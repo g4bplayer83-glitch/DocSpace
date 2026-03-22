@@ -1,6 +1,6 @@
 {
   "name": "docspace-server",
-  "version": "2.9.3-beta",
+  "version": "3.0.0-beta",
   "description": "Serveur de chat DocSpace en temps réel avec panneau admin renforcé, bans temporaires, mode privé et menu contextuel",
   "main": "server.js",
   "engines": {

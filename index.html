@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>DocSpace V2.9.3B</title>
+    <title>DocSpace V3.0.0B</title>
     
     <!-- Favicon - Icône du chat -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%235865F2' rx='20' width='100' height='100'/><text y='.9em' font-size='80' x='50%' text-anchor='middle'>🗄️</text></svg>">
@@ -302,15 +302,15 @@
 
         .connection-form {
             background: var(--sidebar-bg);
-            padding: 32px;
-            border-radius: 16px;
+            padding: 36px;
+            border-radius: 20px;
             text-align: center;
             width: 90%;
             max-width: 420px;
-            box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
             color: var(--text-primary);
             border: 1px solid var(--border-color);
-            animation: slideUp 0.3s ease-out;
+            animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
         
         @keyframes slideUp {
@@ -451,13 +451,14 @@
         .chat-header {
             background: var(--sidebar-bg);
             color: var(--text-primary);
-            padding: 12px 16px;
+            padding: 14px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-shrink: 0;
             border-bottom: 1px solid var(--border-color);
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+            z-index: 10;
         }
 
         .header-info h1 {
@@ -500,10 +501,11 @@
             display: flex;
             align-items: center;
             gap: 6px;
-            padding: 4px 10px;
+            padding: 6px 12px;
             background: var(--input-bg);
-            border-radius: 12px;
+            border-radius: 16px;
             font-size: 12px;
+            font-weight: 500;
         }
 
         .status-dot {
@@ -545,17 +547,35 @@
             flex: 1;
             overflow: hidden;
             flex-direction: column;
+            position: relative;
         }
 
         .chat-messages {
             flex: 1;
-            padding: 16px;
+            padding: 16px 20px;
             overflow-y: auto;
             background: var(--chat-bg);
             display: flex;
             flex-direction: column;
             gap: 4px;
             scroll-behavior: smooth;
+        }
+
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
         }
 
         .users-sidebar {
@@ -585,9 +605,9 @@
         }
 
         .user-item {
-            padding: 6px 12px;
+            padding: 6px 14px;
             background: var(--input-bg);
-            border-radius: 16px;
+            border-radius: 20px;
             font-size: 13px;
             display: flex;
             align-items: center;
@@ -597,11 +617,14 @@
             flex-shrink: 0;
             transition: all 0.2s ease;
             cursor: pointer;
+            border: 1px solid transparent;
         }
         
         .user-item:hover {
             background: var(--accent-color);
             color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         }
 
         .user-item.current {
@@ -626,13 +649,24 @@
         }
 
         .message {
-            margin-bottom: 2px;
-            padding: 8px 12px;
-            border-radius: 8px;
+            margin-bottom: 4px;
+            padding: 10px 14px;
+            padding-right: 32px;
+            border-radius: 12px;
             max-width: 75%;
             word-wrap: break-word;
-            animation: messageSlide 0.2s ease-out;
+            overflow-wrap: break-word;
+            animation: messageSlide 0.3s cubic-bezier(0.22, 0.61, 0.36, 1);
             position: relative;
+            transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+        }
+
+        .message:active {
+            transform: scale(0.99);
+        }
+
+        .message:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
         }
 
         .message.media-message {
@@ -640,8 +674,26 @@
         }
         
         @keyframes messageSlide {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
+            from { opacity: 0; transform: translateY(10px) scale(0.97); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        
+        @keyframes messageSlideOwn {
+            from { opacity: 0; transform: translateX(12px) scale(0.97); }
+            to { opacity: 1; transform: translateX(0) scale(1); }
+        }
+        
+        @keyframes messageSlideOther {
+            from { opacity: 0; transform: translateX(-12px) scale(0.97); }
+            to { opacity: 1; transform: translateX(0) scale(1); }
+        }
+        
+        .message.own {
+            animation: messageSlideOwn 0.3s cubic-bezier(0.22, 0.61, 0.36, 1);
+        }
+        
+        .message.other {
+            animation: messageSlideOther 0.3s cubic-bezier(0.22, 0.61, 0.36, 1);
         }
 
         .message.own {
@@ -649,6 +701,7 @@
             color: white;
             margin-left: auto;
             border-radius: 18px 18px 4px 18px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
         }
 
         .message.other {
@@ -656,6 +709,7 @@
             border-left: 3px solid var(--accent-color);
             color: var(--text-primary);
             border-radius: 4px 18px 18px 18px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
         }
 
         .message.system {
@@ -669,9 +723,41 @@
             border-left: none;
         }
 
+        /* ====== DATE SEPARATORS ====== */
+        .date-separator {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin: 20px 0 12px 0;
+            padding: 0 8px;
+            user-select: none;
+        }
+
+        .date-separator::before,
+        .date-separator::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border-color);
+            opacity: 0.5;
+        }
+
+        .date-separator-text {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            padding: 4px 14px;
+            background: var(--sidebar-bg);
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+        }
+
         .message-header {
             font-size: 12px;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
             font-weight: 600;
             display: flex;
             align-items: center;
@@ -684,8 +770,8 @@
         }
 
         .message-avatar {
-            width: 24px;
-            height: 24px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
             overflow: hidden;
             flex-shrink: 0;
@@ -694,7 +780,8 @@
             align-items: center;
             justify-content: center;
             background: var(--input-bg);
-            font-size: 12px;
+            font-size: 13px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
         }
 
         .message-avatar img {
@@ -719,12 +806,160 @@
         .message-time {
             font-size: 10px;
             font-weight: 400;
-            opacity: 0.7;
+            opacity: 0.6;
+            margin-left: auto;
+        }
+
+        .message-date {
+            font-size: 9px;
+            font-weight: 400;
+            opacity: 0.5;
+            margin-left: 4px;
         }
 
         .message-content {
             font-size: var(--message-font-size, 14px);
-            line-height: 1.4;
+            line-height: 1.45;
+            overflow-wrap: break-word;
+            word-break: break-word;
+        }
+
+        /* ====== CODE BLOCKS ====== */
+        .message-content code {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9em;
+        }
+
+        .message-content pre {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px 14px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 6px 0;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            border-left: 3px solid var(--accent-color);
+        }
+
+        .message-content pre code {
+            background: none;
+            padding: 0;
+            border-radius: 0;
+        }
+
+        /* ====== MESSAGE GROUPING ====== */
+        .message.grouped {
+            margin-top: -2px;
+            padding-top: 2px;
+        }
+
+        .message.grouped .message-header {
+            display: none;
+        }
+
+        .message.grouped:hover .grouped-time {
+            opacity: 0.5;
+        }
+
+        .grouped-time {
+            position: absolute;
+            left: -48px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 9px;
+            color: var(--text-secondary);
+            opacity: 0;
+            transition: opacity 0.15s ease;
+            white-space: nowrap;
+        }
+
+        .message.own .grouped-time {
+            left: auto;
+            right: -48px;
+        }
+
+        /* ====== SCROLL TO BOTTOM BUTTON ====== */
+        .scroll-bottom-btn {
+            position: absolute;
+            bottom: 20px;
+            right: 24px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+            z-index: 50;
+            transition: all 0.2s ease;
+            animation: fadeInUp 0.2s ease-out;
+        }
+
+        .scroll-bottom-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .scroll-bottom-btn.visible {
+            display: flex;
+        }
+
+        .scroll-bottom-badge {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            min-width: 20px;
+            height: 20px;
+            background: var(--danger-color);
+            color: white;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 5px;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ====== NEW MESSAGES DIVIDER ====== */
+        .new-messages-divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 12px 0;
+            user-select: none;
+        }
+
+        .new-messages-divider::before,
+        .new-messages-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--danger-color);
+            opacity: 0.6;
+        }
+
+        .new-messages-divider-text {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--danger-color);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
         }
 
         /* ====== SPOILERS / MESSAGES À RÉVÉLATION ====== */
@@ -814,6 +1049,23 @@
             touch-action: pan-y;
         }
 
+        /* ====== MENTION HIGHLIGHT ====== */
+        .message.mentioned {
+            border-left: 3px solid #FAA61A !important;
+            background: rgba(250, 166, 26, 0.08) !important;
+        }
+
+        .message.mentioned::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: #FAA61A;
+            border-radius: 0 2px 2px 0;
+        }
+
         .message.swiping {
             transition: none;
         }
@@ -865,8 +1117,8 @@
         /* Menu contextuel 3 points */
         .message-menu-container {
             position: absolute;
-            top: 4px;
-            right: 4px;
+            top: 6px;
+            right: 6px;
             z-index: 50;
         }
 
@@ -874,15 +1126,16 @@
             background: var(--input-bg);
             border: none;
             border-radius: 6px;
-            padding: 4px 8px;
-            font-size: 16px;
+            padding: 3px 6px;
+            font-size: 14px;
             cursor: pointer;
             opacity: 0;
-            transition: all 0.15s ease;
+            transition: all 0.2s ease;
             color: var(--text-primary);
             display: flex;
             align-items: center;
             justify-content: center;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
         }
 
         .message:hover .message-menu-btn {
@@ -915,8 +1168,8 @@
         }
 
         @keyframes menuFadeIn {
-            from { opacity: 0; transform: translateY(-8px); }
-            to { opacity: 1; transform: translateY(0); }
+            from { opacity: 0; transform: translateY(-8px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
 
         .context-menu-item {
@@ -1368,7 +1621,7 @@
         }
 
         .chat-input-container {
-            padding: 12px 16px;
+            padding: 12px 20px 16px 20px;
             background: var(--sidebar-bg);
             border-top: 1px solid var(--border-color);
             flex-shrink: 0;
@@ -1441,13 +1694,14 @@
         }
 
         .reply-preview {
-            background: #f0f0f0;
+            background: var(--input-bg);
             padding: 8px 12px;
             margin-bottom: 8px;
-            border-radius: 8px;
+            border-radius: 12px;
             border-left: 3px solid var(--accent-color);
-            font-size: 11px;
+            font-size: 12px;
             display: none;
+            color: var(--text-primary);
         }
 
         .reply-preview .reply-close {
@@ -1467,7 +1721,7 @@
             flex: 1;
             padding: 12px 16px;
             border: 2px solid var(--border-color);
-            border-radius: 12px;
+            border-radius: 20px;
             outline: none;
             font-size: 15px;
             transition: all 0.2s ease;
@@ -1680,21 +1934,23 @@
         }
 
         #sendButton {
-            padding: 12px 20px;
+            padding: 12px 24px;
             background: var(--accent-color);
             color: white;
             border: none;
-            border-radius: 12px;
+            border-radius: 20px;
             cursor: pointer;
             font-size: 14px;
             font-weight: 600;
             transition: all 0.2s ease;
             min-width: 80px;
+            box-shadow: 0 2px 8px rgba(88, 101, 242, 0.3);
         }
 
         #sendButton:hover:not(:disabled) {
             filter: brightness(1.1);
             transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(88, 101, 242, 0.4);
         }
 
         #sendButton:disabled {
@@ -1702,6 +1958,7 @@
             color: var(--text-secondary);
             cursor: not-allowed;
             transform: none;
+            box-shadow: none;
         }
 
         /* Modal Settings */
@@ -1715,6 +1972,12 @@
             height: 100%;
             background-color: rgba(0, 0, 0, 0.7);
             backdrop-filter: blur(4px);
+            animation: modalFadeIn 0.2s ease;
+        }
+        
+        @keyframes modalFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
         .modal-content {
@@ -1730,7 +1993,12 @@
             color: var(--text-primary);
             box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
             border: 1px solid var(--border-color);
-            animation: slideUp 0.3s ease-out;
+            animation: modalSlideUp 0.35s cubic-bezier(0.22, 0.61, 0.36, 1);
+        }
+        
+        @keyframes modalSlideUp {
+            from { opacity: 0; transform: translateY(24px) scale(0.96); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
 
         .modal-header {
@@ -2352,6 +2620,139 @@
             
             .users-sidebar {
                 display: none;
+            }
+            
+            .chat-header {
+                padding: 8px 12px;
+            }
+            
+            .header-info h1 {
+                font-size: 14px;
+            }
+            
+            .header-stats {
+                gap: 6px;
+            }
+            
+            .header-actions {
+                flex-wrap: wrap;
+                gap: 4px;
+                justify-content: flex-end;
+            }
+            
+            .header-btn {
+                padding: 6px;
+                font-size: 14px;
+                border-radius: 6px;
+            }
+            
+            .connection-status, #onlineCount, .current-channel-indicator {
+                font-size: 11px;
+            }
+            
+            .message {
+                padding: 8px 10px;
+                max-width: 85%;
+            }
+            
+            .message-content {
+                font-size: 13px;
+            }
+            
+            .modal-content {
+                margin: 4% auto;
+                width: 92%;
+                max-height: 88vh;
+            }
+            
+            .dm-sidebar {
+                width: 100% !important;
+                max-width: 100vw;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .chat-header {
+                padding: 6px 8px;
+                flex-direction: column;
+                gap: 6px;
+                align-items: stretch;
+            }
+            
+            .header-info h1 {
+                font-size: 13px;
+            }
+            
+            .header-info .server-info {
+                font-size: 10px;
+            }
+            
+            .header-stats {
+                flex-wrap: wrap;
+                gap: 4px;
+                justify-content: center;
+            }
+            
+            .header-actions {
+                gap: 3px;
+                justify-content: center;
+            }
+            
+            .header-btn {
+                padding: 5px;
+                font-size: 13px;
+                min-width: 32px;
+                min-height: 32px;
+            }
+            
+            .connection-status, #onlineCount {
+                display: none;
+            }
+            
+            .message {
+                padding: 6px 8px;
+                max-width: 90%;
+                border-radius: 12px;
+            }
+            
+            .message.own {
+                border-radius: 12px 12px 4px 12px;
+            }
+            
+            .message.other {
+                border-radius: 4px 12px 12px 12px;
+            }
+            
+            .message-username {
+                font-size: 12px;
+            }
+            
+            .message-content {
+                font-size: 12px;
+            }
+            
+            .chat-input-container {
+                padding: 6px 8px;
+            }
+            
+            .patchnotes-modal, .modal-content {
+                width: 95%;
+                max-height: 85vh;
+            }
+            
+            .user-profile-content {
+                width: 90vw !important;
+                max-width: 340px;
+            }
+            
+            .friends-tabs {
+                flex-wrap: wrap;
+                gap: 4px;
+            }
+            
+            .friends-tab {
+                font-size: 11px;
+                padding: 6px 10px;
             }
         }
         /* Style emoji picker moderne */
@@ -3617,6 +4018,7 @@
             height: 100%;
             background: rgba(0,0,0,0.7);
             backdrop-filter: blur(4px);
+            animation: modalFadeIn 0.2s ease;
         }
         .user-profile-content {
             position: absolute;
@@ -3629,6 +4031,12 @@
             max-width: 400px;
             overflow: hidden;
             box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            animation: profilePopIn 0.35s cubic-bezier(0.22, 0.61, 0.36, 1);
+        }
+        
+        @keyframes profilePopIn {
+            from { opacity: 0; transform: translate(-50%, -48%) scale(0.92); }
+            to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
         }
         .user-profile-banner {
             height: 80px;
@@ -3714,10 +4122,15 @@
             cursor: pointer;
             font-size: 13px;
             font-weight: 600;
-            transition: opacity 0.15s;
+            transition: all 0.2s cubic-bezier(0.22, 0.61, 0.36, 1);
         }
         .user-profile-btn:hover {
             opacity: 0.9;
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+        }
+        .user-profile-btn:active {
+            transform: scale(0.97);
         }
         .user-profile-btn.primary {
             background: var(--accent-color);
@@ -3767,7 +4180,6 @@
 
         /* ========== MESSAGES PRIVÉS (DM) ========== */
         .dm-sidebar {
-            display: none;
             position: fixed;
             right: 0;
             top: 0;
@@ -3776,12 +4188,17 @@
             background: var(--sidebar-bg);
             border-left: 1px solid var(--border-color);
             z-index: 1500;
+            display: flex;
             flex-direction: column;
             box-shadow: -4px 0 20px rgba(0,0,0,0.2);
             min-height: 0;
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.22, 0.61, 0.36, 1);
+            pointer-events: none;
         }
         .dm-sidebar.open {
-            display: flex;
+            transform: translateX(0);
+            pointer-events: auto;
         }
         .dm-header {
             padding: 16px;
@@ -3812,10 +4229,11 @@
             gap: 12px;
             padding: 12px 16px;
             cursor: pointer;
-            transition: background 0.15s;
+            transition: all 0.2s ease;
         }
         .dm-conversation:hover {
             background: var(--hover-bg);
+            transform: translateX(4px);
         }
         .dm-conversation.active {
             background: var(--hover-bg);
@@ -4823,12 +5241,18 @@
             cursor: pointer;
             font-size: 16px;
             color: var(--text-primary);
-            transition: all 0.15s ease;
+            transition: all 0.2s cubic-bezier(0.22, 0.61, 0.36, 1);
         }
         
         .header-btn:hover {
             background: var(--accent-color);
             color: white;
+            transform: translateY(-1px) scale(1.08);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+        }
+        
+        .header-btn:active {
+            transform: scale(0.95);
         }
 
         /* ====== PATCH NOTES STYLES ====== */
@@ -5178,29 +5602,45 @@
             height: 80px;
             background: var(--input-bg);
             border: none;
-            border-radius: 8px;
+            border-radius: 12px;
             font-size: 40px;
             cursor: pointer;
-            transition: all 0.15s ease;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             align-items: center;
             justify-content: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .tictactoe-cell:hover:not(.taken) {
             background: var(--hover-bg);
+            transform: scale(1.05);
         }
 
         .tictactoe-cell.x {
             color: #ef4444;
+            animation: cellPop 0.2s ease-out;
         }
 
         .tictactoe-cell.o {
             color: #3b82f6;
+            animation: cellPop 0.2s ease-out;
         }
 
         .tictactoe-cell.win {
             background: rgba(34, 197, 94, 0.3);
+            animation: winPulse 0.6s ease-in-out;
+        }
+
+        @keyframes cellPop {
+            0% { transform: scale(0.8); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes winPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+            50% { box-shadow: 0 0 20px 5px rgba(34, 197, 94, 0.4); }
         }
 
         /* Puissance 4 (Connect 4) */
@@ -5224,25 +5664,34 @@
             background: var(--main-bg);
             border-radius: 50%;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .connect4-cell:hover {
             opacity: 0.8;
+            transform: scale(1.08);
         }
 
         .connect4-cell.red {
             background: #ef4444;
-            box-shadow: inset 0 -4px 8px rgba(0,0,0,0.3);
+            box-shadow: inset 0 -4px 8px rgba(0,0,0,0.3), 0 2px 6px rgba(239, 68, 68, 0.4);
+            animation: chipDrop 0.3s ease-out;
         }
 
         .connect4-cell.yellow {
             background: #eab308;
-            box-shadow: inset 0 -4px 8px rgba(0,0,0,0.3);
+            box-shadow: inset 0 -4px 8px rgba(0,0,0,0.3), 0 2px 6px rgba(234, 179, 8, 0.4);
+            animation: chipDrop 0.3s ease-out;
+        }
+
+        @keyframes chipDrop {
+            0% { transform: translateY(-20px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
         }
 
         .connect4-cell.win {
             box-shadow: 0 0 15px 5px rgba(34, 197, 94, 0.6);
+            animation: winPulse 0.6s ease-in-out;
         }
 
         /* Pierre-Papier-Ciseaux */
@@ -5438,23 +5887,30 @@
             width: 70px;
             height: 70px;
             background: var(--accent-color);
-            border-radius: 10px;
+            border-radius: 12px;
             cursor: pointer;
             font-size: 30px;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             transform-style: preserve-3d;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .memory-card:hover:not(.matched) {
+            transform: scale(1.05);
         }
 
         .memory-card.flipped {
             background: var(--input-bg);
+            transform: rotateY(180deg);
         }
 
         .memory-card.matched {
             background: rgba(34, 197, 94, 0.3);
             cursor: default;
+            box-shadow: 0 0 12px rgba(34, 197, 94, 0.3);
         }
 
         .memory-stats {
@@ -5605,6 +6061,148 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* ========== BOOKMARKS MODAL ========== */
+        .bookmarks-list { max-height: 400px; overflow-y: auto; padding: 10px; }
+        .bookmark-item { background: var(--message-bg); border-radius: 8px; padding: 12px; margin-bottom: 8px; border-left: 3px solid var(--accent-color); }
+        .bookmark-item .bookmark-author { font-weight: 600; color: var(--accent-color); font-size: 13px; }
+        .bookmark-item .bookmark-content { color: var(--text-primary); margin: 4px 0; font-size: 14px; word-break: break-word; }
+        .bookmark-item .bookmark-meta { font-size: 11px; color: var(--text-secondary); display: flex; justify-content: space-between; align-items: center; }
+        .bookmark-item .bookmark-remove { background: none; border: none; color: #f04747; cursor: pointer; font-size: 16px; padding: 2px 6px; border-radius: 4px; }
+        .bookmark-item .bookmark-remove:hover { background: rgba(240,71,71,.15); }
+
+        /* ========== FRIENDS MODAL ========== */
+        .friends-tabs { display: flex; gap: 0; margin-bottom: 12px; border-bottom: 2px solid var(--border-color); }
+        .friends-tab { padding: 8px 16px; background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 13px; font-weight: 600; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all .2s; }
+        .friends-tab.active { color: var(--accent-color); border-bottom-color: var(--accent-color); }
+        .friends-tab .tab-badge { background: #f04747; color: white; border-radius: 50%; padding: 0 5px; font-size: 10px; margin-left: 4px; }
+        .friends-list-container { max-height: 350px; overflow-y: auto; }
+        .friend-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; margin-bottom: 4px; transition: background .2s; }
+        .friend-item:hover { background: var(--hover-bg); }
+        .friend-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
+        .friend-info { flex: 1; }
+        .friend-name { font-weight: 600; color: var(--text-primary); font-size: 14px; }
+        .friend-status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+        .friend-status-dot.online { background: #43b581; }
+        .friend-status-dot.offline { background: #747f8d; }
+        .friend-actions { display: flex; gap: 6px; }
+        .friend-actions button { padding: 5px 10px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; font-weight: 600; }
+        .friend-actions .accept-btn { background: #43b581; color: white; }
+        .friend-actions .reject-btn { background: #f04747; color: white; }
+        .friend-actions .dm-btn { background: var(--accent-color); color: white; }
+        .friend-actions .remove-btn { background: var(--input-bg); color: var(--text-secondary); }
+
+        /* ========== XP / LEVELING ========== */
+        .xp-bar-container { background: var(--input-bg); border-radius: 10px; height: 16px; overflow: hidden; margin: 6px 0; position: relative; }
+        .xp-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent-color), #43b581); border-radius: 10px; transition: width .5s ease; }
+        .xp-bar-text { position: absolute; top: 0; left: 50%; transform: translateX(-50%); font-size: 10px; font-weight: 700; color: white; line-height: 16px; text-shadow: 0 1px 2px rgba(0,0,0,.5); }
+        .level-badge { display: inline-flex; align-items: center; gap: 3px; background: var(--accent-color); color: white; padding: 1px 7px; border-radius: 10px; font-size: 11px; font-weight: 700; }
+        .leaderboard-list { max-height: 400px; overflow-y: auto; }
+        .leaderboard-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; margin-bottom: 4px; }
+        .leaderboard-item:nth-child(1) { background: linear-gradient(90deg, rgba(255,215,0,.15), transparent); }
+        .leaderboard-item:nth-child(2) { background: linear-gradient(90deg, rgba(192,192,192,.15), transparent); }
+        .leaderboard-item:nth-child(3) { background: linear-gradient(90deg, rgba(205,127,50,.15), transparent); }
+        .leaderboard-rank { font-weight: 800; font-size: 16px; width: 28px; text-align: center; color: var(--text-secondary); }
+        .leaderboard-name { flex: 1; font-weight: 600; color: var(--text-primary); }
+        .leaderboard-xp { color: var(--accent-color); font-weight: 700; font-size: 13px; }
+
+        /* ========== REMINDERS ========== */
+        .reminder-item { display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--message-bg); border-radius: 8px; margin-bottom: 6px; }
+        .reminder-icon { font-size: 20px; }
+        .reminder-info { flex: 1; }
+        .reminder-text { font-weight: 600; color: var(--text-primary); font-size: 13px; }
+        .reminder-time { font-size: 11px; color: var(--text-secondary); }
+        .reminder-delete { background: none; border: none; color: #f04747; cursor: pointer; font-size: 16px; }
+        .reminder-toast { position: fixed; top: 20px; right: 20px; background: var(--accent-color); color: white; padding: 16px 24px; border-radius: 12px; z-index: 10001; animation: slideIn .3s ease; box-shadow: 0 8px 24px rgba(0,0,0,.3); max-width: 350px; }
+        .reminder-toast .toast-title { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+        .reminder-toast .toast-msg { font-size: 13px; opacity: .9; }
+
+        /* ========== LINK PREVIEW ========== */
+        .link-preview { display: flex; gap: 12px; background: var(--input-bg); border-left: 3px solid var(--accent-color); border-radius: 0 8px 8px 0; padding: 10px 12px; margin-top: 8px; max-width: 400px; cursor: pointer; transition: background .2s; }
+        .link-preview:hover { background: var(--hover-bg); }
+        .link-preview-info { flex: 1; min-width: 0; }
+        .link-preview-site { font-size: 11px; color: var(--accent-color); font-weight: 600; text-transform: uppercase; }
+        .link-preview-title { font-size: 13px; font-weight: 700; color: var(--text-primary); margin: 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .link-preview-desc { font-size: 12px; color: var(--text-secondary); display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .link-preview-img { width: 60px; height: 60px; border-radius: 6px; object-fit: cover; flex-shrink: 0; }
+
+        /* ========== USER STATUS ========== */
+        .status-selector { display: flex; gap: 6px; margin: 8px 0; flex-wrap: wrap; }
+        .status-option { padding: 6px 12px; border-radius: 16px; border: 2px solid var(--border-color); background: none; cursor: pointer; font-size: 12px; color: var(--text-primary); transition: all .2s; display: flex; align-items: center; gap: 4px; }
+        .status-option.active { border-color: var(--accent-color); background: rgba(88,101,242,.15); }
+        .custom-status-input { display: flex; gap: 8px; margin-top: 8px; }
+        .custom-status-input input { flex: 1; padding: 8px 12px; border-radius: 8px; border: 2px solid var(--border-color); background: var(--input-bg); color: var(--text-primary); font-size: 13px; }
+        .custom-status-input button { padding: 8px 16px; border-radius: 8px; border: none; background: var(--accent-color); color: white; cursor: pointer; font-weight: 600; }
+        .user-custom-status { font-size: 11px; color: var(--text-secondary); display: flex; align-items: center; gap: 3px; }
+
+        /* ========== SOUNDBOARD ========== */
+        .soundboard-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; padding: 10px; }
+        .sound-btn { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 8px; border-radius: 10px; border: 2px solid var(--border-color); background: var(--message-bg); cursor: pointer; transition: all .2s; }
+        .sound-btn:hover { border-color: var(--accent-color); transform: scale(1.05); }
+        .sound-btn:active { transform: scale(.95); }
+        .sound-btn .sound-icon { font-size: 24px; }
+        .sound-btn .sound-name { font-size: 10px; color: var(--text-secondary); font-weight: 600; }
+        .sound-notification { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: var(--accent-color); color: white; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; z-index: 9999; animation: slideUp .3s ease; }
+        @keyframes slideUp { from { opacity: 0; transform: translateX(-50%) translateY(20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+        /* ========== CHANNEL CATEGORIES ========== */
+        .channel-category { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); padding: 12px 12px 4px; letter-spacing: .5px; cursor: pointer; display: flex; align-items: center; gap: 4px; user-select: none; }
+        .channel-category .cat-arrow { transition: transform .2s; font-size: 8px; }
+        .channel-category.collapsed .cat-arrow { transform: rotate(-90deg); }
+        .channel-category.collapsed + .channel-item,
+        .channel-category.collapsed ~ .channel-item:not(.channel-category ~ .channel-category ~ .channel-item) { display: none; }
+
+        /* ========== HANGMAN GAME ========== */
+        .hangman-container { text-align: center; padding: 20px; }
+        .hangman-word { font-size: 28px; font-weight: 800; letter-spacing: 8px; color: var(--text-primary); margin: 20px 0; font-family: monospace; }
+        .hangman-gallows { font-size: 40px; margin: 10px 0; }
+        .hangman-wrong { color: #f04747; font-size: 16px; margin: 10px 0; letter-spacing: 4px; }
+        .hangman-keyboard { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; margin-top: 15px; }
+        .hangman-key { width: 36px; height: 36px; border-radius: 6px; border: 2px solid var(--border-color); background: var(--message-bg); color: var(--text-primary); font-weight: 700; font-size: 14px; cursor: pointer; transition: all .15s; display: flex; align-items: center; justify-content: center; }
+        .hangman-key:hover:not(.used) { border-color: var(--accent-color); background: rgba(88,101,242,.15); }
+        .hangman-key.correct { background: #43b581; color: white; border-color: #43b581; }
+        .hangman-key.wrong { background: #f04747; color: white; border-color: #f04747; opacity: .6; }
+        .hangman-key.used { pointer-events: none; }
+        .hangman-lives { display: flex; gap: 4px; justify-content: center; margin: 10px 0; }
+
+        /* ========== TRIVIA GAME ========== */
+        .trivia-container { text-align: center; padding: 20px; }
+        .trivia-question { font-size: 18px; font-weight: 700; color: var(--text-primary); margin: 15px 0; line-height: 1.4; }
+        .trivia-answers { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; max-width: 400px; margin: 0 auto; }
+        .trivia-answer { padding: 14px; border-radius: 10px; border: 2px solid var(--border-color); background: var(--message-bg); cursor: pointer; font-weight: 600; color: var(--text-primary); transition: all .2s; font-size: 14px; }
+        .trivia-answer:hover { border-color: var(--accent-color); background: rgba(88,101,242,.15); }
+        .trivia-answer.correct { background: #43b581; color: white; border-color: #43b581; }
+        .trivia-answer.wrong { background: #f04747; color: white; border-color: #f04747; }
+        .trivia-progress { font-size: 12px; color: var(--text-secondary); margin-bottom: 10px; }
+        .trivia-score { font-size: 24px; font-weight: 800; color: var(--accent-color); margin: 10px 0; }
+
+        /* ========== READ RECEIPTS ========== */
+        .read-receipts { display: flex; gap: -4px; margin-top: 2px; justify-content: flex-end; }
+        .read-receipt-avatar { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--chat-bg); margin-left: -4px; }
+
+        /* ========== AUTO-MOD PANEL ========== */
+        .automod-panel { padding: 15px; }
+        .automod-toggle { display: flex; align-items: center; justify-content: space-between; padding: 10px; background: var(--message-bg); border-radius: 8px; margin-bottom: 8px; }
+        .automod-toggle label { font-weight: 600; color: var(--text-primary); font-size: 13px; }
+        .toggle-switch { position: relative; width: 44px; height: 24px; cursor: pointer; }
+        .toggle-switch input { display: none; }
+        .toggle-slider { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: var(--border-color); border-radius: 24px; transition: .3s; }
+        .toggle-slider::before { content: ''; position: absolute; width: 18px; height: 18px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: .3s; }
+        .toggle-switch input:checked + .toggle-slider { background: var(--accent-color); }
+        .toggle-switch input:checked + .toggle-slider::before { transform: translateX(20px); }
+        .automod-words { margin-top: 10px; }
+        .automod-words input { width: 100%; padding: 8px; border-radius: 6px; border: 2px solid var(--border-color); background: var(--input-bg); color: var(--text-primary); font-size: 13px; }
+        .automod-word-list { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+        .automod-word { background: #f04747; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; display: flex; align-items: center; gap: 4px; }
+        .automod-word .remove-word { cursor: pointer; opacity: .7; }
+        .automod-word .remove-word:hover { opacity: 1; }
+
+        @keyframes slideIn { from { opacity: 0; transform: translateX(60px); } to { opacity: 1; transform: translateX(0); } }
+
+        @media (max-width: 500px) {
+            .soundboard-grid { grid-template-columns: repeat(3, 1fr); }
+            .trivia-answers { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
@@ -5660,7 +6258,12 @@
                     <button class="header-btn" onclick="openGallery()" title="Stockage">📁</button>
                     <button class="header-btn" onclick="togglePinnedPanel()" title="Messages épinglés">📌</button>
                     <button class="header-btn" onclick="openGamesModal()" title="Mini-jeux">🎮</button>
+                    <button class="header-btn" onclick="openSoundboard()" title="Soundboard">🔊</button>
+                    <button class="header-btn" onclick="openFriendsModal()" title="Amis">👥</button>
+                    <button class="header-btn" onclick="openBookmarksModal()" title="Messages sauvegardés">🔖</button>
+                    <button class="header-btn" onclick="openLeaderboard()" title="Classement XP">🏆</button>
                     <button class="header-btn" onclick="openAIChat()" title="Assistant IA">🤖</button>
+                    <button class="header-btn" onclick="openServerStats()" title="Statistiques">📊</button>
                     <button class="header-btn" onclick="showPatchNotes(true)" title="Nouveautés">📋</button>
                     <button class="header-btn" onclick="openSettings()" title="Paramètres">⚙️</button>
                 </div>
@@ -5753,9 +6356,15 @@
             <!-- Zone principale -->
             <div class="chat-main">
                 <!-- Messages -->
-                <div class="chat-messages" id="chatMessages">
+                <div class="chat-messages" id="chatMessages" style="position: relative;">
                     <!-- Messages apparaîtront ici -->
                 </div>
+                
+                <!-- Bouton scroll vers le bas -->
+                <button class="scroll-bottom-btn" id="scrollBottomBtn" onclick="scrollToBottom()" title="Aller en bas">
+                    ↓
+                    <span class="scroll-bottom-badge" id="scrollBottomBadge" style="display: none;">0</span>
+                </button>
 
                 <!-- Sidebar utilisateurs -->
                 <div class="users-sidebar">
@@ -6228,31 +6837,6 @@
             </div>
             
             <div class="settings-section">
-                <label>Statut personnalisé</label>
-                <div class="status-picker">
-                    <div class="status-picker-title">Votre statut</div>
-                    <div class="status-options">
-                        <div class="status-option active" data-status="online" onclick="setStatus('online')">
-                            <div class="status-indicator status-online"></div>
-                            En ligne
-                        </div>
-                        <div class="status-option" data-status="idle" onclick="setStatus('idle')">
-                            <div class="status-indicator status-idle"></div>
-                            Absent
-                        </div>
-                        <div class="status-option" data-status="dnd" onclick="setStatus('dnd')">
-                            <div class="status-indicator status-dnd"></div>
-                            Ne pas déranger
-                        </div>
-                    </div>
-                    <div class="status-custom-input">
-                        <input type="text" id="customStatusInput" placeholder="🎮 En train de jouer..." maxlength="40">
-                        <button onclick="setCustomStatus()">OK</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="settings-section">
                 <button onclick="closeSettings()" id="saveButton" style="width: 100%; padding: 12px; background: var(--accent-color); color: white; border: none; border-radius: 8px; font-size: 14px;">
                     Sauvegarder
                 </button>
@@ -6307,6 +6891,21 @@
         </div>
     </div>
 
+    <!-- Modal Statistiques Serveur -->
+    <div id="statsModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3>📊 Statistiques du Serveur</h3>
+                <span class="close" onclick="document.getElementById('statsModal').style.display='none'">&times;</span>
+            </div>
+            <div id="statsContent" style="padding: 20px;">
+                <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                    Chargement...
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal Mini-Jeux -->
     <div id="gamesModal" class="modal">
         <div class="modal-content games-modal">
@@ -6348,6 +6947,16 @@
                         <div class="game-name">Memory</div>
                         <div class="game-desc">Solo • Mémoire</div>
                     </div>
+                    <div class="game-card" onclick="startHangman()">
+                        <div class="game-icon">💀</div>
+                        <div class="game-name">Pendu</div>
+                        <div class="game-desc">Solo • Mots</div>
+                    </div>
+                    <div class="game-card" onclick="startTrivia()">
+                        <div class="game-icon">🧠</div>
+                        <div class="game-name">Trivia</div>
+                        <div class="game-desc">Solo • Culture G</div>
+                    </div>
                 </div>
                 
                 <!-- Invitations en attente -->
@@ -6366,6 +6975,179 @@
                 </div>
                 <div id="gameBoard" class="game-board"></div>
                 <div id="gameControls" class="game-controls"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Bookmarks / Messages Sauvegardés -->
+    <div id="bookmarksModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3>🔖 Messages Sauvegardés</h3>
+                <span class="close" onclick="document.getElementById('bookmarksModal').style.display='none'">&times;</span>
+            </div>
+            <div class="bookmarks-list" id="bookmarksList">
+                <div style="text-align: center; padding: 40px; color: var(--text-secondary);">Aucun message sauvegardé</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Amis -->
+    <div id="friendsModal" class="modal">
+        <div class="modal-content" style="max-width: 480px;">
+            <div class="modal-header">
+                <h3>👥 Amis</h3>
+                <span class="close" onclick="document.getElementById('friendsModal').style.display='none'">&times;</span>
+            </div>
+            <div class="friends-tabs">
+                <button class="friends-tab active" onclick="showFriendsTab('all')">Tous</button>
+                <button class="friends-tab" onclick="showFriendsTab('online')">En ligne</button>
+                <button class="friends-tab" onclick="showFriendsTab('pending')">En attente</button>
+                <button class="friends-tab" onclick="showFriendsTab('requests')">Demandes <span class="tab-badge" id="friendRequestsBadge" style="display:none">0</span></button>
+            </div>
+            <div class="friends-list-container" id="friendsListContainer">
+                <div style="text-align: center; padding: 30px; color: var(--text-secondary);">Aucun ami pour le moment</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Leaderboard XP -->
+    <div id="leaderboardModal" class="modal">
+        <div class="modal-content" style="max-width: 450px;">
+            <div class="modal-header">
+                <h3>🏆 Classement XP</h3>
+                <span class="close" onclick="document.getElementById('leaderboardModal').style.display='none'">&times;</span>
+            </div>
+            <div style="padding: 12px; background: var(--message-bg); border-radius: 8px; margin: 10px 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-weight: 700; color: var(--text-primary); font-size: 15px;">Ton niveau</div>
+                        <div style="color: var(--text-secondary); font-size: 12px;" id="myXPInfo">Niveau 0 • 0 XP</div>
+                    </div>
+                    <div class="level-badge" id="myLevelBadge">Nv. 0</div>
+                </div>
+                <div class="xp-bar-container" style="margin-top: 8px;">
+                    <div class="xp-bar-fill" id="myXPBar" style="width: 0%"></div>
+                    <div class="xp-bar-text" id="myXPBarText">0/100</div>
+                </div>
+            </div>
+            <div class="leaderboard-list" id="leaderboardList" style="padding: 10px 15px;">
+                <div style="text-align: center; padding: 30px; color: var(--text-secondary);">Chargement...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Soundboard -->
+    <div id="soundboardModal" class="modal">
+        <div class="modal-content" style="max-width: 420px;">
+            <div class="modal-header">
+                <h3>🔊 Soundboard</h3>
+                <span class="close" onclick="document.getElementById('soundboardModal').style.display='none'">&times;</span>
+            </div>
+            <div class="soundboard-grid">
+                <button class="sound-btn" onclick="playSound('applause')"><span class="sound-icon">👏</span><span class="sound-name">Applause</span></button>
+                <button class="sound-btn" onclick="playSound('airhorn')"><span class="sound-icon">📯</span><span class="sound-name">Airhorn</span></button>
+                <button class="sound-btn" onclick="playSound('rimshot')"><span class="sound-icon">🥁</span><span class="sound-name">Rimshot</span></button>
+                <button class="sound-btn" onclick="playSound('sadtrombone')"><span class="sound-icon">🎺</span><span class="sound-name">Sad</span></button>
+                <button class="sound-btn" onclick="playSound('tada')"><span class="sound-icon">🎉</span><span class="sound-name">Tada</span></button>
+                <button class="sound-btn" onclick="playSound('drumroll')"><span class="sound-icon">🪘</span><span class="sound-name">Drumroll</span></button>
+                <button class="sound-btn" onclick="playSound('crickets')"><span class="sound-icon">🦗</span><span class="sound-name">Crickets</span></button>
+                <button class="sound-btn" onclick="playSound('laugh')"><span class="sound-icon">😂</span><span class="sound-name">Rire</span></button>
+                <button class="sound-btn" onclick="playSound('wow')"><span class="sound-icon">😮</span><span class="sound-name">Wow</span></button>
+                <button class="sound-btn" onclick="playSound('bruh')"><span class="sound-icon">💀</span><span class="sound-name">Bruh</span></button>
+            </div>
+            <div style="padding: 10px 15px; font-size: 11px; color: var(--text-secondary); text-align: center;">
+                Les sons sont joués pour tous les utilisateurs du salon
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Rappels -->
+    <div id="remindersModal" class="modal">
+        <div class="modal-content" style="max-width: 420px;">
+            <div class="modal-header">
+                <h3>⏰ Rappels</h3>
+                <span class="close" onclick="document.getElementById('remindersModal').style.display='none'">&times;</span>
+            </div>
+            <div style="padding: 12px 15px;">
+                <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                    <input type="text" id="reminderMessage" placeholder="Message du rappel..." style="flex: 1; padding: 8px 12px; border-radius: 8px; border: 2px solid var(--border-color); background: var(--input-bg); color: var(--text-primary); font-size: 13px;">
+                    <select id="reminderDelay" style="padding: 8px; border-radius: 8px; border: 2px solid var(--border-color); background: var(--input-bg); color: var(--text-primary); font-size: 13px;">
+                        <option value="300">5 min</option>
+                        <option value="600">10 min</option>
+                        <option value="1800">30 min</option>
+                        <option value="3600">1h</option>
+                        <option value="7200">2h</option>
+                        <option value="86400">24h</option>
+                    </select>
+                    <button onclick="createReminder()" style="padding: 8px 14px; border-radius: 8px; border: none; background: var(--accent-color); color: white; cursor: pointer; font-weight: 600;">+</button>
+                </div>
+                <div id="remindersList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Statut Personnalisé -->
+    <div id="statusModal" class="modal">
+        <div class="modal-content" style="max-width: 380px;">
+            <div class="modal-header">
+                <h3>💭 Statut Personnalisé</h3>
+                <span class="close" onclick="document.getElementById('statusModal').style.display='none'">&times;</span>
+            </div>
+            <div style="padding: 15px;">
+                <div class="status-selector" id="statusSelector">
+                    <button class="status-option active" data-status="online" onclick="selectStatus('online')"><span style="color:#43b581;">●</span> En ligne</button>
+                    <button class="status-option" data-status="idle" onclick="selectStatus('idle')"><span style="color:#faa61a;">●</span> Absent</button>
+                    <button class="status-option" data-status="dnd" onclick="selectStatus('dnd')"><span style="color:#f04747;">●</span> Ne pas déranger</button>
+                    <button class="status-option" data-status="invisible" onclick="selectStatus('invisible')"><span style="color:#747f8d;">●</span> Invisible</button>
+                </div>
+                <div class="custom-status-input">
+                    <input type="text" id="customStatusText" placeholder="Que fais-tu ?" maxlength="50">
+                    <button onclick="saveCustomStatus()">Sauver</button>
+                </div>
+                <div style="margin-top: 12px;">
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 6px;">Suggestions :</div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                        <button class="status-option" onclick="setQuickStatus('🎮 En train de jouer')">🎮 En jeu</button>
+                        <button class="status-option" onclick="setQuickStatus('🎵 Écoute de la musique')">🎵 Musique</button>
+                        <button class="status-option" onclick="setQuickStatus('📚 En train d&apos;étudier')">📚 Études</button>
+                        <button class="status-option" onclick="setQuickStatus('💤 AFK')">💤 AFK</button>
+                        <button class="status-option" onclick="setQuickStatus('🍔 Pause repas')">🍔 Repas</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal AutoMod (admin) -->
+    <div id="automodModal" class="modal">
+        <div class="modal-content" style="max-width: 450px;">
+            <div class="modal-header">
+                <h3>🛡️ Auto-Modération</h3>
+                <span class="close" onclick="document.getElementById('automodModal').style.display='none'">&times;</span>
+            </div>
+            <div class="automod-panel">
+                <div class="automod-toggle">
+                    <label>AutoMod activé</label>
+                    <label class="toggle-switch"><input type="checkbox" id="automodEnabled" onchange="updateAutoMod()"><span class="toggle-slider"></span></label>
+                </div>
+                <div class="automod-toggle">
+                    <label>Filtre de liens</label>
+                    <label class="toggle-switch"><input type="checkbox" id="automodLinks" onchange="updateAutoMod()"><span class="toggle-slider"></span></label>
+                </div>
+                <div class="automod-toggle">
+                    <label>Filtre MAJUSCULES</label>
+                    <label class="toggle-switch"><input type="checkbox" id="automodCaps" onchange="updateAutoMod()"><span class="toggle-slider"></span></label>
+                </div>
+                <div class="automod-toggle">
+                    <label>Anti-spam (msgs/10s)</label>
+                    <input type="number" id="automodSpamThreshold" value="5" min="2" max="20" style="width: 50px; padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-primary); text-align: center;" onchange="updateAutoMod()">
+                </div>
+                <div class="automod-words">
+                    <label style="font-weight: 600; font-size: 13px; color: var(--text-primary);">Mots interdits</label>
+                    <input type="text" id="automodWordInput" placeholder="Ajouter un mot et appuyer Entrée..." onkeypress="if(event.key==='Enter')addBannedWord()">
+                    <div class="automod-word-list" id="bannedWordsList"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -6417,7 +7199,7 @@
     </div>
 
     <!-- Indicateur de version avec accès admin secret -->
-    <div class="version-info">V2.9.3<span id="adminTrigger" onclick="showAdminLogin()" style="cursor:pointer;">B</span><span id="versionAdminBadge" class="admin-badge" style="display:none;margin-left:8px;">ADMIN</span></div>
+    <div class="version-info">V3.0.0<span id="adminTrigger" onclick="showAdminLogin()" style="cursor:pointer;">B</span><span id="versionAdminBadge" class="admin-badge" style="display:none;margin-left:8px;">ADMIN</span></div>
 
     <!-- Container pour notifications empilées -->
     <div class="notification-container" id="notificationContainer"></div>
@@ -7641,6 +8423,9 @@
                 // Initialiser les handlers admin
                 setupAdminSocketListeners();
                 
+                // Initialiser les handlers des nouvelles fonctionnalités (XP, amis, bookmarks, rappels, etc.)
+                setupNewFeatureListeners();
+                
                 // Afficher les patch notes si nouvelle version
                 setTimeout(() => showPatchNotes(), 500);
             });
@@ -7694,6 +8479,8 @@
                 // Vider COMPLETEMENT le chat
                 const chatContainer = document.getElementById('chatMessages');
                 chatContainer.innerHTML = '';
+                resetDateSeparators();
+                resetMessageGrouping();
                 
                 // Récupérer le pseudo actuel pour identifier nos propres messages
                 const myUsername = username || currentUsername || '';
@@ -7742,6 +8529,8 @@
                 // Vider le chat
                 const chatContainer = document.getElementById('chatMessages');
                 chatContainer.innerHTML = '';
+                resetDateSeparators();
+                resetMessageGrouping();
                 
                 // Mettre à jour le cache local
                 channelMessages[data.channel] = data.messages || [];
@@ -7807,6 +8596,13 @@
                 
                 // Si le message est pour le salon actuel, l'afficher
                 if (messageChannel === currentChannel) {
+                    // Insert "New messages" divider if user is scrolled up and it's not their own message
+                    if (isUserScrolledUp && message.userId !== socket.id && scrollUnreadCount === 0) {
+                        const divider = document.createElement('div');
+                        divider.className = 'new-messages-divider';
+                        divider.innerHTML = `<span class="new-messages-divider-text">${currentLanguage === 'en' ? 'New messages' : 'Nouveaux messages'}</span>`;
+                        document.getElementById('chatMessages').appendChild(divider);
+                    }
                     addMessage(message.username, message.content, message.timestamp, message.userId === socket.id, message.avatar, message.replyTo, message.attachment, message.id);
                 } else {
                     // Incrémenter le compteur non-lu pour l'autre salon
@@ -8655,10 +9451,188 @@
             });
         }
 
+        // === SCROLL TO BOTTOM BUTTON ===
+        let scrollUnreadCount = 0;
+        let isUserScrolledUp = false;
+
+        function initScrollToBottom() {
+            const chatMessages = document.getElementById('chatMessages');
+            if (!chatMessages) return;
+            
+            chatMessages.addEventListener('scroll', () => {
+                const threshold = 150;
+                const isAtBottom = chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight < threshold;
+                const btn = document.getElementById('scrollBottomBtn');
+                
+                if (isAtBottom) {
+                    isUserScrolledUp = false;
+                    scrollUnreadCount = 0;
+                    btn.classList.remove('visible');
+                    updateScrollBadge();
+                    // Remove new messages divider
+                    const divider = chatMessages.querySelector('.new-messages-divider');
+                    if (divider) divider.remove();
+                } else {
+                    isUserScrolledUp = true;
+                    btn.classList.add('visible');
+                }
+            });
+        }
+
+        function updateScrollBadge() {
+            const badge = document.getElementById('scrollBottomBadge');
+            if (scrollUnreadCount > 0) {
+                badge.style.display = 'flex';
+                badge.textContent = scrollUnreadCount > 99 ? '99+' : scrollUnreadCount;
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        function incrementScrollUnread() {
+            if (isUserScrolledUp) {
+                scrollUnreadCount++;
+                updateScrollBadge();
+                document.getElementById('scrollBottomBtn').classList.add('visible');
+            }
+        }
+
+        function scrollToBottom() {
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
+            scrollUnreadCount = 0;
+            isUserScrolledUp = false;
+            updateScrollBadge();
+            document.getElementById('scrollBottomBtn').classList.remove('visible');
+        }
+
+        // Init on page load
+        setTimeout(initScrollToBottom, 500);
+
+        // === EMOJI SHORTCODES ===
+        const EMOJI_SHORTCODES = {
+            ':)': '😊', ':-)': '😊', ':(': '😞', ':-(': '😞', ':D': '😃', ':-D': '😃',
+            ';)': '😉', ';-)': '😉', ':P': '😛', ':-P': '😛', ':O': '😮', ':-O': '😮',
+            '<3': '❤️', '</3': '💔', ':fire:': '🔥', ':heart:': '❤️', ':star:': '⭐',
+            ':thumbsup:': '👍', ':thumbsdown:': '👎', ':clap:': '👏', ':wave:': '👋',
+            ':laugh:': '😂', ':cry:': '😢', ':angry:': '😡', ':cool:': '😎',
+            ':thinking:': '🤔', ':skull:': '💀', ':ghost:': '👻', ':rocket:': '🚀',
+            ':100:': '💯', ':check:': '✅', ':cross:': '❌', ':warning:': '⚠️',
+            ':party:': '🎉', ':cake:': '🎂', ':gift:': '🎁', ':music:': '🎵',
+            ':sun:': '☀️', ':moon:': '🌙', ':rain:': '🌧️', ':snow:': '❄️',
+            ':eyes:': '👀', ':pray:': '🙏', ':muscle:': '💪', ':crown:': '👑',
+            ':gem:': '💎', ':trophy:': '🏆', ':medal:': '🏅', ':soccer:': '⚽',
+            ':gaming:': '🎮', ':computer:': '💻', ':phone:': '📱', ':bulb:': '💡',
+            ':lock:': '🔒', ':key:': '🔑', ':boom:': '💥', ':zap:': '⚡',
+            ':poop:': '💩', ':alien:': '👽', ':robot:': '🤖', ':unicorn:': '🦄',
+            ':cat:': '🐱', ':dog:': '🐶', ':pizza:': '🍕', ':taco:': '🌮',
+            ':coffee:': '☕', ':beer:': '🍺', ':wine:': '🍷', ':popcorn:': '🍿',
+            ':gg:': '🎮 GG', ':lol:': '😂', ':rip:': '🪦', ':sus:': '🧐',
+            ':cap:': '🧢', ':nocap:': '🚫🧢', ':goat:': '🐐', ':w:': '🏆',
+            ':L:': '😔', ':bruh:': '🗿', ':nerd:': '🤓', ':moyai:': '🗿',
+        };
+
+        function processEmojiShortcodes(text) {
+            let result = text;
+            // Process :word: shortcodes first
+            result = result.replace(/:[\w]+:/g, (match) => {
+                return EMOJI_SHORTCODES[match] || match;
+            });
+            // Process emoticons (only if surrounded by spaces or at start/end)
+            const emoticons = [':-)', ':)', ':-(', ':(', ':-D', ':D', ';-)', ';)', ':-P', ':P', ':-O', ':O', '<3', '</3'];
+            for (const emoticon of emoticons) {
+                const escaped = emoticon.replace(/([.*+?^${}()|[\]\\])/g, '\\$1');
+                const regex = new RegExp('(?:^|\\s)(' + escaped + ')(?:\\s|$)', 'g');
+                result = result.replace(regex, (match, p1) => {
+                    return match.replace(p1, EMOJI_SHORTCODES[p1] || p1);
+                });
+            }
+            return result;
+        }
+
+        // === CODE BLOCKS PROCESSING ===
+        function processCodeBlocks(text) {
+            // Multi-line code blocks: ```code```
+            text = text.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+            // Inline code: `code`
+            text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+            return text;
+        }
+
+        // === MESSAGE GROUPING ===
+        let lastMessageAuthor = null;
+        let lastMessageTimestamp = null;
+        const MESSAGE_GROUP_THRESHOLD = 5 * 60 * 1000; // 5 minutes
+
+        function shouldGroupMessage(username, timestamp) {
+            if (!lastMessageAuthor || !lastMessageTimestamp) return false;
+            if (username !== lastMessageAuthor) return false;
+            const timeDiff = new Date(timestamp) - new Date(lastMessageTimestamp);
+            return timeDiff < MESSAGE_GROUP_THRESHOLD;
+        }
+
+        function resetMessageGrouping() {
+            lastMessageAuthor = null;
+            lastMessageTimestamp = null;
+        }
+
+        // === DATE SEPARATOR SYSTEM ===
+        let lastMessageDate = null; // Track the last displayed date
+
+        function getDateLabel(date) {
+            const d = new Date(date);
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const messageDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+            const diffDays = Math.floor((today - messageDay) / (1000 * 60 * 60 * 24));
+            
+            if (diffDays === 0) return currentLanguage === 'en' ? "Today" : "Aujourd'hui";
+            if (diffDays === 1) return currentLanguage === 'en' ? "Yesterday" : "Hier";
+            if (diffDays < 7) {
+                const days = currentLanguage === 'en' 
+                    ? ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
+                    : ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+                return days[d.getDay()];
+            }
+            return d.toLocaleDateString(currentLanguage === 'en' ? 'en-US' : 'fr-FR', { 
+                day: 'numeric', month: 'long', year: 'numeric' 
+            });
+        }
+
+        function insertDateSeparatorIfNeeded(container, timestamp) {
+            if (!timestamp) return;
+            const msgDate = new Date(timestamp);
+            const msgDay = new Date(msgDate.getFullYear(), msgDate.getMonth(), msgDate.getDate()).getTime();
+            
+            if (lastMessageDate !== msgDay) {
+                lastMessageDate = msgDay;
+                const separator = document.createElement('div');
+                separator.className = 'date-separator';
+                separator.dataset.date = msgDay;
+                separator.innerHTML = `<span class="date-separator-text">${getDateLabel(timestamp)}</span>`;
+                container.appendChild(separator);
+                // Reset grouping after date change
+                resetMessageGrouping();
+            }
+        }
+
+        function resetDateSeparators() {
+            lastMessageDate = null;
+        }
+
         function addMessage(username, content, timestamp, isOwn, avatar, replyTo, attachment, serverId) {
             const messagesContainer = document.getElementById('chatMessages');
+            
+            // Insert date separator if needed
+            insertDateSeparatorIfNeeded(messagesContainer, timestamp);
+            
+            // Check for message grouping
+            const isGrouped = shouldGroupMessage(username, timestamp) && !replyTo;
+            lastMessageAuthor = username;
+            lastMessageTimestamp = timestamp;
+            
             const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${isOwn ? 'own' : 'other'}`;
+            messageDiv.className = `message ${isOwn ? 'own' : 'other'}${isGrouped ? ' grouped' : ''}`;
             if (attachment && (isAudioAttachment(attachment) || isVideoAttachment(attachment))) {
                 messageDiv.classList.add('media-message');
             }
@@ -8759,6 +9733,8 @@
 
             // Traiter le contenu pour les mentions et les liens
             let processedContent = content ? escapeHtml(content) : '';
+            processedContent = processCodeBlocks(processedContent); // Code blocks
+            processedContent = processEmojiShortcodes(processedContent); // Emoji shortcodes
             processedContent = processMentions(processedContent);
             processedContent = processLinks(processedContent);
             processedContent = parseSpoilers(processedContent); // Ajouter les spoilers
@@ -8821,7 +9797,11 @@
             
             const timeHtml = time ? ` - ${time}` : '';
             
+            // Grouped time shown on hover
+            const groupedTimeHtml = isGrouped ? `<span class="grouped-time">${time}</span>` : '';
+            
             messageDiv.innerHTML = `
+                ${groupedTimeHtml}
                 ${quickReactionsHtml}
                 ${contextMenuHtml}
                 <div class="message-header">
@@ -8837,6 +9817,9 @@
             `;
             
             messagesContainer.appendChild(messageDiv);
+            
+            // Track unread if scrolled up
+            incrementScrollUnread();
             
             // Vérifier si le message mentionne l'utilisateur actuel
             if (content && content.toLowerCase().includes('@' + currentUsername.toLowerCase())) {
@@ -8910,6 +9893,10 @@ window.addEmojiReaction = addEmojiReaction;
 
         function addSystemMessage(content, timestamp) {
             const messagesContainer = document.getElementById('chatMessages');
+            
+            // Insert date separator if needed
+            insertDateSeparatorIfNeeded(messagesContainer, timestamp);
+            
             const messageDiv = document.createElement('div');
             messageDiv.className = 'message system';
             
@@ -10343,6 +11330,69 @@ window.addEmojiReaction = addEmojiReaction;
                 "✨ C'est au-delà de mes capacités... Mais demande-moi l'heure, une blague, ou comment utiliser DocSpace !"
             ];
             return defaults[Math.floor(Math.random() * defaults.length)];
+        }
+
+        // === SERVER STATS ===
+        function openServerStats() {
+            document.getElementById('statsModal').style.display = 'block';
+            document.getElementById('statsContent').innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">Chargement...</div>';
+            
+            fetch('/api/stats')
+                .then(res => res.json())
+                .then(stats => {
+                    const channelRows = Object.entries(stats.channels || {})
+                        .sort((a, b) => b[1] - a[1])
+                        .map(([ch, count]) => `
+                            <div style="display: flex; justify-content: space-between; padding: 8px 12px; background: var(--input-bg); border-radius: 8px; margin-bottom: 4px;">
+                                <span style="color: var(--text-primary); font-weight: 500;">#${ch}</span>
+                                <span style="color: var(--accent-color); font-weight: 700;">${count}</span>
+                            </div>
+                        `).join('');
+                    
+                    document.getElementById('statsContent').innerHTML = `
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+                            <div style="background: var(--input-bg); padding: 16px; border-radius: 12px; text-align: center;">
+                                <div style="font-size: 28px; font-weight: 800; color: var(--accent-color);">${stats.online || 0}</div>
+                                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">En ligne</div>
+                            </div>
+                            <div style="background: var(--input-bg); padding: 16px; border-radius: 12px; text-align: center;">
+                                <div style="font-size: 28px; font-weight: 800; color: var(--success-color);">${stats.totalMessages || 0}</div>
+                                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Messages envoyés</div>
+                            </div>
+                            <div style="background: var(--input-bg); padding: 16px; border-radius: 12px; text-align: center;">
+                                <div style="font-size: 28px; font-weight: 800; color: var(--text-primary);">${stats.totalUploads || 0}</div>
+                                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Fichiers uploadés</div>
+                            </div>
+                            <div style="background: var(--input-bg); padding: 16px; border-radius: 12px; text-align: center;">
+                                <div style="font-size: 28px; font-weight: 800; color: var(--text-primary);">${stats.uptime || '0m'}</div>
+                                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Uptime</div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-bottom: 16px;">
+                            <div style="font-size: 13px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Messages par salon</div>
+                            ${channelRows}
+                        </div>
+                        
+                        <div style="display: flex; gap: 10px;">
+                            <div style="flex: 1; background: var(--input-bg); padding: 12px; border-radius: 10px; text-align: center;">
+                                <div style="font-size: 18px; font-weight: 700; color: var(--text-primary);">${stats.dmConversations || 0}</div>
+                                <div style="font-size: 11px; color: var(--text-secondary);">Conversations DM</div>
+                            </div>
+                            <div style="flex: 1; background: var(--input-bg); padding: 12px; border-radius: 10px; text-align: center;">
+                                <div style="font-size: 18px; font-weight: 700; color: var(--text-primary);">${stats.activePolls || 0}</div>
+                                <div style="font-size: 11px; color: var(--text-secondary);">Sondages actifs</div>
+                            </div>
+                            <div style="flex: 1; background: var(--input-bg); padding: 12px; border-radius: 10px; text-align: center;">
+                                <div style="font-size: 18px; font-weight: 700; color: var(--text-primary);">${stats.totalConnectionsEver || 0}</div>
+                                <div style="font-size: 11px; color: var(--text-secondary);">Connexions totales</div>
+                            </div>
+                        </div>
+                    `;
+                })
+                .catch(() => {
+                    document.getElementById('statsContent').innerHTML = '<div style="text-align: center; padding: 40px; color: var(--danger-color);">Erreur de chargement</div>';
+                });
         }
 
         // ============== MINI-JEUX ==============
@@ -12232,24 +13282,15 @@ window.addEmojiReaction = addEmojiReaction;
             renderDMConversations();
         }
 
-        function toggleDMSidebar() {
-            const sidebar = document.getElementById('dmSidebar');
-            sidebar.classList.toggle('open');
-            if (sidebar.classList.contains('open')) {
-                loadDMConversations(); // Recharger depuis le serveur
-                renderDMConversations();
-            }
-        }
-
         function closeDMSidebar() {
             document.getElementById('dmSidebar').classList.remove('open');
-            document.getElementById('dmChatView').classList.remove('active');
             if (isDMTyping && socket && currentDMUser) {
                 socket.emit('dm_typing_stop', { to: currentDMUser });
                 isDMTyping = false;
             }
             hideDMTyping();
-            currentDMUser = null;
+            // Keep currentDMUser so it restores when reopened
+            // Don't reset chat view - just hide sidebar
         }
 
         function openDMWith(username) {
@@ -12285,6 +13326,26 @@ window.addEmojiReaction = addEmojiReaction;
             document.getElementById('dmConversations').style.display = 'block';
             hideDMTyping();
             renderDMConversations();
+        }
+
+        function toggleDMSidebar() {
+            const sidebar = document.getElementById('dmSidebar');
+            const wasOpen = sidebar.classList.contains('open');
+            sidebar.classList.toggle('open');
+            if (!wasOpen) {
+                loadDMConversations();
+                // If we had an active DM conversation, restore it
+                if (currentDMUser && dmConversations[currentDMUser]) {
+                    document.getElementById('dmConversations').style.display = 'none';
+                    document.getElementById('dmChatView').classList.add('active');
+                    document.getElementById('dmChatName').textContent = currentDMUser;
+                    const dmAvatar = dmConversations[currentDMUser]?.avatar;
+                    document.getElementById('dmChatAvatar').innerHTML = dmAvatar ? `<img src="${dmAvatar}" alt="${currentDMUser}">` : '👤';
+                    renderDMMessages();
+                } else {
+                    renderDMConversations();
+                }
+            }
         }
 
         function renderDMConversations() {
@@ -13264,6 +14325,1055 @@ window.addEmojiReaction = addEmojiReaction;
                     closeEditModal();
                 }
                 closeAllMenus();
+                // Close any open modal
+                document.querySelectorAll('.modal').forEach(m => { if (m.style.display === 'block') m.style.display = 'none'; });
+            }
+        });
+
+        // ===========================================================
+        // === BOOKMARKS SYSTEM ===
+        // ===========================================================
+        let myBookmarks = [];
+
+        function openBookmarksModal() {
+            document.getElementById('bookmarksModal').style.display = 'block';
+            if (socket) socket.emit('get_bookmarks');
+        }
+
+        function bookmarkMessage(messageId) {
+            const msgEl = document.querySelector(`[data-message-id="${messageId}"]`);
+            if (!msgEl || !socket) return;
+            socket.emit('bookmark_message', {
+                messageId,
+                content: msgEl.dataset.content || '',
+                author: msgEl.dataset.username || '',
+                channel: currentChannel,
+                timestamp: new Date().toISOString()
+            });
+            showNotification('🔖 Sauvegardé', 'Message ajouté aux favoris', 'success');
+        }
+
+        function renderBookmarks(bookmarks) {
+            myBookmarks = bookmarks;
+            const container = document.getElementById('bookmarksList');
+            if (!bookmarks.length) {
+                container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-secondary);">Aucun message sauvegardé</div>';
+                return;
+            }
+            container.innerHTML = bookmarks.map(b => `
+                <div class="bookmark-item">
+                    <div class="bookmark-author">${escapeHtml(b.author)} <span style="color:var(--text-secondary);font-weight:400;">dans #${escapeHtml(b.channel || '?')}</span></div>
+                    <div class="bookmark-content">${escapeHtml(b.content || '[Pièce jointe]')}</div>
+                    <div class="bookmark-meta">
+                        <span>${new Date(b.savedAt).toLocaleDateString('fr-FR')}</span>
+                        <button class="bookmark-remove" onclick="removeBookmark('${b.messageId}')">✕</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function removeBookmark(messageId) {
+            if (socket) socket.emit('remove_bookmark', { messageId });
+        }
+
+        // ===========================================================
+        // === FRIENDS SYSTEM ===
+        // ===========================================================
+        let myFriends = { friends: [], pending: [], requests: [] };
+
+        function openFriendsModal() {
+            document.getElementById('friendsModal').style.display = 'block';
+            if (socket) socket.emit('get_friends');
+        }
+
+        function showFriendsTab(tab) {
+            document.querySelectorAll('.friends-tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            renderFriendsList(tab);
+        }
+
+        function renderFriendsList(tab = 'all') {
+            const container = document.getElementById('friendsListContainer');
+            let html = '';
+
+            if (tab === 'all' || tab === 'online') {
+                const list = tab === 'online' ? myFriends.friends.filter(f => f.online) : myFriends.friends;
+                if (!list.length) {
+                    html = `<div style="text-align:center;padding:30px;color:var(--text-secondary);">${tab === 'online' ? 'Aucun ami en ligne' : 'Aucun ami'}</div>`;
+                } else {
+                    html = list.map(f => `
+                        <div class="friend-item">
+                            <div class="friend-status-dot ${f.online ? 'online' : 'offline'}"></div>
+                            <div class="friend-info">
+                                <div class="friend-name">${escapeHtml(f.username)}</div>
+                            </div>
+                            <div class="friend-actions">
+                                <button class="dm-btn" onclick="startDMWith('${escapeHtml(f.username)}')">💬</button>
+                                <button class="remove-btn" onclick="removeFriend('${escapeHtml(f.username)}')">✕</button>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } else if (tab === 'pending') {
+                if (!myFriends.pending || !myFriends.pending.length) {
+                    html = '<div style="text-align:center;padding:30px;color:var(--text-secondary);">Aucune demande envoyée</div>';
+                } else {
+                    html = myFriends.pending.map(u => `
+                        <div class="friend-item">
+                            <div class="friend-info"><div class="friend-name">${escapeHtml(u)}</div><div style="font-size:11px;color:var(--text-secondary);">Demande envoyée</div></div>
+                        </div>
+                    `).join('');
+                }
+            } else if (tab === 'requests') {
+                if (!myFriends.requests || !myFriends.requests.length) {
+                    html = '<div style="text-align:center;padding:30px;color:var(--text-secondary);">Aucune demande reçue</div>';
+                } else {
+                    html = myFriends.requests.map(u => `
+                        <div class="friend-item">
+                            <div class="friend-info"><div class="friend-name">${escapeHtml(u)}</div></div>
+                            <div class="friend-actions">
+                                <button class="accept-btn" onclick="acceptFriend('${escapeHtml(u)}')">✓ Accepter</button>
+                                <button class="reject-btn" onclick="rejectFriend('${escapeHtml(u)}')">✕</button>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            }
+            container.innerHTML = html;
+        }
+
+        function sendFriendRequest(username) {
+            if (socket) socket.emit('send_friend_request', { username });
+        }
+
+        function acceptFriend(username) {
+            if (socket) socket.emit('accept_friend', { username });
+        }
+
+        function rejectFriend(username) {
+            if (socket) socket.emit('reject_friend', { username });
+        }
+
+        function removeFriend(username) {
+            if (confirm(`Retirer ${username} de vos amis ?`)) {
+                if (socket) socket.emit('remove_friend', { username });
+            }
+        }
+
+        function startDMWith(username) {
+            document.getElementById('friendsModal').style.display = 'none';
+            // Use existing DM system
+            if (typeof openDM === 'function') openDM(username);
+        }
+
+        // ===========================================================
+        // === XP / LEADERBOARD ===
+        // ===========================================================
+        let myXP = { xp: 0, level: 0, currentXP: 0, neededXP: 100 };
+
+        function openLeaderboard() {
+            document.getElementById('leaderboardModal').style.display = 'block';
+            if (socket) {
+                socket.emit('get_xp');
+                socket.emit('get_leaderboard');
+            }
+        }
+
+        function updateMyXPDisplay(data) {
+            myXP = data;
+            const pct = data.neededXP > 0 ? Math.min(100, (data.currentXP / data.neededXP) * 100) : 0;
+            const infoEl = document.getElementById('myXPInfo');
+            if (infoEl) infoEl.textContent = `Niveau ${data.level} • ${data.xp} XP total`;
+            const badgeEl = document.getElementById('myLevelBadge');
+            if (badgeEl) badgeEl.textContent = `Nv. ${data.level}`;
+            const barEl = document.getElementById('myXPBar');
+            if (barEl) barEl.style.width = pct + '%';
+            const barText = document.getElementById('myXPBarText');
+            if (barText) barText.textContent = `${data.currentXP}/${data.neededXP}`;
+        }
+
+        function renderLeaderboard(data) {
+            const container = document.getElementById('leaderboardList');
+            if (!data.length) {
+                container.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-secondary);">Pas encore de données</div>';
+                return;
+            }
+            const medals = ['🥇', '🥈', '🥉'];
+            container.innerHTML = data.map((u, i) => `
+                <div class="leaderboard-item">
+                    <div class="leaderboard-rank">${medals[i] || (i + 1)}</div>
+                    <div class="leaderboard-name">${escapeHtml(u.username)}</div>
+                    <div class="level-badge">Nv. ${u.level}</div>
+                    <div class="leaderboard-xp">${u.xp} XP</div>
+                </div>
+            `).join('');
+        }
+
+        // ===========================================================
+        // === REMINDERS ===
+        // ===========================================================
+        function openRemindersModal() {
+            document.getElementById('remindersModal').style.display = 'block';
+            if (socket) socket.emit('get_reminders');
+        }
+
+        function createReminder() {
+            const msg = document.getElementById('reminderMessage').value.trim();
+            const delay = parseInt(document.getElementById('reminderDelay').value);
+            if (!msg) return showNotification('⚠️', 'Entrez un message de rappel', 'warning');
+            if (socket) socket.emit('create_reminder', { message: msg, delay, channel: currentChannel });
+            document.getElementById('reminderMessage').value = '';
+        }
+
+        function renderReminders(list) {
+            const container = document.getElementById('remindersList');
+            if (!list.length) {
+                container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-secondary);font-size:13px;">Aucun rappel actif</div>';
+                return;
+            }
+            container.innerHTML = list.map(r => {
+                const remaining = Math.max(0, Math.floor((r.triggerAt - Date.now()) / 1000));
+                const timeStr = remaining > 3600 ? `${Math.floor(remaining / 3600)}h ${Math.floor((remaining % 3600) / 60)}min` : remaining > 60 ? `${Math.floor(remaining / 60)}min` : `${remaining}s`;
+                return `<div class="reminder-item">
+                    <div class="reminder-icon">⏰</div>
+                    <div class="reminder-info">
+                        <div class="reminder-text">${escapeHtml(r.message)}</div>
+                        <div class="reminder-time">Dans ${timeStr}</div>
+                    </div>
+                    <button class="reminder-delete" onclick="deleteReminder(${r.id})">✕</button>
+                </div>`;
+            }).join('');
+        }
+
+        function deleteReminder(id) {
+            if (socket) socket.emit('delete_reminder', { id });
+        }
+
+        function showReminderToast(data) {
+            const toast = document.createElement('div');
+            toast.className = 'reminder-toast';
+            toast.innerHTML = `<div class="toast-title">⏰ Rappel !</div><div class="toast-msg">${escapeHtml(data.message)}</div>`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 8000);
+            // Also play a beep
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.frequency.value = 880;
+                gain.gain.value = 0.1;
+                osc.start();
+                setTimeout(() => { osc.stop(); ctx.close(); }, 300);
+            } catch(e) {}
+        }
+
+        // ===========================================================
+        // === SOUNDBOARD ===
+        // ===========================================================
+
+        function openSoundboard() {
+            document.getElementById('soundboardModal').style.display = 'block';
+        }
+
+        function playSound(soundName) {
+            if (socket) socket.emit('play_sound', { sound: soundName, channel: currentChannel });
+            document.getElementById('soundboardModal').style.display = 'none';
+        }
+
+        function createNoise(ctx, duration) {
+            const buf = ctx.createBuffer(1, ctx.sampleRate * duration, ctx.sampleRate);
+            const data = buf.getChannelData(0);
+            for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+            const src = ctx.createBufferSource();
+            src.buffer = buf;
+            return src;
+        }
+
+        function playSoundLocally(soundName) {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const t = ctx.currentTime;
+                const master = ctx.createGain();
+                master.gain.value = 0.3;
+                master.connect(ctx.destination);
+
+                switch(soundName) {
+                    case 'applause': {
+                        for (let i = 0; i < 8; i++) {
+                            const noise = createNoise(ctx, 1.5);
+                            const bp = ctx.createBiquadFilter();
+                            bp.type = 'bandpass';
+                            bp.frequency.value = 800 + Math.random() * 3000;
+                            bp.Q.value = 0.5;
+                            const g = ctx.createGain();
+                            g.gain.setValueAtTime(0, t);
+                            g.gain.linearRampToValueAtTime(0.06, t + 0.2);
+                            g.gain.setValueAtTime(0.06, t + 0.8);
+                            g.gain.exponentialRampToValueAtTime(0.001, t + 1.5);
+                            noise.connect(bp); bp.connect(g); g.connect(master);
+                            noise.start(t + Math.random() * 0.1);
+                            noise.stop(t + 1.5);
+                        }
+                        setTimeout(() => ctx.close(), 2000);
+                        break;
+                    }
+                    case 'airhorn': {
+                        [280, 350, 440, 560].forEach(f => {
+                            const osc = ctx.createOscillator();
+                            osc.type = 'sawtooth';
+                            osc.frequency.value = f;
+                            const g = ctx.createGain();
+                            const dist = ctx.createWaveShaperFunction ? null : ctx.createWaveShaper();
+                            g.gain.setValueAtTime(0, t);
+                            g.gain.linearRampToValueAtTime(0.08, t + 0.05);
+                            g.gain.setValueAtTime(0.08, t + 0.6);
+                            g.gain.exponentialRampToValueAtTime(0.001, t + 0.9);
+                            osc.connect(g); g.connect(master);
+                            osc.start(t); osc.stop(t + 0.9);
+                        });
+                        setTimeout(() => ctx.close(), 1200);
+                        break;
+                    }
+                    case 'rimshot': {
+                        // Snare hit
+                        const noise = createNoise(ctx, 0.2);
+                        const hp = ctx.createBiquadFilter();
+                        hp.type = 'highpass'; hp.frequency.value = 2000;
+                        const ng = ctx.createGain();
+                        ng.gain.setValueAtTime(0.2, t);
+                        ng.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+                        noise.connect(hp); hp.connect(ng); ng.connect(master);
+                        noise.start(t); noise.stop(t + 0.2);
+                        // Tom
+                        const osc = ctx.createOscillator();
+                        osc.frequency.setValueAtTime(200, t);
+                        osc.frequency.exponentialRampToValueAtTime(50, t + 0.1);
+                        const og = ctx.createGain();
+                        og.gain.setValueAtTime(0.3, t);
+                        og.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+                        osc.connect(og); og.connect(master);
+                        osc.start(t); osc.stop(t + 0.15);
+                        // Cymbal accent
+                        const cNoise = createNoise(ctx, 0.5);
+                        const bp = ctx.createBiquadFilter();
+                        bp.type = 'bandpass'; bp.frequency.value = 8000; bp.Q.value = 1;
+                        const cg = ctx.createGain();
+                        cg.gain.setValueAtTime(0.08, t + 0.02);
+                        cg.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+                        cNoise.connect(bp); bp.connect(cg); cg.connect(master);
+                        cNoise.start(t + 0.02); cNoise.stop(t + 0.5);
+                        setTimeout(() => ctx.close(), 800);
+                        break;
+                    }
+                    case 'sadtrombone': {
+                        const notes = [293.66, 277.18, 261.63, 220];
+                        notes.forEach((f, i) => {
+                            const osc = ctx.createOscillator();
+                            osc.type = 'sawtooth';
+                            osc.frequency.setValueAtTime(f, t + i * 0.4);
+                            osc.frequency.linearRampToValueAtTime(f * 0.97, t + i * 0.4 + 0.35);
+                            const g = ctx.createGain();
+                            g.gain.setValueAtTime(0, t + i * 0.4);
+                            g.gain.linearRampToValueAtTime(0.1, t + i * 0.4 + 0.05);
+                            g.gain.setValueAtTime(0.1, t + i * 0.4 + 0.3);
+                            g.gain.exponentialRampToValueAtTime(0.001, t + i * 0.4 + 0.4);
+                            const lp = ctx.createBiquadFilter();
+                            lp.type = 'lowpass'; lp.frequency.value = 1500;
+                            osc.connect(lp); lp.connect(g); g.connect(master);
+                            osc.start(t + i * 0.4); osc.stop(t + i * 0.4 + 0.4);
+                        });
+                        setTimeout(() => ctx.close(), 2200);
+                        break;
+                    }
+                    case 'tada': {
+                        const chord = [[523.25, 659.25, 783.99], [587.33, 739.99, 880], [659.25, 830.61, 1046.5]];
+                        chord.forEach((notes, i) => {
+                            notes.forEach(f => {
+                                const osc = ctx.createOscillator();
+                                osc.type = 'triangle';
+                                osc.frequency.value = f;
+                                const g = ctx.createGain();
+                                g.gain.setValueAtTime(0, t + i * 0.2);
+                                g.gain.linearRampToValueAtTime(0.08, t + i * 0.2 + 0.03);
+                                g.gain.setValueAtTime(i === 2 ? 0.08 : 0.06, t + i * 0.2 + 0.15);
+                                g.gain.exponentialRampToValueAtTime(0.001, t + i * 0.2 + (i === 2 ? 0.8 : 0.2));
+                                osc.connect(g); g.connect(master);
+                                osc.start(t + i * 0.2); osc.stop(t + i * 0.2 + (i === 2 ? 0.8 : 0.25));
+                            });
+                        });
+                        setTimeout(() => ctx.close(), 1500);
+                        break;
+                    }
+                    case 'drumroll': {
+                        for (let i = 0; i < 30; i++) {
+                            const noise = createNoise(ctx, 0.08);
+                            const hp = ctx.createBiquadFilter();
+                            hp.type = 'highpass'; hp.frequency.value = 3000;
+                            const g = ctx.createGain();
+                            const offset = i * 0.04;
+                            const vol = 0.03 + (i / 30) * 0.12;
+                            g.gain.setValueAtTime(vol, t + offset);
+                            g.gain.exponentialRampToValueAtTime(0.001, t + offset + 0.06);
+                            noise.connect(hp); hp.connect(g); g.connect(master);
+                            noise.start(t + offset); noise.stop(t + offset + 0.08);
+                        }
+                        // Final crash
+                        const crash = createNoise(ctx, 0.8);
+                        const bp = ctx.createBiquadFilter();
+                        bp.type = 'bandpass'; bp.frequency.value = 6000; bp.Q.value = 0.5;
+                        const cg = ctx.createGain();
+                        cg.gain.setValueAtTime(0.15, t + 1.2);
+                        cg.gain.exponentialRampToValueAtTime(0.001, t + 2.0);
+                        crash.connect(bp); bp.connect(cg); cg.connect(master);
+                        crash.start(t + 1.2); crash.stop(t + 2.0);
+                        setTimeout(() => ctx.close(), 2500);
+                        break;
+                    }
+                    case 'crickets': {
+                        for (let c = 0; c < 3; c++) {
+                            for (let i = 0; i < 6; i++) {
+                                const osc = ctx.createOscillator();
+                                osc.type = 'sine';
+                                osc.frequency.value = 4200 + c * 300 + Math.random() * 200;
+                                const g = ctx.createGain();
+                                const start = t + c * 0.15 + i * 0.3 + Math.random() * 0.05;
+                                g.gain.setValueAtTime(0, start);
+                                g.gain.linearRampToValueAtTime(0.04, start + 0.02);
+                                g.gain.setValueAtTime(0.04, start + 0.06);
+                                g.gain.exponentialRampToValueAtTime(0.001, start + 0.1);
+                                osc.connect(g); g.connect(master);
+                                osc.start(start); osc.stop(start + 0.1);
+                            }
+                        }
+                        setTimeout(() => ctx.close(), 2500);
+                        break;
+                    }
+                    case 'laugh': {
+                        const haSteps = [350, 420, 350, 400, 330, 380, 320, 360];
+                        haSteps.forEach((f, i) => {
+                            const osc = ctx.createOscillator();
+                            osc.type = 'sawtooth';
+                            osc.frequency.setValueAtTime(f, t + i * 0.12);
+                            osc.frequency.linearRampToValueAtTime(f * 0.85, t + i * 0.12 + 0.1);
+                            const lp = ctx.createBiquadFilter();
+                            lp.type = 'lowpass'; lp.frequency.value = 1200;
+                            const g = ctx.createGain();
+                            g.gain.setValueAtTime(0, t + i * 0.12);
+                            g.gain.linearRampToValueAtTime(0.07, t + i * 0.12 + 0.02);
+                            g.gain.exponentialRampToValueAtTime(0.001, t + i * 0.12 + 0.1);
+                            osc.connect(lp); lp.connect(g); g.connect(master);
+                            osc.start(t + i * 0.12); osc.stop(t + i * 0.12 + 0.12);
+                        });
+                        setTimeout(() => ctx.close(), 1500);
+                        break;
+                    }
+                    case 'wow': {
+                        const osc = ctx.createOscillator();
+                        osc.type = 'sawtooth';
+                        osc.frequency.setValueAtTime(150, t);
+                        osc.frequency.exponentialRampToValueAtTime(800, t + 0.6);
+                        osc.frequency.exponentialRampToValueAtTime(300, t + 1.0);
+                        const lp = ctx.createBiquadFilter();
+                        lp.type = 'lowpass';
+                        lp.frequency.setValueAtTime(400, t);
+                        lp.frequency.exponentialRampToValueAtTime(2000, t + 0.6);
+                        lp.frequency.exponentialRampToValueAtTime(600, t + 1.0);
+                        const g = ctx.createGain();
+                        g.gain.setValueAtTime(0, t);
+                        g.gain.linearRampToValueAtTime(0.12, t + 0.1);
+                        g.gain.setValueAtTime(0.12, t + 0.7);
+                        g.gain.exponentialRampToValueAtTime(0.001, t + 1.0);
+                        osc.connect(lp); lp.connect(g); g.connect(master);
+                        osc.start(t); osc.stop(t + 1.0);
+                        setTimeout(() => ctx.close(), 1300);
+                        break;
+                    }
+                    case 'bruh': {
+                        const osc = ctx.createOscillator();
+                        osc.type = 'sawtooth';
+                        osc.frequency.setValueAtTime(150, t);
+                        osc.frequency.linearRampToValueAtTime(85, t + 0.6);
+                        const lp = ctx.createBiquadFilter();
+                        lp.type = 'lowpass'; lp.frequency.value = 600;
+                        const g = ctx.createGain();
+                        g.gain.setValueAtTime(0, t);
+                        g.gain.linearRampToValueAtTime(0.15, t + 0.05);
+                        g.gain.setValueAtTime(0.15, t + 0.3);
+                        g.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
+                        osc.connect(lp); lp.connect(g); g.connect(master);
+                        osc.start(t); osc.stop(t + 0.6);
+                        setTimeout(() => ctx.close(), 900);
+                        break;
+                    }
+                    default: {
+                        const osc = ctx.createOscillator();
+                        osc.frequency.value = 440;
+                        const g = ctx.createGain();
+                        g.gain.setValueAtTime(0.1, t);
+                        g.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+                        osc.connect(g); g.connect(master);
+                        osc.start(t); osc.stop(t + 0.3);
+                        setTimeout(() => ctx.close(), 500);
+                    }
+                }
+            } catch(e) { console.warn('Sound error:', e); }
+        }
+
+        function showSoundNotification(username, soundName) {
+            const icons = { applause: '👏', airhorn: '📯', rimshot: '🥁', sadtrombone: '🎺', tada: '🎉', drumroll: '🪘', crickets: '🦗', laugh: '😂', wow: '😮', bruh: '💀' };
+            const notif = document.createElement('div');
+            notif.className = 'sound-notification';
+            notif.textContent = `${icons[soundName] || '🔊'} ${username} a joué un son`;
+            document.body.appendChild(notif);
+            playSoundLocally(soundName);
+            setTimeout(() => notif.remove(), 3000);
+        }
+
+        // ===========================================================
+        // === USER STATUS ===
+        // ===========================================================
+        // currentStatus is already declared in main scope
+
+        function openStatusModal() {
+            document.getElementById('statusModal').style.display = 'block';
+        }
+
+        function selectStatus(status) {
+            currentStatus = status;
+            document.querySelectorAll('.status-option[data-status]').forEach(el => {
+                el.classList.toggle('active', el.dataset.status === status);
+            });
+        }
+
+        function saveCustomStatus() {
+            const text = document.getElementById('customStatusText').value.trim();
+            if (socket) socket.emit('set_custom_status', { status: currentStatus, customText: text });
+            document.getElementById('statusModal').style.display = 'none';
+            showNotification('💭 Statut mis à jour', text || currentStatus, 'success');
+        }
+
+        function setQuickStatus(text) {
+            document.getElementById('customStatusText').value = text;
+        }
+
+        // ===========================================================
+        // === LINK PREVIEW ===
+        // ===========================================================
+        function requestLinkPreviews(content, messageEl) {
+            if (!socket || !content) return;
+            const urlRegex = /(https?:\/\/[^\s<>"']+)/gi;
+            const urls = content.match(urlRegex);
+            if (!urls) return;
+            
+            // Request preview for first URL only
+            const url = urls[0];
+            socket.emit('request_link_preview', { url });
+            
+            // Store reference to attach preview later
+            if (!messageEl._pendingPreviewUrl) {
+                messageEl._pendingPreviewUrl = url;
+            }
+        }
+
+        function attachLinkPreview(data) {
+            // Find messages with this URL and add preview
+            const messages = document.querySelectorAll('.message');
+            for (const msg of messages) {
+                const content = msg.dataset.content || '';
+                if (content.includes(data.url) && !msg.querySelector('.link-preview')) {
+                    const bubble = msg.querySelector('.message-bubble');
+                    if (!bubble) continue;
+                    const preview = document.createElement('div');
+                    preview.className = 'link-preview';
+                    preview.onclick = () => window.open(data.url, '_blank', 'noopener');
+                    preview.innerHTML = `
+                        <div class="link-preview-info">
+                            ${data.siteName ? `<div class="link-preview-site">${escapeHtml(data.siteName)}</div>` : ''}
+                            <div class="link-preview-title">${escapeHtml(data.title)}</div>
+                            ${data.description ? `<div class="link-preview-desc">${escapeHtml(data.description)}</div>` : ''}
+                        </div>
+                        ${data.image ? `<img class="link-preview-img" src="${escapeHtml(data.image)}" onerror="this.remove()">` : ''}
+                    `;
+                    bubble.appendChild(preview);
+                    break;
+                }
+            }
+        }
+
+        // ===========================================================
+        // === AUTO-MOD (admin panel) ===
+        // ===========================================================
+        function openAutoMod() {
+            document.getElementById('automodModal').style.display = 'block';
+            if (socket) socket.emit('get_automod_config');
+        }
+
+        function updateAutoMod() {
+            if (!socket) return;
+            socket.emit('update_automod', {
+                enabled: document.getElementById('automodEnabled').checked,
+                linkFilter: document.getElementById('automodLinks').checked,
+                capsFilter: document.getElementById('automodCaps').checked,
+                spamThreshold: parseInt(document.getElementById('automodSpamThreshold').value) || 5
+            });
+        }
+
+        function addBannedWord() {
+            const input = document.getElementById('automodWordInput');
+            const word = input.value.trim();
+            if (!word) return;
+            input.value = '';
+            if (socket) socket.emit('update_automod', { wordFilter: [...(autoModWords || []), word] });
+        }
+
+        let autoModWords = [];
+        function renderAutoModConfig(config) {
+            document.getElementById('automodEnabled').checked = config.enabled;
+            document.getElementById('automodLinks').checked = config.linkFilter;
+            document.getElementById('automodCaps').checked = config.capsFilter;
+            document.getElementById('automodSpamThreshold').value = config.spamThreshold;
+            autoModWords = config.wordFilter || [];
+            document.getElementById('bannedWordsList').innerHTML = autoModWords.map(w =>
+                `<span class="automod-word">${escapeHtml(w)} <span class="remove-word" onclick="removeBannedWord('${escapeHtml(w)}')">✕</span></span>`
+            ).join('');
+        }
+
+        function removeBannedWord(word) {
+            autoModWords = autoModWords.filter(w => w !== word);
+            if (socket) socket.emit('update_automod', { wordFilter: autoModWords });
+        }
+
+        // ===========================================================
+        // === HANGMAN GAME ===
+        // ===========================================================
+        function startHangman() {
+            document.getElementById('gamesMenu').style.display = 'none';
+            document.getElementById('gameArea').style.display = 'block';
+            document.getElementById('gameTitle').textContent = '💀 Pendu';
+            if (socket) socket.emit('start_hangman');
+        }
+
+        function renderHangman(state) {
+            const hangmanParts = ['', '😶', '😶👕', '😶👕👖', '😶👕👖🦶', '😶👕👖🦶🦶', '💀👕👖🦶🦶'];
+            const board = document.getElementById('gameBoard');
+            const controls = document.getElementById('gameControls');
+            const status = document.getElementById('gameStatus');
+
+            const lives = '❤️'.repeat(state.remaining) + '🖤'.repeat(6 - state.remaining);
+
+            board.innerHTML = `
+                <div class="hangman-container">
+                    <div class="hangman-gallows">${hangmanParts[6 - state.remaining] || ''}</div>
+                    <div class="hangman-word">${state.display}</div>
+                    <div class="hangman-lives">${lives}</div>
+                    ${state.wrong.length ? `<div class="hangman-wrong">Erreurs: ${state.wrong.join(' ')}</div>` : ''}
+                    ${state.finished ? `<div style="margin:15px 0;font-size:18px;font-weight:700;color:${state.won ? '#43b581' : '#f04747'};">${state.won ? '🎉 Bravo !' : `💀 Perdu ! Le mot était: ${state.word}`}</div>` : ''}
+                </div>
+            `;
+
+            if (!state.finished) {
+                const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+                controls.innerHTML = `<div class="hangman-keyboard">${alphabet.map(l => {
+                    const isGuessed = state.display.includes(l);
+                    const isWrong = state.wrong.includes(l);
+                    const used = isGuessed || isWrong;
+                    return `<button class="hangman-key ${isGuessed ? 'correct' : ''} ${isWrong ? 'wrong' : ''} ${used ? 'used' : ''}" onclick="guessLetter('${l}')">${l}</button>`;
+                }).join('')}</div>`;
+            } else {
+                controls.innerHTML = '<button class="game-back-btn" onclick="socket.emit(\'start_hangman\')">🔄 Rejouer</button>';
+            }
+            status.textContent = state.finished ? (state.won ? 'Gagné !' : 'Perdu !') : `${state.remaining} vies restantes`;
+        }
+
+        function guessLetter(letter) {
+            if (socket) socket.emit('hangman_guess', { letter });
+        }
+
+        // ===========================================================
+        // === TRIVIA GAME ===
+        // ===========================================================
+        function startTrivia() {
+            document.getElementById('gamesMenu').style.display = 'none';
+            document.getElementById('gameArea').style.display = 'block';
+            document.getElementById('gameTitle').textContent = '🧠 Trivia';
+            if (socket) socket.emit('start_trivia');
+        }
+
+        function renderTriviaQuestion(data) {
+            const board = document.getElementById('gameBoard');
+            const controls = document.getElementById('gameControls');
+            const status = document.getElementById('gameStatus');
+
+            status.textContent = `Question ${data.current}/${data.total} • Score: ${data.score}`;
+
+            board.innerHTML = `
+                <div class="trivia-container">
+                    <div class="trivia-progress">Question ${data.current} sur ${data.total}</div>
+                    <div class="trivia-question">${escapeHtml(data.question)}</div>
+                    <div class="trivia-answers">
+                        ${data.answers.map((a, i) => `<button class="trivia-answer" onclick="answerTrivia(${i})">${escapeHtml(a)}</button>`).join('')}
+                    </div>
+                </div>
+            `;
+            controls.innerHTML = '';
+        }
+
+        function answerTrivia(index) {
+            if (socket) socket.emit('trivia_answer', { answer: index });
+            // Disable buttons
+            document.querySelectorAll('.trivia-answer').forEach(btn => { btn.style.pointerEvents = 'none'; });
+        }
+
+        function renderTriviaResult(data) {
+            // Highlight correct/wrong
+            const buttons = document.querySelectorAll('.trivia-answer');
+            buttons.forEach((btn, i) => {
+                if (i === data.correctAnswer) btn.classList.add('correct');
+                if (i !== data.correctAnswer && i === data.lastAnswer) btn.classList.add('wrong');
+            });
+
+            if (data.finished) {
+                setTimeout(() => {
+                    const board = document.getElementById('gameBoard');
+                    board.innerHTML = `
+                        <div class="trivia-container">
+                            <div style="font-size:48px;margin-bottom:10px;">🏆</div>
+                            <div class="trivia-score">${data.score}/${data.total}</div>
+                            <div style="color:var(--text-secondary);margin-bottom:15px;">+${data.xpGained} XP gagnés !</div>
+                            <button class="game-back-btn" onclick="startTrivia()">🔄 Rejouer</button>
+                        </div>
+                    `;
+                    document.getElementById('gameControls').innerHTML = '';
+                    document.getElementById('gameStatus').textContent = 'Terminé !';
+                }, 1500);
+            } else {
+                setTimeout(() => {
+                    renderTriviaQuestion({
+                        question: data.nextQuestion,
+                        answers: data.nextAnswers,
+                        current: data.current,
+                        total: data.total,
+                        score: data.score
+                    });
+                }, 1200);
+            }
+        }
+
+        // ===========================================================
+        // === CHANNEL CATEGORIES (collapsible) ===
+        // ===========================================================
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.channel-category').forEach(cat => {
+                cat.addEventListener('click', function(e) {
+                    if (e.target.closest('.channel-item')) return;
+                    this.classList.toggle('collapsed');
+                    // Hide/show channels until next category
+                    let sibling = this.nextElementSibling;
+                    while (sibling && !sibling.classList.contains('channel-category')) {
+                        sibling.style.display = this.classList.contains('collapsed') ? 'none' : '';
+                        sibling = sibling.nextElementSibling;
+                    }
+                });
+                // Add arrow
+                if (!cat.querySelector('.cat-arrow')) {
+                    cat.innerHTML = '<span class="cat-arrow">▼</span> ' + cat.innerHTML;
+                }
+            });
+        });
+
+        // ===========================================================
+        // === SOCKET LISTENERS FOR NEW FEATURES ===
+        // ===========================================================
+        function setupNewFeatureListeners() {
+            if (!socket) return;
+
+            // Bookmarks
+            socket.on('bookmarks_list', (data) => renderBookmarks(data.bookmarks || []));
+            socket.on('bookmark_added', (data) => {
+                if (document.getElementById('bookmarksModal').style.display === 'block') {
+                    socket.emit('get_bookmarks');
+                }
+            });
+            socket.on('bookmark_removed', () => {
+                if (document.getElementById('bookmarksModal').style.display === 'block') {
+                    socket.emit('get_bookmarks');
+                }
+            });
+
+            // Friends
+            socket.on('friends_list', (data) => {
+                if (data.friends) myFriends.friends = data.friends;
+                if (data.pending) myFriends.pending = data.pending;
+                if (data.requests) myFriends.requests = data.requests;
+                renderFriendsList('all');
+                // Update badge
+                const badge = document.getElementById('friendRequestsBadge');
+                if (badge && myFriends.requests.length > 0) {
+                    badge.textContent = myFriends.requests.length;
+                    badge.style.display = 'inline';
+                } else if (badge) {
+                    badge.style.display = 'none';
+                }
+            });
+            socket.on('friend_request_received', (data) => {
+                showNotification('👥 Demande d\'ami', `${data.from} veut être votre ami !`, 'info');
+                socket.emit('get_friends');
+            });
+            socket.on('friend_request_sent', () => showNotification('✅', 'Demande envoyée !', 'success'));
+            socket.on('friend_accepted', (data) => {
+                showNotification('🎉', `${data.username} est maintenant votre ami !`, 'success');
+                socket.emit('get_friends');
+            });
+            socket.on('friend_removed', () => socket.emit('get_friends'));
+            socket.on('friend_error', (data) => showNotification('⚠️', data.message, 'warning'));
+
+            // XP
+            socket.on('xp_data', updateMyXPDisplay);
+            socket.on('leaderboard_data', (data) => renderLeaderboard(data.leaderboard || []));
+
+            // Reminders
+            socket.on('reminders_list', (data) => renderReminders(data.reminders || []));
+            socket.on('reminder_created', (data) => {
+                showNotification('⏰ Rappel créé', data.message, 'success');
+                socket.emit('get_reminders');
+            });
+            socket.on('reminder_triggered', showReminderToast);
+            socket.on('reminder_deleted', () => socket.emit('get_reminders'));
+
+            // Soundboard
+            socket.on('sound_played', (data) => {
+                if (data.channel === currentChannel || !data.channel) {
+                    showSoundNotification(data.username, data.sound);
+                }
+            });
+
+            // AutoMod
+            socket.on('automod_blocked', (data) => showNotification('🛡️ AutoMod', data.reason, 'error'));
+            socket.on('automod_config', renderAutoModConfig);
+            socket.on('automod_updated', renderAutoModConfig);
+
+            // Link preview
+            socket.on('link_preview_data', attachLinkPreview);
+
+            // User status
+            socket.on('user_status_changed', (data) => {
+                // Update user list display
+                updateUsersList && typeof updateUsersList === 'function' && updateUsersList();
+            });
+
+            // Hangman
+            socket.on('hangman_state', renderHangman);
+
+            // Trivia
+            socket.on('trivia_question', renderTriviaQuestion);
+            socket.on('trivia_result', renderTriviaResult);
+
+            // Read receipts
+            socket.on('read_receipt', (data) => {
+                // Store and display read receipts
+                const msgEl = document.querySelector(`[data-message-id="${data.lastMessageId}"]`);
+                if (msgEl && data.username !== currentUser) {
+                    let receiptsEl = msgEl.querySelector('.read-receipts');
+                    if (!receiptsEl) {
+                        receiptsEl = document.createElement('div');
+                        receiptsEl.className = 'read-receipts';
+                        msgEl.querySelector('.message-bubble')?.appendChild(receiptsEl);
+                    }
+                    if (!receiptsEl.querySelector(`[data-reader="${data.username}"]`)) {
+                        const avatar = document.createElement('div');
+                        avatar.className = 'read-receipt-avatar';
+                        avatar.dataset.reader = data.username;
+                        avatar.title = data.username;
+                        avatar.style.cssText = 'width:14px;height:14px;border-radius:50%;background:var(--accent-color);display:flex;align-items:center;justify-content:center;font-size:7px;color:white;';
+                        avatar.textContent = data.username.charAt(0).toUpperCase();
+                        receiptsEl.appendChild(avatar);
+                    }
+                }
+            });
+        }
+
+        // Hook into existing socket connection
+        // (setupNewFeatureListeners is now called directly from the connect handler)
+
+        // Add bookmark option to message context menu
+        const _origToggleMenu = typeof toggleMessageMenu === 'function' ? toggleMessageMenu : null;
+
+        // Inject "Add Friend" button into user profile modal
+        const _origOpenProfile = typeof openUserProfile === 'function' ? openUserProfile : null;
+        if (_origOpenProfile) {
+            const origFn = openUserProfile;
+            openUserProfile = function(username) {
+                origFn(username);
+                // Add friend button after a short delay
+                setTimeout(() => {
+                    const actionsDiv = document.querySelector('.user-profile-actions');
+                    if (!actionsDiv) return;
+                    // Remove old friend btn if exists
+                    const old = actionsDiv.querySelector('.add-friend-btn');
+                    if (old) old.remove();
+                    
+                    const isFriend = myFriends.friends.some(f => f.username === username);
+                    const isPending = (myFriends.pending || []).includes(username);
+                    const isRequested = (myFriends.requests || []).includes(username);
+                    const isSelf = username === currentUsername;
+                    
+                    if (isSelf) return; // Don't show friend button for self
+                    
+                    const friendBtn = document.createElement('button');
+                    friendBtn.className = 'user-profile-btn secondary add-friend-btn';
+                    
+                    if (isFriend) {
+                        friendBtn.textContent = '✅ Ami';
+                        friendBtn.style.opacity = '0.7';
+                        friendBtn.onclick = () => {
+                            if (confirm(`Retirer ${username} de vos amis ?`)) {
+                                removeFriend(username);
+                                friendBtn.textContent = '👥 Ajouter en ami';
+                                friendBtn.style.opacity = '1';
+                            }
+                        };
+                    } else if (isPending) {
+                        friendBtn.textContent = '⏳ Demande envoyée';
+                        friendBtn.style.opacity = '0.6';
+                        friendBtn.disabled = true;
+                    } else if (isRequested) {
+                        friendBtn.textContent = '✓ Accepter la demande';
+                        friendBtn.style.background = 'var(--accent-color)';
+                        friendBtn.style.color = 'white';
+                        friendBtn.onclick = () => {
+                            acceptFriend(username);
+                            friendBtn.textContent = '✅ Ami';
+                            friendBtn.style.opacity = '0.7';
+                        };
+                    } else {
+                        friendBtn.textContent = '👥 Ajouter en ami';
+                        friendBtn.onclick = () => {
+                            sendFriendRequest(username);
+                            friendBtn.textContent = '⏳ Demande envoyée';
+                            friendBtn.style.opacity = '0.6';
+                            friendBtn.disabled = true;
+                        };
+                    }
+                    actionsDiv.appendChild(friendBtn);
+                }, 200);
+            };
+        }
+
+        // Request link previews when new messages arrive
+        const _origAddMessage = typeof addMessage === 'function' ? addMessage : null;
+
+        // Mark messages as read when scrolling
+        const messagesContainer = document.getElementById('chatMessages');
+        if (messagesContainer) {
+            let readDebounce;
+            messagesContainer.addEventListener('scroll', () => {
+                clearTimeout(readDebounce);
+                readDebounce = setTimeout(() => {
+                    if (!socket || !socket.connected) return;
+                    const msgs = messagesContainer.querySelectorAll('.message[data-message-id]');
+                    if (msgs.length) {
+                        const lastId = msgs[msgs.length - 1].dataset.messageId;
+                        socket.emit('mark_read', { channel: currentChannel, lastMessageId: lastId });
+                    }
+                }, 2000);
+            });
+        }
+
+        // Add reminder via /rappel command
+        const _origSendMessage = typeof sendMessage === 'function' ? sendMessage : null;
+        if (_origSendMessage) {
+            const origSend = sendMessage;
+            sendMessage = function() {
+                const input = document.getElementById('messageInput');
+                const val = (input ? input.value : '').trim();
+                
+                // /rappel command
+                const rappelMatch = val.match(/^\/rappel\s+(\d+)\s*(s|sec|m|min|h|heure)?\s+(.+)/i);
+                if (rappelMatch) {
+                    let delay = parseInt(rappelMatch[1]);
+                    const unit = (rappelMatch[2] || 'm').toLowerCase();
+                    if (unit.startsWith('h')) delay *= 3600;
+                    else if (unit.startsWith('m')) delay *= 60;
+                    // else seconds
+                    const msg = rappelMatch[3];
+                    if (socket) socket.emit('create_reminder', { message: msg, delay, channel: currentChannel });
+                    input.value = '';
+                    input.style.height = 'auto';
+                    return;
+                }
+
+                // /status command
+                if (val.startsWith('/statut ') || val.startsWith('/status ')) {
+                    const statusText = val.replace(/^\/(statut|status)\s+/i, '').trim();
+                    if (socket) socket.emit('set_custom_status', { status: currentStatus || 'online', customText: statusText });
+                    input.value = '';
+                    input.style.height = 'auto';
+                    showNotification('💭 Statut mis à jour', statusText, 'success');
+                    return;
+                }
+
+                return origSend.apply(this, arguments);
+            };
+        }
+
+        // Add bookmark button to context menus - inject into message rendering
+        // We patch addMessage to also add bookmark buttons and request link previews
+        (function() {
+            const origAddMsg = addMessage;
+            if (typeof origAddMsg !== 'function') return;
+            
+            addMessage = function(username, content, timestamp, isOwn, avatar, replyTo, attachment, serverId) {
+                origAddMsg.apply(this, arguments);
+                
+                // Get the just-added message
+                const messages = document.getElementById('chatMessages');
+                if (!messages) return;
+                const lastMsg = messages.lastElementChild;
+                if (!lastMsg || !lastMsg.classList.contains('message')) return;
+                
+                // Add bookmark button to menu
+                const menuContainer = lastMsg.querySelector('.message-menu-container');
+                if (menuContainer) {
+                    const menu = menuContainer.querySelector('.message-context-menu');
+                    if (menu) {
+                        const bookmarkBtn = document.createElement('div');
+                        bookmarkBtn.className = 'context-menu-item';
+                        bookmarkBtn.innerHTML = '🔖 Sauvegarder';
+                        bookmarkBtn.onclick = (e) => {
+                            e.stopPropagation();
+                            bookmarkMessage(lastMsg.dataset.messageId);
+                            closeAllMenus();
+                        };
+                        menu.appendChild(bookmarkBtn);
+                    }
+                }
+                
+                // Request link preview
+                if (content && typeof requestLinkPreviews === 'function') {
+                    requestLinkPreviews(content, lastMsg);
+                }
+            };
+        })();
+
+        // Add status button to user info area
+        document.addEventListener('DOMContentLoaded', () => {
+            const userControls = document.querySelector('.user-controls');
+            if (userControls) {
+                const statusBtn = document.createElement('button');
+                statusBtn.className = 'settings-btn';
+                statusBtn.textContent = '💭';
+                statusBtn.title = 'Statut personnalisé';
+                statusBtn.onclick = openStatusModal;
+                userControls.insertBefore(statusBtn, userControls.firstChild);
+
+                const reminderBtn = document.createElement('button');
+                reminderBtn.className = 'settings-btn';
+                reminderBtn.textContent = '⏰';
+                reminderBtn.title = 'Rappels';
+                reminderBtn.onclick = openRemindersModal;
+                userControls.insertBefore(reminderBtn, userControls.firstChild);
             }
         });
     </script>

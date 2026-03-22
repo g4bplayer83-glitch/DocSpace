@@ -113,6 +113,45 @@ let serverConfig = {
     globalMute: false
 };
 
+// === BOOKMARKS (Messages sauvegardés) ===
+let userBookmarks = {}; // username -> [{ messageId, content, author, channel, timestamp, savedAt }]
+
+// === FRIEND SYSTEM ===
+let friendships = {}; // username -> { friends: [username], pending: [username], requests: [username] }
+
+// === LEVELING / XP SYSTEM ===
+let userXP = {}; // username -> { xp, level, totalMessages, lastXpGain }
+const XP_PER_MESSAGE = 15;
+const XP_PER_REACTION = 5;
+const XP_LEVEL_BASE = 100; // XP for level 1, doubles each level
+function getXPForLevel(level) { return Math.floor(XP_LEVEL_BASE * Math.pow(1.5, level - 1)); }
+function getLevelFromXP(xp) {
+    let level = 0;
+    let totalNeeded = 0;
+    while (totalNeeded + getXPForLevel(level + 1) <= xp) {
+        level++;
+        totalNeeded += getXPForLevel(level);
+    }
+    return { level, currentXP: xp - totalNeeded, neededXP: getXPForLevel(level + 1) };
+}
+
+// === REMINDERS ===
+let reminders = []; // [{ id, username, message, triggerAt, channel, createdAt }]
+let reminderIdCounter = 1;
+
+// === AUTO-MODERATION ===
+let autoModConfig = {
+    enabled: false,
+    spamThreshold: 5, // max messages in spamInterval seconds
+    spamInterval: 10, // seconds
+    linkFilter: false,
+    capsFilter: false, // block messages >80% caps
+    wordFilter: [], // banned words
+    warnThreshold: 3, // warnings before auto-mute
+};
+let userWarnings = {}; // username -> { count, lastWarning }
+let spamTracker = {}; // username -> [timestamps]
+
 // Liste des utilisateurs bannis: { identifier: { username, bannedAt, expiresAt, permanent, ip } }
 let bannedUsers = new Map();
 
@@ -137,6 +176,11 @@ const CHANNELS_FILE = path.join(DATA_DIR, 'channel_histories.json');
 const DM_FILE = path.join(DATA_DIR, 'dm_history.json');
 const POLLS_FILE = path.join(DATA_DIR, 'polls.json');
 const PINNED_FILE = path.join(DATA_DIR, 'pinned.json');
+const XP_FILE = path.join(DATA_DIR, 'user_xp.json');
+const FRIENDS_FILE = path.join(DATA_DIR, 'friendships.json');
+const BOOKMARKS_FILE = path.join(DATA_DIR, 'bookmarks.json');
+const REMINDERS_FILE = path.join(DATA_DIR, 'reminders.json');
+const AUTOMOD_FILE = path.join(DATA_DIR, 'automod.json');
 
 console.log(`📂 Dossier de données: ${DATA_DIR}`);
 
@@ -300,6 +344,168 @@ loadDMs();
 // Charger les données au démarrage
 loadPersistedData();
 loadPinnedMessages();
+
+// === CHARGEMENT DES NOUVELLES DONNÉES ===
+function loadXPData() {
+    try {
+        if (fs.existsSync(XP_FILE)) {
+            userXP = JSON.parse(fs.readFileSync(XP_FILE, 'utf8'));
+            console.log(`✅ XP chargé: ${Object.keys(userXP).length} utilisateurs`);
+        }
+    } catch (e) { console.error('❌ Erreur chargement XP:', e.message); userXP = {}; }
+}
+function saveXPData() {
+    try { fs.writeFileSync(XP_FILE, JSON.stringify(userXP, null, 2)); } catch (e) { console.error('❌ Erreur sauvegarde XP:', e.message); }
+}
+function loadFriendships() {
+    try {
+        if (fs.existsSync(FRIENDS_FILE)) {
+            friendships = JSON.parse(fs.readFileSync(FRIENDS_FILE, 'utf8'));
+            console.log(`✅ Amitiés chargées: ${Object.keys(friendships).length} utilisateurs`);
+        }
+    } catch (e) { console.error('❌ Erreur chargement amitiés:', e.message); friendships = {}; }
+}
+function saveFriendships() {
+    try { fs.writeFileSync(FRIENDS_FILE, JSON.stringify(friendships, null, 2)); } catch (e) { console.error('❌ Erreur sauvegarde amitiés:', e.message); }
+}
+function loadBookmarks() {
+    try {
+        if (fs.existsSync(BOOKMARKS_FILE)) {
+            userBookmarks = JSON.parse(fs.readFileSync(BOOKMARKS_FILE, 'utf8'));
+            console.log(`✅ Bookmarks chargés: ${Object.keys(userBookmarks).length} utilisateurs`);
+        }
+    } catch (e) { console.error('❌ Erreur chargement bookmarks:', e.message); userBookmarks = {}; }
+}
+function saveBookmarks() {
+    try { fs.writeFileSync(BOOKMARKS_FILE, JSON.stringify(userBookmarks, null, 2)); } catch (e) { console.error('❌ Erreur sauvegarde bookmarks:', e.message); }
+}
+function loadReminders() {
+    try {
+        if (fs.existsSync(REMINDERS_FILE)) {
+            const data = JSON.parse(fs.readFileSync(REMINDERS_FILE, 'utf8'));
+            reminders = data.reminders || [];
+            reminderIdCounter = data.lastId || 1;
+            console.log(`✅ Rappels chargés: ${reminders.length}`);
+        }
+    } catch (e) { console.error('❌ Erreur chargement rappels:', e.message); reminders = []; }
+}
+function saveReminders() {
+    try { fs.writeFileSync(REMINDERS_FILE, JSON.stringify({ reminders, lastId: reminderIdCounter }, null, 2)); } catch (e) { console.error('❌ Erreur sauvegarde rappels:', e.message); }
+}
+function loadAutoMod() {
+    try {
+        if (fs.existsSync(AUTOMOD_FILE)) {
+            autoModConfig = { ...autoModConfig, ...JSON.parse(fs.readFileSync(AUTOMOD_FILE, 'utf8')) };
+            console.log(`✅ AutoMod chargé`);
+        }
+    } catch (e) { console.error('❌ Erreur chargement AutoMod:', e.message); }
+}
+function saveAutoMod() {
+    try { fs.writeFileSync(AUTOMOD_FILE, JSON.stringify(autoModConfig, null, 2)); } catch (e) { console.error('❌ Erreur sauvegarde AutoMod:', e.message); }
+}
+
+loadXPData();
+loadFriendships();
+loadBookmarks();
+loadReminders();
+loadAutoMod();
+
+// === REMINDER CHECKER (every 10 seconds) ===
+setInterval(() => {
+    const now = Date.now();
+    const triggered = reminders.filter(r => r.triggerAt <= now);
+    if (triggered.length === 0) return;
+    
+    triggered.forEach(reminder => {
+        // Find user socket
+        for (const [socketId, userData] of connectedUsers.entries()) {
+            if (userData.username === reminder.username) {
+                io.to(socketId).emit('reminder_triggered', {
+                    id: reminder.id,
+                    message: reminder.message,
+                    createdAt: reminder.createdAt
+                });
+                break;
+            }
+        }
+    });
+    
+    reminders = reminders.filter(r => r.triggerAt > now);
+    saveReminders();
+}, 10000);
+
+// === AUTO-MODERATION HELPER ===
+function checkAutoMod(username, content) {
+    if (!autoModConfig.enabled) return { allowed: true };
+    if (adminUsersList.includes(username)) return { allowed: true };
+    
+    // Spam check
+    if (!spamTracker[username]) spamTracker[username] = [];
+    const now = Date.now();
+    spamTracker[username].push(now);
+    spamTracker[username] = spamTracker[username].filter(t => now - t < autoModConfig.spamInterval * 1000);
+    if (spamTracker[username].length > autoModConfig.spamThreshold) {
+        addWarning(username);
+        return { allowed: false, reason: '🚫 Spam détecté ! Ralentissez.' };
+    }
+    
+    // Link filter
+    if (autoModConfig.linkFilter && /https?:\/\//i.test(content)) {
+        addWarning(username);
+        return { allowed: false, reason: '🚫 Les liens ne sont pas autorisés.' };
+    }
+    
+    // Caps filter
+    if (autoModConfig.capsFilter && content.length > 10) {
+        const caps = content.replace(/[^a-zA-Z]/g, '');
+        const upperCount = caps.replace(/[^A-Z]/g, '').length;
+        if (caps.length > 0 && upperCount / caps.length > 0.8) {
+            return { allowed: false, reason: '🚫 Trop de MAJUSCULES !' };
+        }
+    }
+    
+    // Word filter
+    if (autoModConfig.wordFilter.length > 0) {
+        const lowerContent = content.toLowerCase();
+        for (const word of autoModConfig.wordFilter) {
+            if (lowerContent.includes(word.toLowerCase())) {
+                addWarning(username);
+                return { allowed: false, reason: '🚫 Message contient un mot interdit.' };
+            }
+        }
+    }
+    
+    return { allowed: true };
+}
+
+function addWarning(username) {
+    if (!userWarnings[username]) userWarnings[username] = { count: 0, lastWarning: 0 };
+    userWarnings[username].count++;
+    userWarnings[username].lastWarning = Date.now();
+}
+
+// === XP HELPER ===
+function grantXP(username, amount) {
+    if (!userXP[username]) userXP[username] = { xp: 0, level: 0, totalMessages: 0, lastXpGain: 0 };
+    
+    const now = Date.now();
+    // Cooldown: only gain XP once per 30 seconds per message
+    if (now - userXP[username].lastXpGain < 30000) return null;
+    
+    const oldLevel = getLevelFromXP(userXP[username].xp).level;
+    userXP[username].xp += amount;
+    userXP[username].lastXpGain = now;
+    const newLevelData = getLevelFromXP(userXP[username].xp);
+    
+    if (newLevelData.level > oldLevel) {
+        saveXPData();
+        return { levelUp: true, newLevel: newLevelData.level, username };
+    }
+    
+    // Save periodically (every 5 XP gains)
+    if (userXP[username].xp % (amount * 5) < amount) saveXPData();
+    return null;
+}
 
 // Fonction de logging améliorée
 function logActivity(type, message, data = {}) {
@@ -616,6 +822,30 @@ app.get('/health', (req, res) => {
     });
     
     res.status(200).json(healthData);
+});
+
+// === API STATISTIQUES PUBLIQUES ===
+app.get('/api/stats', (req, res) => {
+    const uptime = Math.floor(process.uptime());
+    const totalChannelMessages = Object.values(channelHistories).reduce((sum, arr) => sum + arr.length, 0);
+    
+    // Top channels by activity
+    const channelStats = {};
+    AVAILABLE_CHANNELS.forEach(ch => {
+        channelStats[ch] = channelHistories[ch] ? channelHistories[ch].length : 0;
+    });
+    
+    res.json({
+        online: connectedUsers.size,
+        totalMessages: serverStats.totalMessages,
+        totalChannelMessages: totalChannelMessages,
+        totalUploads: serverStats.totalUploads,
+        totalConnectionsEver: serverStats.totalConnections,
+        channels: channelStats,
+        uptime: `${Math.floor(uptime / 3600)}h ${Math.floor((uptime % 3600) / 60)}m`,
+        activePolls: Object.keys(polls).length,
+        dmConversations: Object.keys(dmHistory).length
+    });
 });
 
 // Gestion des connexions Socket.IO
@@ -1350,6 +1580,13 @@ io.on('connection', (socket) => {
             socket.emit('admin_list_update', { admins: adminUsersList });
             socket.emit('pinned_update', { pinnedMessages });
             
+            // Send new feature data
+            const xpData = userXP[cleanUsername] || { xp: 0, level: 0, totalMessages: 0 };
+            socket.emit('xp_data', { xp: xpData.xp, ...getLevelFromXP(xpData.xp), totalMessages: xpData.totalMessages });
+            socket.emit('friends_list', friendships[cleanUsername] || { friends: [], pending: [], requests: [] });
+            socket.emit('bookmarks_list', { bookmarks: userBookmarks[cleanUsername] || [] });
+            socket.emit('reminders_list', { reminders: (reminders[cleanUsername] || []).filter(r => r.triggerAt > Date.now()) });
+            
             logActivity('SYSTEM', `Historique envoyé à ${cleanUsername}`, {
                 messagesCount: chatHistory.length,
                 reactionsCount: Object.keys(messageReactions).length
@@ -1474,6 +1711,15 @@ io.on('connection', (socket) => {
             user.lastActivity = new Date();
             user.messagesCount++;
 
+            // === AUTO-MODERATION CHECK ===
+            if (messageData.content) {
+                const modResult = checkAutoMod(user.username, messageData.content);
+                if (!modResult.allowed) {
+                    socket.emit('automod_blocked', { reason: modResult.reason });
+                    return;
+                }
+            }
+
             // === GESTION DES SALONS ===
             const channel = messageData.channel || 'général';
             if (!AVAILABLE_CHANNELS.includes(channel)) {
@@ -1550,6 +1796,19 @@ io.on('connection', (socket) => {
             addToHistory(message); // Garder aussi dans l'historique global pour rétrocompatibilité
             io.emit('new_message', message);
             serverStats.totalMessages++;
+            
+            // === XP SYSTEM ===
+            if (!userXP[user.username]) userXP[user.username] = { xp: 0, level: 0, totalMessages: 0, lastXpGain: 0 };
+            userXP[user.username].totalMessages++;
+            const xpResult = grantXP(user.username, XP_PER_MESSAGE);
+            if (xpResult && xpResult.levelUp) {
+                io.emit('system_message', {
+                    type: 'system',
+                    message: `🎉 ${user.username} a atteint le niveau ${xpResult.newLevel} !`,
+                    timestamp: new Date(),
+                    id: messageId++
+                });
+            }
             
             // Sauvegarder l'historique après chaque message
             saveHistory();
@@ -2176,6 +2435,439 @@ io.on('connection', (socket) => {
         });
         
         global.activeGames.delete(gameId);
+    });
+
+    // =========================================
+    // === BOOKMARK SYSTEM ===
+    // =========================================
+    socket.on('bookmark_message', (data) => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+        const { messageId, content, author, channel, timestamp } = data;
+        if (!userBookmarks[user.username]) userBookmarks[user.username] = [];
+        // Check if already bookmarked
+        if (userBookmarks[user.username].some(b => b.messageId === messageId)) {
+            socket.emit('bookmark_error', { message: 'Message déjà sauvegardé' });
+            return;
+        }
+        userBookmarks[user.username].push({ messageId, content: (content || '').substring(0, 500), author, channel, timestamp, savedAt: new Date().toISOString() });
+        saveBookmarks();
+        socket.emit('bookmark_added', { messageId });
+    });
+
+    socket.on('remove_bookmark', (data) => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+        if (!userBookmarks[user.username]) return;
+        userBookmarks[user.username] = userBookmarks[user.username].filter(b => b.messageId !== data.messageId);
+        saveBookmarks();
+        socket.emit('bookmark_removed', { messageId: data.messageId });
+    });
+
+    socket.on('get_bookmarks', () => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+        socket.emit('bookmarks_list', { bookmarks: userBookmarks[user.username] || [] });
+    });
+
+    // =========================================
+    // === FRIEND SYSTEM ===
+    // =========================================
+    socket.on('send_friend_request', (data) => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+        const target = data.username;
+        if (target === user.username) return;
+        
+        if (!friendships[user.username]) friendships[user.username] = { friends: [], pending: [], requests: [] };
+        if (!friendships[target]) friendships[target] = { friends: [], pending: [], requests: [] };
+        
+        // Already friends?
+        if (friendships[user.username].friends.includes(target)) {
+            socket.emit('friend_error', { message: 'Déjà amis !' });
+            return;
+        }
+        // Already pending?
+        if (friendships[user.username].pending.includes(target)) {
+            socket.emit('friend_error', { message: 'Demande déjà envoyée' });
+            return;
+        }
+        
+        friendships[user.username].pending.push(target);
+        friendships[target].requests.push(user.username);
+        saveFriendships();
+        
+        socket.emit('friend_request_sent', { username: target });
+        // Notify target if online
+        for (const [sid, u] of connectedUsers.entries()) {
+            if (u.username === target) {
+                io.to(sid).emit('friend_request_received', { from: user.username, avatar: user.avatar });
+                break;
+            }
+        }
+    });
+
+    socket.on('accept_friend', (data) => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+        const from = data.username;
+        if (!friendships[user.username] || !friendships[from]) return;
+        
+        // Remove from requests/pending
+        friendships[user.username].requests = friendships[user.username].requests.filter(u => u !== from);
+        friendships[from].pending = friendships[from].pending.filter(u => u !== user.username);
+        
+        // Add to friends
+        if (!friendships[user.username].friends.includes(from)) friendships[user.username].friends.push(from);
+        if (!friendships[from].friends.includes(user.username)) friendships[from].friends.push(user.username);
+        
+        saveFriendships();
+        socket.emit('friend_accepted', { username: from });
+        for (const [sid, u] of connectedUsers.entries()) {
+            if (u.username === from) {
+                io.to(sid).emit('friend_accepted', { username: user.username });
+                break;
+            }
+        }
+    });
+
+    socket.on('reject_friend', (data) => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+        const from = data.username;
+        if (!friendships[user.username] || !friendships[from]) return;
+        friendships[user.username].requests = friendships[user.username].requests.filter(u => u !== from);
+        friendships[from].pending = friendships[from].pending.filter(u => u !== user.username);
+        saveFriendships();
+    });
+
+    socket.on('remove_friend', (data) => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+        const target = data.username;
+        if (friendships[user.username]) friendships[user.username].friends = friendships[user.username].friends.filter(u => u !== target);
+        if (friendships[target]) friendships[target].friends = friendships[target].friends.filter(u => u !== user.username);
+        saveFriendships();
+        socket.emit('friend_removed', { username: target });
+    });
+
+    socket.on('get_friends', () => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+        const data = friendships[user.username] || { friends: [], pending: [], requests: [] };
+        // Add online status
+        const friendsWithStatus = data.friends.map(f => {
+            let online = false;
+            for (const [, u] of connectedUsers.entries()) {
+                if (u.username === f) { online = true; break; }
+            }
+            return { username: f, online };
+        });
+        socket.emit('friends_list', { friends: friendsWithStatus, pending: data.pending, requests: data.requests });
+    });
+
+    // =========================================
+    // === XP / LEVELING ===
+    // =========================================
+    socket.on('get_xp', () => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+        const data = userXP[user.username] || { xp: 0, level: 0, totalMessages: 0 };
+        const levelData = getLevelFromXP(data.xp);
+        socket.emit('xp_data', { xp: data.xp, ...levelData, totalMessages: data.totalMessages });
+    });
+
+    socket.on('get_leaderboard', () => {
+        const leaderboard = Object.entries(userXP)
+            .map(([username, data]) => ({ username, xp: data.xp, ...getLevelFromXP(data.xp), totalMessages: data.totalMessages }))
+            .sort((a, b) => b.xp - a.xp)
+            .slice(0, 20);
+        socket.emit('leaderboard_data', { leaderboard });
+    });
+
+    // =========================================
+    // === REMINDERS ===
+    // =========================================
+    socket.on('create_reminder', (data) => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+        const { message, delay } = data; // delay in seconds
+        if (!message || !delay || delay < 10 || delay > 86400 * 7) {
+            socket.emit('reminder_error', { message: 'Durée invalide (10s - 7 jours)' });
+            return;
+        }
+        const reminder = {
+            id: reminderIdCounter++,
+            username: user.username,
+            message: message.substring(0, 200),
+            triggerAt: Date.now() + delay * 1000,
+            channel: data.channel || 'général',
+            createdAt: new Date().toISOString()
+        };
+        reminders.push(reminder);
+        saveReminders();
+        socket.emit('reminder_created', { id: reminder.id, triggerAt: reminder.triggerAt, message: reminder.message });
+    });
+
+    socket.on('get_reminders', () => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+        socket.emit('reminders_list', { reminders: reminders.filter(r => r.username === user.username) });
+    });
+
+    socket.on('delete_reminder', (data) => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+        reminders = reminders.filter(r => !(r.id === data.id && r.username === user.username));
+        saveReminders();
+        socket.emit('reminder_deleted', { id: data.id });
+    });
+
+    // =========================================
+    // === AUTOMOD CONFIG (admin only) ===
+    // =========================================
+    socket.on('get_automod_config', () => {
+        const user = connectedUsers.get(socket.id);
+        if (!user || !adminUsersList.includes(user.username)) return;
+        socket.emit('automod_config', autoModConfig);
+    });
+
+    socket.on('update_automod', (data) => {
+        const user = connectedUsers.get(socket.id);
+        if (!user || !adminUsersList.includes(user.username)) return;
+        autoModConfig = { ...autoModConfig, ...data };
+        saveAutoMod();
+        socket.emit('automod_updated', autoModConfig);
+    });
+
+    // =========================================
+    // === USER STATUS ===
+    // =========================================
+    socket.on('set_custom_status', (data) => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+        const { status, customText, emoji } = data;
+        userStatuses[user.username] = {
+            status: status || 'online',
+            customText: (customText || '').substring(0, 50),
+            emoji: emoji || '',
+            updatedAt: new Date().toISOString()
+        };
+        updateUsersList();
+        io.emit('user_status_changed', { username: user.username, ...userStatuses[user.username] });
+    });
+
+    // =========================================
+    // === LINK PREVIEW ===
+    // =========================================
+    socket.on('request_link_preview', async (data) => {
+        const { url } = data;
+        if (!url || !/^https?:\/\//i.test(url)) return;
+        
+        try {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 5000);
+            const response = await fetch(url, {
+                headers: { 'User-Agent': 'DocSpace-Bot/1.0' },
+                signal: controller.signal,
+                redirect: 'follow'
+            });
+            clearTimeout(timeout);
+            
+            if (!response.ok) return;
+            const contentType = response.headers.get('content-type') || '';
+            if (!contentType.includes('text/html')) return;
+            
+            const html = (await response.text()).substring(0, 50000); // Limit to 50KB
+            
+            const getMetaContent = (name) => {
+                const match = html.match(new RegExp(`<meta[^>]*(?:property|name)=["']${name}["'][^>]*content=["']([^"']*)["']`, 'i'))
+                    || html.match(new RegExp(`<meta[^>]*content=["']([^"']*)["'][^>]*(?:property|name)=["']${name}["']`, 'i'));
+                return match ? match[1] : '';
+            };
+            
+            const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i);
+            const preview = {
+                url,
+                title: getMetaContent('og:title') || (titleMatch ? titleMatch[1].trim() : ''),
+                description: (getMetaContent('og:description') || getMetaContent('description') || '').substring(0, 200),
+                image: getMetaContent('og:image') || '',
+                siteName: getMetaContent('og:site_name') || ''
+            };
+            
+            if (preview.title) {
+                socket.emit('link_preview_data', preview);
+            }
+        } catch (e) {
+            // Silently fail for link previews
+        }
+    });
+
+    // =========================================
+    // === HANGMAN GAME ===
+    // =========================================
+    socket.on('start_hangman', () => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+        const words = ['JAVASCRIPT','PYTHON','SERVEUR','DISCORD','ORDINATEUR','INTERNET','CLAVIER','ECRAN','PROGRAMME','FONCTION','VARIABLE','TABLEAU','BOUCLE','CONDITION','MUSIQUE','CINEMA','GALAXIE','PLANETE','ETOILE','LICORNE','DRAGON','CHATEAU','PIRATE','ROBOT','ESPACE','AVENTURE'];
+        const word = words[Math.floor(Math.random() * words.length)];
+        const gameState = {
+            word,
+            guessed: [],
+            wrong: [],
+            maxErrors: 6,
+            display: word.split('').map(() => '_').join(' ')
+        };
+        socket.hangmanGame = gameState;
+        socket.emit('hangman_state', {
+            display: gameState.display,
+            wrong: gameState.wrong,
+            remaining: gameState.maxErrors - gameState.wrong.length,
+            finished: false
+        });
+    });
+
+    socket.on('hangman_guess', (data) => {
+        const user = connectedUsers.get(socket.id);
+        if (!user || !socket.hangmanGame) return;
+        const game = socket.hangmanGame;
+        const letter = (data.letter || '').toUpperCase().charAt(0);
+        if (!letter || game.guessed.includes(letter) || game.wrong.includes(letter)) return;
+        
+        if (game.word.includes(letter)) {
+            game.guessed.push(letter);
+        } else {
+            game.wrong.push(letter);
+        }
+        
+        const display = game.word.split('').map(c => game.guessed.includes(c) ? c : '_').join(' ');
+        const won = !display.includes('_');
+        const lost = game.wrong.length >= game.maxErrors;
+        
+        socket.emit('hangman_state', {
+            display,
+            wrong: game.wrong,
+            remaining: game.maxErrors - game.wrong.length,
+            finished: won || lost,
+            won,
+            word: (won || lost) ? game.word : undefined
+        });
+        
+        if (won) {
+            const xpResult = grantXP(user.username, 50);
+            if (xpResult && xpResult.levelUp) {
+                io.emit('system_message', { type: 'system', message: `🎉 ${user.username} a atteint le niveau ${xpResult.newLevel} !`, timestamp: new Date(), id: messageId++ });
+            }
+            socket.hangmanGame = null;
+        } else if (lost) {
+            socket.hangmanGame = null;
+        }
+    });
+
+    // =========================================
+    // === TRIVIA GAME ===
+    // =========================================
+    socket.on('start_trivia', () => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+        
+        const questions = [
+            { q: "Quelle est la capitale de la France ?", a: ["Paris", "Lyon", "Marseille", "Toulouse"], correct: 0 },
+            { q: "Combien de continents y a-t-il ?", a: ["5", "6", "7", "8"], correct: 2 },
+            { q: "Quel est le plus grand océan ?", a: ["Atlantique", "Pacifique", "Indien", "Arctique"], correct: 1 },
+            { q: "En quelle année a été créé Internet ?", a: ["1969", "1983", "1991", "2000"], correct: 0 },
+            { q: "Quel langage a créé le Web ?", a: ["Java", "Python", "HTML", "C++"], correct: 2 },
+            { q: "Combien de pattes a une araignée ?", a: ["6", "8", "10", "4"], correct: 1 },
+            { q: "Quelle planète est la plus proche du Soleil ?", a: ["Vénus", "Mercure", "Mars", "Terre"], correct: 1 },
+            { q: "Quel est le plus long fleuve du monde ?", a: ["Amazone", "Nil", "Yangtsé", "Mississippi"], correct: 1 },
+            { q: "Qui a peint la Joconde ?", a: ["Michel-Ange", "Raphaël", "Léonard de Vinci", "Botticelli"], correct: 2 },
+            { q: "Combien d'os a le corps humain adulte ?", a: ["186", "206", "226", "256"], correct: 1 },
+            { q: "Quel animal est le plus rapide ?", a: ["Lion", "Guépard", "Faucon pèlerin", "Lévrier"], correct: 2 },
+            { q: "Quelle est la monnaie du Japon ?", a: ["Yuan", "Won", "Yen", "Baht"], correct: 2 },
+            { q: "En quelle année le mur de Berlin est-il tombé ?", a: ["1987", "1989", "1991", "1993"], correct: 1 },
+            { q: "Quel est le symbole chimique de l'or ?", a: ["Ag", "Au", "Or", "Go"], correct: 1 },
+            { q: "Combien de couleurs dans un arc-en-ciel ?", a: ["5", "6", "7", "8"], correct: 2 },
+            { q: "Quel est le plus petit pays du monde ?", a: ["Monaco", "Vatican", "Nauru", "San Marino"], correct: 1 },
+            { q: "Qui a écrit 'Les Misérables' ?", a: ["Zola", "Hugo", "Balzac", "Dumas"], correct: 1 },
+            { q: "Quel gaz les plantes absorbent-elles ?", a: ["Oxygène", "Azote", "CO2", "Hydrogène"], correct: 2 },
+            { q: "Combien de touches sur un piano standard ?", a: ["76", "82", "88", "92"], correct: 2 },
+            { q: "Quelle est la vitesse de la lumière ?", a: ["150 000 km/s", "300 000 km/s", "500 000 km/s", "1 000 000 km/s"], correct: 1 }
+        ];
+        
+        // Pick 5 random questions
+        const shuffled = questions.sort(() => Math.random() - 0.5).slice(0, 5);
+        socket.triviaGame = { questions: shuffled, current: 0, score: 0, total: shuffled.length };
+        
+        socket.emit('trivia_question', {
+            question: shuffled[0].q,
+            answers: shuffled[0].a,
+            current: 1,
+            total: shuffled.length,
+            score: 0
+        });
+    });
+
+    socket.on('trivia_answer', (data) => {
+        const user = connectedUsers.get(socket.id);
+        if (!user || !socket.triviaGame) return;
+        const game = socket.triviaGame;
+        const q = game.questions[game.current];
+        const correct = data.answer === q.correct;
+        if (correct) game.score++;
+        
+        game.current++;
+        
+        if (game.current >= game.total) {
+            // Game over
+            const xpGained = game.score * 20;
+            const xpResult = grantXP(user.username, xpGained);
+            socket.emit('trivia_result', {
+                correct,
+                correctAnswer: q.correct,
+                score: game.score,
+                total: game.total,
+                finished: true,
+                xpGained
+            });
+            if (xpResult && xpResult.levelUp) {
+                io.emit('system_message', { type: 'system', message: `🎉 ${user.username} a atteint le niveau ${xpResult.newLevel} !`, timestamp: new Date(), id: messageId++ });
+            }
+            socket.triviaGame = null;
+        } else {
+            const next = game.questions[game.current];
+            socket.emit('trivia_result', {
+                correct,
+                correctAnswer: q.correct,
+                score: game.score,
+                total: game.total,
+                finished: false,
+                nextQuestion: next.q,
+                nextAnswers: next.a,
+                current: game.current + 1
+            });
+        }
+    });
+
+    // =========================================
+    // === SOUNDBOARD ===
+    // =========================================
+    socket.on('play_sound', (data) => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+        const allowedSounds = ['applause','airhorn','rimshot','sadtrombone','tada','drumroll','crickets','laugh','wow','bruh'];
+        if (!allowedSounds.includes(data.sound)) return;
+        // Broadcast to all users in same channel
+        io.emit('sound_played', { sound: data.sound, username: user.username, channel: data.channel || 'général' });
+    });
+
+    // =========================================
+    // === READ RECEIPTS ===
+    // =========================================
+    socket.on('mark_read', (data) => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+        const { channel, lastMessageId } = data;
+        io.emit('read_receipt', { username: user.username, channel, lastMessageId, timestamp: Date.now() });
     });
 });
 

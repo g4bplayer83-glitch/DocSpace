@@ -1,7 +1,37 @@
 {
-  "currentVersion": "3.0.0B",
-  "lastUpdate": "2026-03-22",
+  "currentVersion": "3.0.2B",
+  "lastUpdate": "2026-03-23",
   "versions": [
+    {
+      "version": "3.0.2B",
+      "date": "2026-03-23",
+      "title": "🎨 Refonte Interface & Formatage",
+      "changes": [
+        "📐 Header compact - Icônes en barre horizontale avec animation stylée",
+        "✨ Animation d'ouverture/fermeture des icônes (scale + stagger)",
+        "🪟 Option Liquid Glass (iOS) - Effet glassmorphism sur toute l'interface",
+        "🔐 Admin Panel complètement refait - Design moderne avec onglets",
+        "📺 Admin: Diffusion sur l'écran de tous les utilisateurs",
+        "🎊 Admin: Effets visuels (confettis, tremblement, flash, matrix)",
+        "✏️ Formatage texte : **gras**, *italique*, ~~barré~~, __souligné__",
+        "🎨 Couleurs des thèmes respectées partout (--accent-rgb)",
+        "🔤 Traduction complète des paramètres dans les 8 langues",
+        "🗑️ Suppression du changement de pseudo dans les paramètres"
+      ]
+    },
+    {
+      "version": "3.0.1B",
+      "date": "2026-03-22",
+      "title": "🔧 Correctifs & Système de Comptes",
+      "changes": [
+        "🔑 Système de comptes avec mot de passe - Protégez votre pseudo !",
+        "🐛 Fix [object Object] et Invalid Date dans les messages",
+        "👥 Synchronisation amis améliorée - Statut en ligne en temps réel",
+        "🔄 Bannière de reconnexion avec animation de fermeture automatique",
+        "🛡️ Protection des pseudos enregistrés - Mot de passe requis si compte existant",
+        "📡 Mise à jour automatique de la liste d'amis (ajout, suppression, connexion/déconnexion)"
+      ]
+    },
     {
       "version": "3.0.0B",
       "date": "2026-03-22",

@@ -4,6 +4,7 @@ const socketIo = require('socket.io');
 const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
+const crypto = require('crypto');
 
 const app = express();
 const server = http.createServer(app);
@@ -72,6 +73,7 @@ app.use('/uploads', express.static(uploadDir));
 
 // Variables pour stocker les données
 let connectedUsers = new Map(); // socketId -> userData
+let authenticatedSockets = new Set(); // socketIds that completed account auth
 let chatHistory = []; // Historique des messages (général - rétrocompatibilité)
 const MAX_HISTORY = 500; // Limite de l'historique (augmentée pour persistance)
 let typingUsers = new Map(); // socketId -> {username, timestamp}
@@ -86,6 +88,11 @@ let serverStats = {
 
 // === SALONS MULTIPLES (BETA) ===
 const AVAILABLE_CHANNELS = ['général', 'présentation', 'jeux', 'musique', 'films', 'random', 'aide'];
+const VOICE_CHANNELS = ['Vocal Général', 'Vocal Gaming', 'Vocal Musique'];
+let voiceRooms = {}; // { roomName: { participants: Map(socketId -> {username, muted, deafened, video, screen}) } }
+VOICE_CHANNELS.forEach(vc => {
+    voiceRooms[vc] = { participants: new Map() };
+});
 let channelHistories = {}; // { channelName: [messages] }
 let channelReactions = {}; // { channelName: { messageId: {emoji: [usernames]} } }
 
@@ -166,6 +173,9 @@ let pollIdCounter = 1;
 // === MESSAGES PRIVÉS (DM) ===
 let dmHistory = {}; // "user1:user2" (trié) -> [messages]
 
+// === COMPTES UTILISATEURS ===
+let accounts = {}; // username_lower -> { username, passwordHash, salt, createdAt, lastLogin }
+
 // === FICHIERS DE SAUVEGARDE POUR PERSISTANCE ===
 // Pour render.com: créer un Disk persistant et définir RENDER_DISK_PATH=/var/data
 // Sinon utilise le dossier local 'data'
@@ -181,6 +191,7 @@ const FRIENDS_FILE = path.join(DATA_DIR, 'friendships.json');
 const BOOKMARKS_FILE = path.join(DATA_DIR, 'bookmarks.json');
 const REMINDERS_FILE = path.join(DATA_DIR, 'reminders.json');
 const AUTOMOD_FILE = path.join(DATA_DIR, 'automod.json');
+const ACCOUNTS_FILE = path.join(DATA_DIR, 'accounts.json');
 
 console.log(`📂 Dossier de données: ${DATA_DIR}`);
 
@@ -368,6 +379,33 @@ function loadFriendships() {
 function saveFriendships() {
     try { fs.writeFileSync(FRIENDS_FILE, JSON.stringify(friendships, null, 2)); } catch (e) { console.error('❌ Erreur sauvegarde amitiés:', e.message); }
 }
+
+// Envoyer la liste d'amis mise à jour à un utilisateur connecté (par username)
+function emitFriendsListTo(username) {
+    const data = friendships[username] || { friends: [], pending: [], requests: [] };
+    const friendsWithStatus = (data.friends || []).map(f => {
+        let online = false;
+        for (const [, u] of connectedUsers.entries()) {
+            if (u.username === f) { online = true; break; }
+        }
+        return { username: f, online };
+    });
+    for (const [sid, u] of connectedUsers.entries()) {
+        if (u.username === username) {
+            io.to(sid).emit('friends_list', { friends: friendsWithStatus, pending: data.pending, requests: data.requests });
+            break;
+        }
+    }
+}
+
+// Notifier les amis d'un changement de statut en ligne
+function notifyFriendsOfStatusChange(username) {
+    const data = friendships[username];
+    if (!data || !data.friends) return;
+    data.friends.forEach(friendName => {
+        emitFriendsListTo(friendName);
+    });
+}
 function loadBookmarks() {
     try {
         if (fs.existsSync(BOOKMARKS_FILE)) {
@@ -404,11 +442,28 @@ function saveAutoMod() {
     try { fs.writeFileSync(AUTOMOD_FILE, JSON.stringify(autoModConfig, null, 2)); } catch (e) { console.error('❌ Erreur sauvegarde AutoMod:', e.message); }
 }
 
+// === COMPTES ===
+function hashPassword(password, salt) {
+    return crypto.pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex');
+}
+function loadAccounts() {
+    try {
+        if (fs.existsSync(ACCOUNTS_FILE)) {
+            accounts = JSON.parse(fs.readFileSync(ACCOUNTS_FILE, 'utf8'));
+            console.log(`✅ Comptes chargés: ${Object.keys(accounts).length}`);
+        }
+    } catch (e) { console.error('❌ Erreur chargement comptes:', e.message); accounts = {}; }
+}
+function saveAccounts() {
+    try { fs.writeFileSync(ACCOUNTS_FILE, JSON.stringify(accounts, null, 2)); } catch (e) { console.error('❌ Erreur sauvegarde comptes:', e.message); }
+}
+
 loadXPData();
 loadFriendships();
 loadBookmarks();
 loadReminders();
 loadAutoMod();
+loadAccounts();
 
 // === REMINDER CHECKER (every 10 seconds) ===
 setInterval(() => {
@@ -1345,7 +1400,64 @@ io.on('connection', (socket) => {
                     logActivity('ADMIN', `${target} débanni`, { admin: adminName });
                 }
                 break;
+
+            case 'screen_broadcast':
+                // Broadcast a message on everyone's screen
+                const sbText = (data.text || '').substring(0, 200);
+                const sbStyle = ['info','warning','success','alert','fun'].includes(data.style) ? data.style : 'info';
+                const sbDuration = Math.min(Math.max(parseInt(data.duration) || 5, 1), 30);
+                io.emit('screen_broadcast', { text: sbText, style: sbStyle, duration: sbDuration });
+                socket.emit('admin_response', { success: true, message: 'Message diffusé sur tous les écrans' });
+                logActivity('ADMIN', `Screen broadcast: "${sbText}"`, { admin: adminName, style: sbStyle });
+                break;
+
+            case 'trigger_effect':
+                // Trigger a visual effect on all clients
+                const effect = ['confetti','shake','flash','matrix'].includes(data.effect) ? data.effect : null;
+                if (effect) {
+                    io.emit('admin_effect', { effect: effect });
+                    socket.emit('admin_response', { success: true, message: `Effet "${effect}" déclenché` });
+                    logActivity('ADMIN', `Effet visuel: ${effect}`, { admin: adminName });
+                } else {
+                    socket.emit('admin_response', { success: false, message: 'Effet non reconnu' });
+                }
+                break;
                 
+            case 'set_announcement':
+                const annText = (data.value || '').substring(0, 500);
+                if (annText) {
+                    io.emit('server_announcement', { message: annText });
+                    socket.emit('admin_response', { success: true, message: 'Annonce épinglée pour tous' });
+                    logActivity('ADMIN', `Annonce: "${annText}"`, { admin: adminName });
+                } else {
+                    socket.emit('admin_response', { success: false, message: 'Texte vide' });
+                }
+                break;
+
+            case 'clear_announcement':
+                io.emit('server_announcement', { message: null });
+                socket.emit('admin_response', { success: true, message: 'Annonce supprimée' });
+                logActivity('ADMIN', 'Annonce supprimée', { admin: adminName });
+                break;
+
+            case 'set_server_name':
+                const srvName = (data.value || '').substring(0, 50);
+                if (srvName) {
+                    io.emit('server_name_update', { name: srvName });
+                    socket.emit('admin_response', { success: true, message: `Nom du serveur: ${srvName}` });
+                    logActivity('ADMIN', `Nom du serveur changé: ${srvName}`, { admin: adminName });
+                } else {
+                    socket.emit('admin_response', { success: false, message: 'Nom vide' });
+                }
+                break;
+
+            case 'set_welcome_message':
+                const welcomeMsg = (data.value || '').substring(0, 500);
+                io.emit('welcome_message_update', { message: welcomeMsg });
+                socket.emit('admin_response', { success: true, message: 'Message de bienvenue mis à jour' });
+                logActivity('ADMIN', `Message de bienvenue: "${welcomeMsg}"`, { admin: adminName });
+                break;
+
             default:
                 socket.emit('admin_response', { success: false, message: 'Action non reconnue' });
         }
@@ -1493,6 +1605,13 @@ io.on('connection', (socket) => {
             
             const cleanUsername = username.trim().substring(0, 20);
             
+            // === VÉRIFICATION COMPTE PROTÉGÉ ===
+            const accountKey = cleanUsername.toLowerCase();
+            if (accounts[accountKey] && !authenticatedSockets.has(socket.id)) {
+                socket.emit('account_required', { message: 'Ce pseudo est protégé par un mot de passe. Entrez votre mot de passe.' });
+                return;
+            }
+            
             // === VÉRIFICATION DU BAN ===
             const banIdentifier = cleanUsername.toLowerCase();
             if (bannedUsers.has(banIdentifier)) {
@@ -1587,6 +1706,11 @@ io.on('connection', (socket) => {
             socket.emit('bookmarks_list', { bookmarks: userBookmarks[cleanUsername] || [] });
             socket.emit('reminders_list', { reminders: (reminders[cleanUsername] || []).filter(r => r.triggerAt > Date.now()) });
             
+            // Envoyer l'état des salons vocaux
+            for (const [room, data] of Object.entries(voiceRooms)) {
+                socket.emit('voice_participants_update', { room, participants: getVoiceParticipants(room) });
+            }
+            
             logActivity('SYSTEM', `Historique envoyé à ${cleanUsername}`, {
                 messagesCount: chatHistory.length,
                 reactionsCount: Object.keys(messageReactions).length
@@ -1605,6 +1729,9 @@ io.on('connection', (socket) => {
             
             // Envoyer la liste des utilisateurs connectés
             updateUsersList();
+            
+            // Notifier les amis que cet utilisateur est en ligne
+            notifyFriendsOfStatusChange(cleanUsername);
             
             logActivity('CONNECTION', `Utilisateur rejoint le chat`, {
                 username: cleanUsername,
@@ -1951,11 +2078,114 @@ io.on('connection', (socket) => {
         }
     });
 
+    // === VOCAL WebRTC ===
+    
+    // Rejoindre un salon vocal
+    socket.on('voice_join', (data) => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+        const room = data.room;
+        if (!voiceRooms[room]) return;
+        
+        // Quitter l'ancien salon vocal si nécessaire
+        for (const [rName, rData] of Object.entries(voiceRooms)) {
+            if (rData.participants.has(socket.id)) {
+                rData.participants.delete(socket.id);
+                socket.leave('voice_' + rName);
+                io.emit('voice_participants_update', { room: rName, participants: getVoiceParticipants(rName) });
+            }
+        }
+        
+        // Rejoindre le nouveau salon
+        voiceRooms[room].participants.set(socket.id, {
+            username: user.username,
+            muted: false,
+            deafened: false,
+            video: false,
+            screen: false
+        });
+        socket.join('voice_' + room);
+        
+        // Notifier les autres participants pour qu'ils créent des connexions WebRTC
+        const otherParticipants = [];
+        voiceRooms[room].participants.forEach((pData, pId) => {
+            if (pId !== socket.id) {
+                otherParticipants.push({ socketId: pId, username: pData.username });
+            }
+        });
+        
+        // Envoyer la liste des participants existants au nouvel arrivant
+        socket.emit('voice_joined', { room, participants: otherParticipants });
+        
+        // Notifier tous les clients de la mise à jour des participants
+        io.emit('voice_participants_update', { room, participants: getVoiceParticipants(room) });
+        
+        logActivity('VOICE', `${user.username} a rejoint ${room}`, { room });
+    });
+    
+    // Quitter le salon vocal
+    socket.on('voice_leave', () => {
+        const user = connectedUsers.get(socket.id);
+        for (const [rName, rData] of Object.entries(voiceRooms)) {
+            if (rData.participants.has(socket.id)) {
+                rData.participants.delete(socket.id);
+                socket.leave('voice_' + rName);
+                io.emit('voice_participants_update', { room: rName, participants: getVoiceParticipants(rName) });
+                socket.to('voice_' + rName).emit('voice_peer_left', { socketId: socket.id });
+                if (user) logActivity('VOICE', `${user.username} a quitté ${rName}`, { room: rName });
+            }
+        }
+    });
+    
+    // Signaling WebRTC - Offer
+    socket.on('voice_offer', (data) => {
+        const { targetId, offer } = data;
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+        io.to(targetId).emit('voice_offer', { fromId: socket.id, fromUsername: user.username, offer });
+    });
+    
+    // Signaling WebRTC - Answer
+    socket.on('voice_answer', (data) => {
+        const { targetId, answer } = data;
+        io.to(targetId).emit('voice_answer', { fromId: socket.id, answer });
+    });
+    
+    // Signaling WebRTC - ICE Candidate
+    socket.on('voice_ice_candidate', (data) => {
+        const { targetId, candidate } = data;
+        io.to(targetId).emit('voice_ice_candidate', { fromId: socket.id, candidate });
+    });
+    
+    // Mise à jour du statut vocal (mute, deafen, video, screen)
+    socket.on('voice_status_update', (data) => {
+        for (const [rName, rData] of Object.entries(voiceRooms)) {
+            const participant = rData.participants.get(socket.id);
+            if (participant) {
+                if (data.muted !== undefined) participant.muted = data.muted;
+                if (data.deafened !== undefined) participant.deafened = data.deafened;
+                if (data.video !== undefined) participant.video = data.video;
+                if (data.screen !== undefined) participant.screen = data.screen;
+                io.emit('voice_participants_update', { room: rName, participants: getVoiceParticipants(rName) });
+                break;
+            }
+        }
+    });
+
     // Déconnexion
     socket.on('disconnect', (reason) => {
         const user = connectedUsers.get(socket.id);
         if (user) {
             const sessionDuration = Date.now() - user.joinTime.getTime();
+            
+            // Retirer des salons vocaux
+            for (const [rName, rData] of Object.entries(voiceRooms)) {
+                if (rData.participants.has(socket.id)) {
+                    rData.participants.delete(socket.id);
+                    io.emit('voice_participants_update', { room: rName, participants: getVoiceParticipants(rName) });
+                    io.to('voice_' + rName).emit('voice_peer_left', { socketId: socket.id });
+                }
+            }
             
             // Retirer de la liste des admins
             const adminIndex = adminUsersList.indexOf(user.username);
@@ -1993,7 +2223,11 @@ io.on('connection', (socket) => {
             
             // Retirer l'utilisateur
             connectedUsers.delete(socket.id);
+            authenticatedSockets.delete(socket.id);
             updateUsersList();
+            
+            // Notifier les amis que cet utilisateur est hors ligne
+            notifyFriendsOfStatusChange(user.username);
             
             logActivity('DISCONNECTION', `Utilisateur déconnecté`, {
                 username: user.username,
@@ -2438,6 +2672,68 @@ io.on('connection', (socket) => {
     });
 
     // =========================================
+    // === ACCOUNT SYSTEM ===
+    // =========================================
+    socket.on('register_account', (data) => {
+        const { username, password } = data;
+        if (!username || !password || typeof username !== 'string' || typeof password !== 'string') {
+            socket.emit('account_error', { message: 'Données invalides' });
+            return;
+        }
+        const cleanName = username.trim().substring(0, 20);
+        const key = cleanName.toLowerCase();
+        if (password.length < 4) {
+            socket.emit('account_error', { message: 'Mot de passe trop court (min 4 caractères)' });
+            return;
+        }
+        if (accounts[key]) {
+            socket.emit('account_error', { message: 'Ce pseudo est déjà enregistré. Connectez-vous.' });
+            return;
+        }
+        const salt = crypto.randomBytes(16).toString('hex');
+        accounts[key] = {
+            username: cleanName,
+            passwordHash: hashPassword(password, salt),
+            salt,
+            createdAt: new Date().toISOString(),
+            lastLogin: new Date().toISOString()
+        };
+        saveAccounts();
+        authenticatedSockets.add(socket.id);
+        socket.emit('account_registered', { username: cleanName });
+    });
+
+    socket.on('login_account', (data) => {
+        const { username, password } = data;
+        if (!username || !password || typeof username !== 'string' || typeof password !== 'string') {
+            socket.emit('account_error', { message: 'Données invalides' });
+            return;
+        }
+        const key = username.trim().toLowerCase();
+        const account = accounts[key];
+        if (!account) {
+            socket.emit('account_error', { message: 'Compte inexistant. Créez un compte.' });
+            return;
+        }
+        const hash = hashPassword(password, account.salt);
+        if (hash !== account.passwordHash) {
+            socket.emit('account_error', { message: 'Mot de passe incorrect' });
+            return;
+        }
+        account.lastLogin = new Date().toISOString();
+        saveAccounts();
+        authenticatedSockets.add(socket.id);
+        socket.emit('account_logged_in', { username: account.username });
+    });
+
+    socket.on('check_account', (data) => {
+        const { username } = data;
+        if (!username) return;
+        const key = username.trim().toLowerCase();
+        socket.emit('account_check_result', { exists: !!accounts[key] });
+    });
+
+    // =========================================
     // === BOOKMARK SYSTEM ===
     // =========================================
     socket.on('bookmark_message', (data) => {
@@ -2523,6 +2819,9 @@ io.on('connection', (socket) => {
         
         saveFriendships();
         socket.emit('friend_accepted', { username: from });
+        // Envoyer listes mises à jour aux deux
+        emitFriendsListTo(user.username);
+        emitFriendsListTo(from);
         for (const [sid, u] of connectedUsers.entries()) {
             if (u.username === from) {
                 io.to(sid).emit('friend_accepted', { username: user.username });
@@ -2539,6 +2838,9 @@ io.on('connection', (socket) => {
         friendships[user.username].requests = friendships[user.username].requests.filter(u => u !== from);
         friendships[from].pending = friendships[from].pending.filter(u => u !== user.username);
         saveFriendships();
+        // Envoyer listes mises à jour
+        emitFriendsListTo(user.username);
+        emitFriendsListTo(from);
     });
 
     socket.on('remove_friend', (data) => {
@@ -2549,6 +2851,8 @@ io.on('connection', (socket) => {
         if (friendships[target]) friendships[target].friends = friendships[target].friends.filter(u => u !== user.username);
         saveFriendships();
         socket.emit('friend_removed', { username: target });
+        // Envoyer liste mise à jour à l'autre
+        emitFriendsListTo(target);
     });
 
     socket.on('get_friends', () => {
@@ -3004,6 +3308,23 @@ function addToChannelHistory(message, channel) {
     if (channelHistories[channel].length > MAX_CHANNEL_HISTORY) {
         channelHistories[channel] = channelHistories[channel].slice(-MAX_CHANNEL_HISTORY);
     }
+}
+
+// === FONCTION POUR PARTICIPANTS VOCAUX ===
+function getVoiceParticipants(room) {
+    if (!voiceRooms[room]) return [];
+    const participants = [];
+    voiceRooms[room].participants.forEach((data, socketId) => {
+        participants.push({
+            socketId,
+            username: data.username,
+            muted: data.muted,
+            deafened: data.deafened,
+            video: data.video,
+            screen: data.screen
+        });
+    });
+    return participants;
 }
 
 // === FONCTION POUR TYPING PAR SALON ===

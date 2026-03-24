@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>DocSpace V3.0.2B</title>
+    <title>DocSpace V3.0.4B</title>
     
     <!-- Favicon - Icône du chat -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%235865F2' rx='20' width='100' height='100'/><text y='.9em' font-size='80' x='50%' text-anchor='middle'>🗄️</text></svg>">
@@ -2151,21 +2151,24 @@
 
         .ai-suggestions {
             display: flex;
-            gap: 8px;
+            gap: 6px;
             padding: 8px 16px 16px;
             flex-wrap: wrap;
             justify-content: center;
+            max-height: 80px;
+            overflow-y: auto;
         }
 
         .ai-suggestions button {
-            padding: 6px 12px;
+            padding: 5px 10px;
             background: var(--input-bg);
             border: 1px solid var(--border-color);
             border-radius: 16px;
             color: var(--text-primary);
-            font-size: 12px;
+            font-size: 11px;
             cursor: pointer;
             transition: all 0.2s ease;
+            white-space: nowrap;
         }
 
         .ai-suggestions button:hover {
@@ -2776,130 +2779,14 @@
                 padding: 6px 10px;
             }
         }
-        /* Style emoji picker moderne */
-        #emojiPickerPopup {
-            display: none;
-            position: fixed;
-            bottom: 120px; /* Position au-dessus de la zone de chat */
-            right: 20px; /* Aligné à droite */
-            background: #36393f;
-            color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-            padding: 0;
-            width: 350px;
-            height: 400px;
-            z-index: 4000;
-            flex-direction: column;
-            border: 1px solid #202225;
-        }
-
-        .emoji-picker-header {
-            padding: 8px;
-            border-bottom: 1px solid #202225;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .emoji-picker-search {
-            flex: 1;
-            background: #202225;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 4px;
-            color: #dcddde;
-            font-size: 14px;
-            outline: none;
-            direction: ltr;
-        }
-
-        .emoji-picker-search::placeholder {
-            color: #72767d;
-        }
-
-        .emoji-picker-close {
-            background: none;
-            border: none;
-            color: #dcddde;
-            font-size: 20px;
-            cursor: pointer;
-            padding: 0 8px;
-        }
-
-        .emoji-picker-content {
-            flex: 1;
-            overflow-y: auto;
-            padding: 8px;
-        }
-
-        .emoji-picker-section {
-            margin-bottom: 16px;
-        }
-
-        .emoji-picker-section-title {
-            color: #b9bbbe;
-            font-size: 12px;
-            font-weight: 600;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-        }
-
-        .emoji-picker-grid {
-            display: grid;
-            grid-template-columns: repeat(8, 1fr);
-            gap: 2px;
-        }
-
-        .emoji-picker-emoji {
-            aspect-ratio: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 1.5em;
-            border-radius: 3px;
-            transition: background-color 0.1s;
-        }
-
-        .emoji-picker-emoji:hover {
-            background-color: #32353b;
-        }
-
-        .emoji-picker-categories {
-            display: flex;
-            padding: 8px;
-            gap: 2px;
-            border-top: 1px solid #202225;
-            background: #2f3136;
-        }
-
-        .emoji-picker-category-btn {
-            flex: 1;
-            background: none;
-            border: none;
-            color: #b9bbbe;
-            padding: 8px;
-            cursor: pointer;
-            border-radius: 3px;
-            transition: all 0.1s;
-            font-size: 20px;
-        }
-
-        .emoji-picker-category-btn:hover {
-            color: #dcddde;
-            background: #32353b;
-        }
-
-        .emoji-picker-category-btn.active {
-            color: #fff;
-            background: #32353b;
-        }
+        /* Emoji picker styles - see themed version below */
 
         @media (max-width: 600px) {
             #emojiPickerPopup {
                 width: 95vw;
                 max-height: 80vh;
+                right: 2.5vw !important;
+                left: 2.5vw !important;
             }
         }
         /* Emoji reactions */
@@ -4489,6 +4376,56 @@
             overflow: hidden;
             border: 2px solid var(--accent-color);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+        .voice-screen-tile.tile-fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            max-height: 100vh;
+            height: 100vh;
+            border-radius: 0;
+            z-index: 10000;
+            border: none;
+        }
+        .voice-screen-tile.tile-fullscreen .screen-tile-controls {
+            top: 20px;
+            right: 20px;
+            gap: 8px;
+        }
+        .voice-screen-tile.tile-fullscreen .screen-tile-controls button {
+            width: 40px;
+            height: 40px;
+            font-size: 20px;
+        }
+        .voice-screen-tile.tile-minimized {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 320px;
+            max-height: 200px;
+            z-index: 9999;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            cursor: move;
+        }
+        .voice-screen-tile.tile-minimized video {
+            max-height: 200px;
+        }
+        .voice-screen-tile.tile-minimized .screen-tile-controls {
+            top: 4px;
+            right: 4px;
+            gap: 2px;
+        }
+        .voice-screen-tile.tile-minimized .screen-tile-controls button {
+            width: 24px;
+            height: 24px;
+            font-size: 12px;
+        }
+        .voice-screen-tile.tile-minimized .screen-label {
+            font-size: 10px;
+            padding: 2px 8px;
         }
         .voice-screen-tile video {
             width: 100%;
@@ -4507,6 +4444,121 @@
             font-size: 12px;
             font-weight: 600;
             backdrop-filter: blur(4px);
+        }
+        .screen-tile-controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 6px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            z-index: 2;
+        }
+        .voice-screen-tile:hover .screen-tile-controls,
+        .voice-screen-tile.tile-minimized .screen-tile-controls,
+        .voice-screen-tile.tile-fullscreen .screen-tile-controls {
+            opacity: 1;
+        }
+        .screen-tile-controls button {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+            transition: background 0.15s ease;
+        }
+        .screen-tile-controls button:hover {
+            background: rgba(var(--accent-rgb), 0.8);
+        }
+
+        /* Mini barre vocale persistante */
+        .voice-mini-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 16px;
+            background: rgba(var(--accent-rgb), 0.15);
+            border-top: 2px solid rgba(var(--accent-rgb), 0.4);
+            backdrop-filter: blur(12px);
+            z-index: 100;
+            animation: miniBarSlideUp 0.25s ease;
+        }
+        @keyframes miniBarSlideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .voice-mini-bar-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 8px;
+            transition: background 0.15s ease;
+        }
+        .voice-mini-bar-info:hover {
+            background: rgba(var(--accent-rgb), 0.2);
+        }
+        .voice-mini-bar-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #43b581;
+            animation: voicePulse 1.5s ease infinite;
+        }
+        .voice-mini-bar-room {
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--text-primary);
+        }
+        .voice-mini-bar-time {
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-variant-numeric: tabular-nums;
+        }
+        .voice-mini-bar-controls {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .voice-mini-bar-controls button {
+            width: 34px;
+            height: 34px;
+            border: none;
+            border-radius: 10px;
+            background: rgba(var(--accent-rgb), 0.1);
+            color: var(--text-primary);
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s ease, transform 0.1s ease;
+        }
+        .voice-mini-bar-controls button:hover {
+            background: rgba(var(--accent-rgb), 0.3);
+            transform: scale(1.08);
+        }
+        .voice-mini-bar-controls button.mini-active {
+            background: rgba(var(--accent-rgb), 0.4);
+        }
+        .voice-mini-bar-disconnect {
+            background: rgba(240, 71, 71, 0.2) !important;
+        }
+        .voice-mini-bar-disconnect:hover {
+            background: rgba(240, 71, 71, 0.5) !important;
         }
 
         /* Barre de contrôles en bas - style Discord */
@@ -5372,40 +5424,60 @@
             position: fixed;
             bottom: 80px;
             right: 20px;
-            width: 340px;
-            height: 400px;
+            width: 380px;
+            height: 440px;
             background: var(--sidebar-bg);
-            border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            border-radius: 16px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,.05);
             z-index: 4000;
             flex-direction: column;
             border: 1px solid var(--border-color);
             overflow: hidden;
+            animation: gifPickerIn 0.25s cubic-bezier(.22,.61,.36,1);
+            backdrop-filter: blur(12px);
+        }
+        @keyframes gifPickerIn {
+            from { opacity: 0; transform: translateY(10px) scale(.96); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
         .gif-picker.active {
             display: flex;
         }
         .gif-picker-header {
-            padding: 12px;
+            padding: 12px 14px;
             border-bottom: 1px solid var(--border-color);
             display: flex;
             gap: 8px;
+            background: rgba(var(--accent-rgb), .04);
         }
         .gif-search {
             flex: 1;
-            padding: 8px 12px;
+            padding: 10px 14px;
             background: var(--input-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
+            border: 2px solid transparent;
+            border-radius: 10px;
             color: var(--text-primary);
             font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .gif-search:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(var(--accent-rgb), .15);
         }
         .gif-picker-close {
             background: none;
             border: none;
             color: var(--text-secondary);
-            font-size: 20px;
+            font-size: 22px;
             cursor: pointer;
+            border-radius: 8px;
+            padding: 4px 8px;
+            transition: all .15s;
+        }
+        .gif-picker-close:hover {
+            background: rgba(240, 71, 71, .15);
+            color: #f04747;
         }
         .gif-categories {
             display: flex;
@@ -5413,21 +5485,32 @@
             padding: 8px 12px;
             overflow-x: auto;
             border-bottom: 1px solid var(--border-color);
+            background: rgba(var(--accent-rgb), .02);
         }
+        .gif-categories::-webkit-scrollbar { height: 4px; }
+        .gif-categories::-webkit-scrollbar-thumb { background: rgba(var(--accent-rgb), .3); border-radius: 4px; }
         .gif-category {
-            padding: 6px 12px;
+            padding: 6px 14px;
             background: var(--input-bg);
-            border: none;
-            border-radius: 16px;
+            border: 1px solid transparent;
+            border-radius: 20px;
             color: var(--text-secondary);
             font-size: 12px;
+            font-weight: 600;
             cursor: pointer;
             white-space: nowrap;
-            transition: all 0.15s;
+            transition: all 0.2s ease;
         }
-        .gif-category:hover, .gif-category.active {
+        .gif-category:hover {
+            background: rgba(var(--accent-rgb), .12);
+            color: var(--accent-color);
+            border-color: rgba(var(--accent-rgb), .2);
+        }
+        .gif-category.active {
             background: var(--accent-color);
             color: white;
+            border-color: var(--accent-color);
+            box-shadow: 0 2px 8px rgba(var(--accent-rgb), .3);
         }
         .gif-grid {
             flex: 1;
@@ -5437,28 +5520,39 @@
             grid-template-columns: repeat(2, 1fr);
             gap: 8px;
             align-content: start;
+            scroll-behavior: smooth;
         }
+        .gif-grid::-webkit-scrollbar { width: 6px; }
+        .gif-grid::-webkit-scrollbar-thumb { background: rgba(var(--accent-rgb), .3); border-radius: 6px; }
+        .gif-grid::-webkit-scrollbar-thumb:hover { background: rgba(var(--accent-rgb), .5); }
         .gif-item {
-            border-radius: 8px;
+            border-radius: 10px;
             overflow: hidden;
             cursor: pointer;
             aspect-ratio: 4/3;
             background: var(--input-bg);
             position: relative;
             min-height: 80px;
+            border: 2px solid transparent;
+            transition: all .2s ease;
+        }
+        .gif-item:hover {
+            border-color: var(--accent-color);
+            box-shadow: 0 4px 12px rgba(var(--accent-rgb), .25);
+            transform: scale(1.02);
         }
         .gif-item img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transition: transform 0.2s;
+            transition: transform 0.25s ease;
             display: block;
             position: absolute;
             top: 0;
             left: 0;
         }
         .gif-item:hover img {
-            transform: scale(1.05);
+            transform: scale(1.08);
         }
         .gif-loading {
             display: flex;
@@ -5471,12 +5565,14 @@
             font-size: 14px;
         }
         .gif-powered-by {
-            padding: 8px;
+            padding: 6px;
             text-align: center;
             font-size: 10px;
             color: var(--text-secondary);
-            background: var(--input-bg);
+            background: rgba(var(--accent-rgb), .04);
             border-top: 1px solid var(--border-color);
+            font-weight: 600;
+            letter-spacing: .3px;
         }
         .gif-btn {
             padding: 8px;
@@ -5731,6 +5827,62 @@
         .pinned-message-content {
             font-size: 13px;
             color: var(--text-primary);
+        }
+
+        /* Combined Pinned + Saved Panel */
+        .pinned-saved-panel {
+            position: absolute;
+            top: 50px;
+            right: 16px;
+            width: 380px;
+            max-height: 480px;
+            background: var(--sidebar-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+            z-index: 500;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .pinned-saved-panel.active {
+            display: flex;
+        }
+        .pinned-saved-header {
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--main-bg);
+        }
+        .pinned-saved-tabs {
+            display: flex;
+            gap: 4px;
+        }
+        .ps-tab {
+            padding: 8px 16px;
+            border: none;
+            background: none;
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.15s ease;
+        }
+        .ps-tab:hover {
+            background: var(--hover-bg);
+            color: var(--text-primary);
+        }
+        .ps-tab.active {
+            background: var(--accent-color);
+            color: white;
+        }
+        .ps-content {
+            flex: 1;
+            overflow-y: auto;
+            max-height: 420px;
         }
 
         .message.pinned {
@@ -6000,41 +6152,47 @@
             right: 20px;
             background: var(--sidebar-bg);
             color: var(--text-primary);
-            border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            border-radius: 16px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255,255,255,.05);
             padding: 0;
-            width: 380px;
-            height: 420px;
+            width: 400px;
+            height: 440px;
             z-index: 4000;
             flex-direction: column;
             border: 1px solid var(--border-color);
-            animation: slideUp 0.2s ease;
+            animation: emojiPickerIn 0.25s cubic-bezier(.22,.61,.36,1);
+            backdrop-filter: blur(12px);
+            overflow: hidden;
+        }
+        @keyframes emojiPickerIn {
+            from { opacity: 0; transform: translateY(10px) scale(.96); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
 
         .emoji-picker-header {
-            padding: 12px;
+            padding: 12px 14px;
             border-bottom: 1px solid var(--border-color);
             display: flex;
             align-items: center;
             gap: 10px;
-            background: var(--input-bg);
-            border-radius: 12px 12px 0 0;
+            background: rgba(var(--accent-rgb), .04);
         }
 
         .emoji-picker-search {
             flex: 1;
-            background: var(--sidebar-bg);
-            border: 1px solid var(--border-color);
+            background: var(--input-bg);
+            border: 2px solid transparent;
             padding: 10px 14px;
-            border-radius: 8px;
+            border-radius: 10px;
             color: var(--text-primary);
-            font-size: 14px;
+            font-size: 13px;
             outline: none;
-            transition: border-color 0.15s ease;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
         .emoji-picker-search:focus {
             border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(var(--accent-rgb), .15);
         }
 
         .emoji-picker-search::placeholder {
@@ -6048,38 +6206,44 @@
             font-size: 22px;
             cursor: pointer;
             padding: 4px 8px;
-            border-radius: 6px;
+            border-radius: 8px;
             transition: all 0.15s ease;
         }
 
         .emoji-picker-close:hover {
-            background: var(--hover-bg);
-            color: var(--text-primary);
+            background: rgba(240, 71, 71, .15);
+            color: #f04747;
         }
 
         .emoji-picker-content {
             flex: 1;
             overflow-y: auto;
-            padding: 12px;
+            padding: 10px 12px;
+            scroll-behavior: smooth;
         }
 
+        .emoji-picker-content::-webkit-scrollbar { width: 6px; }
+        .emoji-picker-content::-webkit-scrollbar-thumb { background: rgba(var(--accent-rgb), .3); border-radius: 6px; }
+        .emoji-picker-content::-webkit-scrollbar-thumb:hover { background: rgba(var(--accent-rgb), .5); }
+
         .emoji-picker-section {
-            margin-bottom: 16px;
+            margin-bottom: 14px;
         }
 
         .emoji-picker-section-title {
             color: var(--text-secondary);
             font-size: 11px;
-            font-weight: 700;
-            margin-bottom: 10px;
+            font-weight: 800;
+            margin-bottom: 8px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.8px;
+            padding-left: 2px;
         }
 
         .emoji-picker-grid {
             display: grid;
             grid-template-columns: repeat(8, 1fr);
-            gap: 4px;
+            gap: 3px;
         }
 
         .emoji-picker-emoji {
@@ -6089,22 +6253,21 @@
             justify-content: center;
             cursor: pointer;
             font-size: 1.4em;
-            border-radius: 6px;
-            transition: all 0.1s ease;
+            border-radius: 8px;
+            transition: all 0.15s ease;
         }
 
         .emoji-picker-emoji:hover {
-            background: var(--hover-bg);
-            transform: scale(1.2);
+            background: rgba(var(--accent-rgb), .15);
+            transform: scale(1.25);
         }
 
         .emoji-picker-categories {
             display: flex;
-            padding: 8px;
-            gap: 4px;
+            padding: 6px 8px;
+            gap: 2px;
             border-top: 1px solid var(--border-color);
-            background: var(--input-bg);
-            border-radius: 0 0 12px 12px;
+            background: rgba(var(--accent-rgb), .04);
         }
 
         .emoji-picker-category-btn {
@@ -6112,11 +6275,12 @@
             background: none;
             border: none;
             color: var(--text-secondary);
-            padding: 10px;
+            padding: 8px 4px;
             cursor: pointer;
-            border-radius: 6px;
+            border-radius: 8px;
             transition: all 0.15s ease;
-            font-size: 18px;
+            font-size: 17px;
+            position: relative;
         }
 
         .emoji-picker-category-btn:hover {
@@ -6125,8 +6289,18 @@
         }
 
         .emoji-picker-category-btn.active {
-            color: white;
+            color: var(--accent-color);
+            background: rgba(var(--accent-rgb), .12);
+        }
+        .emoji-picker-category-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: 2px;
+            left: 25%;
+            width: 50%;
+            height: 3px;
             background: var(--accent-color);
+            border-radius: 3px;
         }
 
         /* Header buttons */
@@ -6208,9 +6382,27 @@
         .header-more-dropdown.open .header-more-item:nth-child(7)  { transition-delay: 0.14s; }
         .header-more-dropdown.open .header-more-item:nth-child(8)  { transition-delay: 0.16s; }
         .header-more-dropdown.open .header-more-item:nth-child(9)  { transition-delay: 0.18s; }
-        .header-more-dropdown.open .header-more-item:nth-child(10) { transition-delay: 0.20s; }
-        .header-more-dropdown.open .header-more-item:nth-child(11) { transition-delay: 0.22s; }
-        .header-more-dropdown.open .header-more-item:nth-child(12) { transition-delay: 0.24s; }
+
+        .header-more-dropdown.open .header-group { 
+            transform: scale(1) translateY(0);
+            opacity: 1;
+            transition-delay: 0.02s;
+        }
+
+        .header-more-dropdown .header-group {
+            transform: scale(0) translateY(-8px);
+            opacity: 0;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease;
+        }
+
+        .header-more-dropdown.open .header-separator {
+            opacity: 0.5;
+            transition-delay: 0.05s;
+        }
+        .header-more-dropdown .header-separator {
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
 
         .header-more-item {
             display: flex;
@@ -6233,6 +6425,42 @@
             color: white;
             transform: translateY(-1px) scale(1.05);
             box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+        }
+
+        .header-separator {
+            width: 2px;
+            height: 20px;
+            background: var(--border-color);
+            border-radius: 1px;
+            flex-shrink: 0;
+            opacity: 0.5;
+        }
+
+        .header-group {
+            display: flex;
+            gap: 3px;
+            background: rgba(var(--accent-rgb, 88,101,242), 0.08);
+            border-radius: 10px;
+            padding: 2px;
+            flex-shrink: 0;
+        }
+
+        .header-group .header-more-item {
+            border-radius: 8px;
+        }
+
+        .pinned-saved-dot {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            width: 6px;
+            height: 6px;
+            background: #f04747;
+            border-radius: 50%;
+        }
+
+        .header-more-item {
+            position: relative;
         }
 
         .header-more-item:active {
@@ -6452,52 +6680,131 @@
         /* ====== MINI-JEUX STYLES ====== */
         .games-modal {
             width: 90%;
-            max-width: 600px;
+            max-width: 650px;
             max-height: 85vh;
             overflow-y: auto;
         }
 
+        .games-modal-header {
+            background: linear-gradient(135deg, rgba(var(--accent-rgb, 88,101,242), 0.15), transparent);
+        }
+
         .games-menu {
-            padding: 20px;
+            padding: 16px 20px;
+        }
+
+        .games-category-label {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            letter-spacing: 0.5px;
+            margin: 16px 0 8px 4px;
+        }
+        .games-category-label:first-child {
+            margin-top: 0;
         }
 
         .games-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        @media (max-width: 600px) {
+            .games-grid { grid-template-columns: repeat(2, 1fr); }
         }
 
         .game-card {
             background: var(--input-bg);
             border: 2px solid var(--border-color);
             border-radius: 16px;
-            padding: 20px;
+            padding: 16px 12px 12px;
             text-align: center;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+            overflow: hidden;
         }
+
+        .game-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            border-radius: 16px 16px 0 0;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .game-card:hover::before { opacity: 1; }
+        .game-card-multi::before { background: linear-gradient(90deg, #ef4444, #f97316); }
+        .game-card-brain::before { background: linear-gradient(90deg, #8b5cf6, #6366f1); }
+        .game-card-solo::before { background: linear-gradient(90deg, #22c55e, #14b8a6); }
 
         .game-card:hover {
             border-color: var(--accent-color);
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+        }
+
+        .game-card-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            font-size: 9px;
+            font-weight: 800;
+            background: var(--accent-color);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 6px;
+            letter-spacing: 0.5px;
+        }
+
+        .game-icon-wrap {
+            width: 52px;
+            height: 52px;
+            margin: 0 auto 8px;
+            background: rgba(var(--accent-rgb, 88,101,242), 0.1);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .game-icon {
-            font-size: 40px;
-            margin-bottom: 10px;
+            font-size: 28px;
         }
 
         .game-name {
-            font-size: 16px;
-            font-weight: 600;
+            font-size: 14px;
+            font-weight: 700;
             color: var(--text-primary);
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
 
         .game-desc {
-            font-size: 12px;
+            font-size: 11px;
             color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+
+        .game-tags {
+            display: flex;
+            gap: 4px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .game-tag {
+            font-size: 9px;
+            padding: 2px 6px;
+            background: rgba(var(--accent-rgb, 88,101,242), 0.08);
+            color: var(--accent-color);
+            border-radius: 4px;
+            font-weight: 600;
         }
 
         .game-invites {
@@ -6539,6 +6846,75 @@
             background: #ef4444;
             color: white;
         }
+
+        /* Game Invite Toast Notification */
+        .game-invite-toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 320px;
+            background: var(--sidebar-bg);
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--accent-color);
+            border-radius: 12px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+            z-index: 10002;
+            overflow: hidden;
+            transform: translateX(120%);
+            opacity: 0;
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+        }
+        .game-invite-toast.active {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        .git-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            background: rgba(var(--accent-rgb, 88,101,242), 0.1);
+            border-bottom: 1px solid var(--border-color);
+        }
+        .git-icon { font-size: 18px; }
+        .git-title { font-weight: 700; font-size: 13px; color: var(--text-primary); flex: 1; }
+        .git-close { background: none; border: none; color: var(--text-secondary); font-size: 18px; cursor: pointer; padding: 0 4px; }
+        .git-close:hover { color: var(--text-primary); }
+        .git-body { padding: 12px 14px; }
+        .git-from { font-size: 14px; color: var(--text-primary); margin-bottom: 4px; }
+        .git-game { font-size: 20px; font-weight: 700; color: var(--accent-color); }
+        .git-actions {
+            display: flex;
+            gap: 8px;
+            padding: 10px 14px;
+            border-top: 1px solid var(--border-color);
+        }
+        .git-accept {
+            flex: 1;
+            padding: 8px;
+            background: #22c55e;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.15s;
+        }
+        .git-accept:hover { background: #16a34a; transform: scale(1.02); }
+        .git-decline {
+            flex: 1;
+            padding: 8px;
+            background: var(--input-bg);
+            color: var(--text-secondary);
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.15s;
+        }
+        .git-decline:hover { background: #ef4444; color: white; }
 
         .game-area {
             padding: 20px;
@@ -6593,6 +6969,113 @@
             justify-content: center;
             gap: 10px;
             flex-wrap: wrap;
+        }
+
+        /* Game Rematch Overlay */
+        .game-end-overlay {
+            text-align: center;
+            padding: 24px;
+            background: linear-gradient(135deg, rgba(var(--accent-rgb, 88,101,242), 0.08), transparent);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            margin-top: 16px;
+        }
+        .game-end-result {
+            font-size: 48px;
+            margin-bottom: 8px;
+        }
+        .game-end-text {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+        .game-end-sub {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+        .game-end-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        .game-btn-rematch {
+            padding: 10px 24px;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .game-btn-rematch:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(var(--accent-rgb, 88,101,242), 0.4);
+        }
+        .game-btn-menu {
+            padding: 10px 24px;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .game-btn-menu:hover {
+            background: var(--hover-bg);
+        }
+
+        /* Mode Selector (Solo/Multi) */
+        .game-mode-selector-panel {
+            text-align: center;
+            padding: 30px;
+        }
+        .game-mode-selector-panel h3 {
+            font-size: 18px;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+        }
+        .game-mode-cards {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+        .game-mode-card {
+            padding: 24px 28px;
+            background: var(--input-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            min-width: 140px;
+        }
+        .game-mode-card:hover {
+            border-color: var(--accent-color);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+        }
+        .game-mode-card-icon {
+            font-size: 36px;
+            margin-bottom: 8px;
+        }
+        .game-mode-card-title {
+            font-weight: 700;
+            font-size: 15px;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+        .game-mode-card-desc {
+            font-size: 11px;
+            color: var(--text-secondary);
         }
 
         /* Morpion (Tic-Tac-Toe) */
@@ -7101,18 +7584,36 @@
         .friend-actions .remove-btn { background: var(--input-bg); color: var(--text-secondary); }
 
         /* ========== XP / LEVELING ========== */
-        .xp-bar-container { background: var(--input-bg); border-radius: 10px; height: 16px; overflow: hidden; margin: 6px 0; position: relative; }
-        .xp-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent-color), #43b581); border-radius: 10px; transition: width .5s ease; }
-        .xp-bar-text { position: absolute; top: 0; left: 50%; transform: translateX(-50%); font-size: 10px; font-weight: 700; color: white; line-height: 16px; text-shadow: 0 1px 2px rgba(0,0,0,.5); }
-        .level-badge { display: inline-flex; align-items: center; gap: 3px; background: var(--accent-color); color: white; padding: 1px 7px; border-radius: 10px; font-size: 11px; font-weight: 700; }
-        .leaderboard-list { max-height: 400px; overflow-y: auto; }
-        .leaderboard-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; margin-bottom: 4px; }
-        .leaderboard-item:nth-child(1) { background: linear-gradient(90deg, rgba(255,215,0,.15), transparent); }
-        .leaderboard-item:nth-child(2) { background: linear-gradient(90deg, rgba(192,192,192,.15), transparent); }
-        .leaderboard-item:nth-child(3) { background: linear-gradient(90deg, rgba(205,127,50,.15), transparent); }
-        .leaderboard-rank { font-weight: 800; font-size: 16px; width: 28px; text-align: center; color: var(--text-secondary); }
-        .leaderboard-name { flex: 1; font-weight: 600; color: var(--text-primary); }
-        .leaderboard-xp { color: var(--accent-color); font-weight: 700; font-size: 13px; }
+        .xp-bar-container { background: var(--input-bg); border-radius: 12px; height: 22px; overflow: hidden; margin: 8px 0; position: relative; box-shadow: inset 0 2px 6px rgba(0,0,0,.3); }
+        .xp-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent-color), #43b581, #00d4aa); border-radius: 12px; transition: width .8s cubic-bezier(.4,0,.2,1); position: relative; overflow: hidden; }
+        .xp-bar-fill::after { content: ''; position: absolute; top: 0; left: -100%; width: 200%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,.2), transparent); animation: xpShine 2s ease-in-out infinite; }
+        @keyframes xpShine { 0% { left: -100%; } 100% { left: 100%; } }
+        .xp-bar-text { position: absolute; top: 0; left: 50%; transform: translateX(-50%); font-size: 11px; font-weight: 800; color: white; line-height: 22px; text-shadow: 0 1px 3px rgba(0,0,0,.6); letter-spacing: .5px; }
+        .level-badge { display: inline-flex; align-items: center; gap: 4px; background: linear-gradient(135deg, var(--accent-color), #43b581); color: white; padding: 4px 12px; border-radius: 12px; font-size: 13px; font-weight: 800; box-shadow: 0 2px 8px rgba(var(--accent-rgb),.4); text-shadow: 0 1px 2px rgba(0,0,0,.3); }
+        .xp-hero-section { padding: 16px; background: linear-gradient(135deg, rgba(var(--accent-rgb),.15), rgba(67,181,129,.1)); border-radius: 12px; margin: 12px 15px; border: 1px solid rgba(var(--accent-rgb),.2); position: relative; overflow: hidden; }
+        .xp-hero-section::before { content: ''; position: absolute; top: -50%; right: -50%; width: 100%; height: 100%; background: radial-gradient(circle, rgba(var(--accent-rgb),.08) 0%, transparent 70%); pointer-events: none; }
+        .xp-hero-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; position: relative; z-index: 1; }
+        .xp-hero-info { display: flex; flex-direction: column; gap: 2px; }
+        .xp-hero-title { font-weight: 800; color: var(--text-primary); font-size: 16px; }
+        .xp-hero-sub { color: var(--text-secondary); font-size: 12px; }
+        .xp-level-circle { width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-color), #43b581); display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 900; color: white; text-shadow: 0 2px 4px rgba(0,0,0,.3); box-shadow: 0 4px 15px rgba(var(--accent-rgb),.5), 0 0 20px rgba(var(--accent-rgb),.2); position: relative; }
+        .xp-level-circle::after { content: ''; position: absolute; inset: -3px; border-radius: 50%; border: 2px solid rgba(var(--accent-rgb),.4); animation: xpPulseRing 2s ease-in-out infinite; }
+        @keyframes xpPulseRing { 0%, 100% { transform: scale(1); opacity: .6; } 50% { transform: scale(1.08); opacity: 1; } }
+        .xp-stats-row { display: flex; gap: 8px; margin-top: 10px; position: relative; z-index: 1; }
+        .xp-stat-chip { flex: 1; text-align: center; padding: 6px 8px; background: rgba(var(--accent-rgb),.1); border-radius: 8px; border: 1px solid rgba(var(--accent-rgb),.15); }
+        .xp-stat-chip .xp-stat-val { font-weight: 800; color: var(--accent-color); font-size: 14px; }
+        .xp-stat-chip .xp-stat-label { font-size: 10px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .5px; }
+        .leaderboard-list { max-height: 350px; overflow-y: auto; padding: 0 15px 10px !important; }
+        .leaderboard-title { font-size: 13px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; padding: 10px 15px 6px; }
+        .leaderboard-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 10px; margin-bottom: 4px; transition: all .2s ease; border: 1px solid transparent; }
+        .leaderboard-item:hover { background: rgba(var(--accent-rgb),.08); border-color: rgba(var(--accent-rgb),.15); transform: translateX(2px); }
+        .leaderboard-item:nth-child(1) { background: linear-gradient(90deg, rgba(255,215,0,.12), transparent); border-left: 3px solid #ffd700; }
+        .leaderboard-item:nth-child(2) { background: linear-gradient(90deg, rgba(192,192,192,.12), transparent); border-left: 3px solid #c0c0c0; }
+        .leaderboard-item:nth-child(3) { background: linear-gradient(90deg, rgba(205,127,50,.12), transparent); border-left: 3px solid #cd7f32; }
+        .leaderboard-rank { font-weight: 900; font-size: 18px; width: 32px; text-align: center; }
+        .leaderboard-name { flex: 1; font-weight: 700; color: var(--text-primary); font-size: 14px; }
+        .leaderboard-xp { color: var(--accent-color); font-weight: 800; font-size: 13px; display: flex; flex-direction: column; align-items: flex-end; }
+        .leaderboard-xp-sub { font-size: 10px; color: var(--text-secondary); font-weight: 600; }
 
         /* ========== REMINDERS ========== */
         .reminder-item { display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--message-bg); border-radius: 8px; margin-bottom: 6px; }
@@ -7268,15 +7769,21 @@
                 <div class="header-actions">
                     <button class="header-btn header-more-btn" id="headerMoreBtn" onclick="toggleHeaderMore()" title="Plus d'options" data-i18n-title="btn_more">•••</button>
                     <div class="header-more-dropdown" id="headerMoreDropdown">
-                    <button class="header-more-item" onclick="toggleChannelsSidebar()" title="Salons" data-i18n-text="btn_channels">📺</button>
-                    <button class="header-more-item" onclick="toggleDMSidebar()" title="Messages privés" data-i18n-text="btn_dm">💬<span class="dm-unread-badge" id="dmUnreadBadge" style="display:none;">0</span></button>
+                    <!-- Social -->
+                    <div class="header-group" data-group="social">
+                        <button class="header-more-item social-item" onclick="toggleDMSidebar()" title="Messages privés" data-i18n-text="btn_dm">💬<span class="dm-unread-badge" id="dmUnreadBadge" style="display:none;">0</span></button>
+                        <button class="header-more-item social-item" onclick="openFriendsModal()" title="Amis" data-i18n-text="btn_friends">👥</button>
+                    </div>
+                    <span class="header-separator"></span>
+                    <!-- Contenu -->
+                    <button class="header-more-item" onclick="togglePinnedSavedPanel()" title="Épinglés & Sauvegardés" data-i18n-text="btn_pinned">📌<span class="pinned-saved-dot" id="pinnedSavedDot" style="display:none;"></span></button>
                     <button class="header-more-item" onclick="toggleSearch()" title="Rechercher" data-i18n-text="btn_search">🔍</button>
-                    <button class="header-more-item" onclick="openGallery()" title="Stockage" data-i18n-text="btn_storage">📁</button>
-                    <button class="header-more-item" onclick="togglePinnedPanel()" title="Épinglés" data-i18n-text="btn_pinned">📌</button>
+                    <span class="header-separator"></span>
+                    <!-- Divertissement -->
                     <button class="header-more-item" onclick="openGamesModal()" title="Mini-jeux" data-i18n-text="btn_games">🎮</button>
                     <button class="header-more-item" onclick="openSoundboard()" title="Soundboard" data-i18n-text="btn_soundboard">🔊</button>
-                    <button class="header-more-item" onclick="openFriendsModal()" title="Amis" data-i18n-text="btn_friends">👥</button>
-                    <button class="header-more-item" onclick="openBookmarksModal()" title="Sauvegardés" data-i18n-text="btn_bookmarks">🔖</button>
+                    <span class="header-separator"></span>
+                    <!-- Stats & outils -->
                     <button class="header-more-item" onclick="openLeaderboard()" title="Classement XP" data-i18n-text="btn_leaderboard">🏆</button>
                     <button class="header-more-item" onclick="openAIChat()" title="Assistant IA" data-i18n-text="btn_ai">🤖</button>
                     <button class="header-more-item" onclick="openServerStats()" title="Statistiques" data-i18n-text="btn_stats">📊</button>
@@ -7288,20 +7795,40 @@
         </div>
         
         <!-- Barre des messages épinglés -->
-        <div class="pinned-messages-bar" id="pinnedBar" onclick="togglePinnedPanel()">
+        <div class="pinned-messages-bar" id="pinnedBar" onclick="togglePinnedSavedPanel()">
             <span class="pin-icon">📌</span>
             <span class="pinned-count" id="pinnedCount">0 message épinglé</span>
             <span class="pinned-preview" id="pinnedPreview"></span>
         </div>
         
-        <!-- Panneau des messages épinglés -->
-        <div class="pinned-messages-panel" id="pinnedPanel">
+        <!-- Panneau combiné Épinglés + Sauvegardés -->
+        <div class="pinned-saved-panel" id="pinnedSavedPanel">
+            <div class="pinned-saved-header">
+                <div class="pinned-saved-tabs">
+                    <button class="ps-tab active" onclick="switchPSTab('pinned')" data-tab="pinned">📌 Épinglés</button>
+                    <button class="ps-tab" onclick="switchPSTab('saved')" data-tab="saved">🔖 Sauvegardés</button>
+                </div>
+                <span class="pinned-panel-close" onclick="togglePinnedSavedPanel()">×</span>
+            </div>
+            <div class="ps-content" id="psPinnedContent">
+                <div class="pinned-messages-list" id="pinnedList">
+                    <!-- Messages épinglés ici -->
+                </div>
+            </div>
+            <div class="ps-content" id="psSavedContent" style="display:none;">
+                <div class="bookmarks-list" id="pinnedSavedBookmarksList">
+                    <div style="text-align: center; padding: 40px; color: var(--text-secondary);">Aucun message sauvegardé</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Panneau des messages épinglés (ancien, caché) -->
+        <div class="pinned-messages-panel" id="pinnedPanel" style="display:none;">
             <div class="pinned-panel-header">
                 <span>📌 Messages épinglés</span>
                 <span class="pinned-panel-close" onclick="togglePinnedPanel()">×</span>
             </div>
-            <div class="pinned-messages-list" id="pinnedList">
-                <!-- Messages épinglés ici -->
+            <div class="pinned-messages-list" id="pinnedListOld">
             </div>
         </div>
         
@@ -7386,6 +7913,13 @@
                         <span class="voice-user-count" data-voice-room="Vocal Musique" data-count="0">0</span>
                     </div>
                     <div class="voice-channel-participants" data-voice-room="Vocal Musique"></div>
+                    
+                    <!-- Stockage -->
+                    <div class="channel-category">📁 Stockage</div>
+                    <div class="channel-item storage-sidebar-btn" onclick="openGallery()">
+                        <span class="channel-icon">📁</span>
+                        <span class="channel-name">Fichiers & Médias</span>
+                    </div>
                 </div>
             </div>
 
@@ -7413,6 +7947,11 @@
                     </div>
                     <div class="voice-view-screen-area" id="voiceScreenArea" style="display: none;">
                         <!-- Zone pour le partage d'écran / vidéo principale -->
+                    </div>
+                    <div class="voice-waves">
+                        <div class="voice-wave"></div>
+                        <div class="voice-wave"></div>
+                        <div class="voice-wave"></div>
                     </div>
                     <div class="voice-view-controls" id="voiceViewControls">
                         <button class="vc-btn" id="vcMuteBtn" onclick="toggleVoiceMute()" title="Micro">
@@ -7443,6 +7982,22 @@
                     ↓
                     <span class="scroll-bottom-badge" id="scrollBottomBadge" style="display: none;">0</span>
                 </button>
+
+                <!-- Barre vocale persistante (visible quand on navigue ailleurs pendant un appel vocal) -->
+                <div class="voice-mini-bar" id="voiceMiniBar" style="display: none;">
+                    <div class="voice-mini-bar-info" onclick="returnToVoiceView()">
+                        <div class="voice-mini-bar-dot"></div>
+                        <span class="voice-mini-bar-room" id="voiceMiniBarRoom">Vocal</span>
+                        <span class="voice-mini-bar-time" id="voiceMiniBarTime">00:00</span>
+                    </div>
+                    <div class="voice-mini-bar-controls">
+                        <button onclick="toggleVoiceMute()" id="miniMuteBtn" title="Micro">🎤</button>
+                        <button onclick="toggleVoiceDeafen()" id="miniDeafenBtn" title="Son">🔊</button>
+                        <button onclick="toggleVoiceVideo()" id="miniVideoBtn" title="Caméra">📷</button>
+                        <button onclick="toggleVoiceScreen()" id="miniScreenBtn" title="Écran">🖥️</button>
+                        <button onclick="leaveVoiceChannel()" class="voice-mini-bar-disconnect" title="Quitter">📞</button>
+                    </div>
+                </div>
 
                 <!-- Sidebar utilisateurs -->
                 <div class="users-sidebar">
@@ -7982,60 +8537,80 @@
     <!-- Modal Mini-Jeux -->
     <div id="gamesModal" class="modal">
         <div class="modal-content games-modal">
-            <div class="modal-header">
+            <div class="modal-header games-modal-header">
                 <h3>🎮 Mini-Jeux</h3>
                 <span class="close" onclick="closeGamesModal()">&times;</span>
             </div>
             
             <!-- Menu des jeux -->
             <div id="gamesMenu" class="games-menu">
-                <div class="games-grid">
-                    <div class="game-card" onclick="startGame('tictactoe')">
-                        <div class="game-icon">⭕</div>
-                        <div class="game-name">Morpion</div>
-                        <div class="game-desc">2 joueurs • Classique</div>
-                    </div>
-                    <div class="game-card" onclick="startGame('connect4')">
-                        <div class="game-icon">🔴</div>
-                        <div class="game-name">Puissance 4</div>
-                        <div class="game-desc">2 joueurs • Stratégie</div>
-                    </div>
-                    <div class="game-card" onclick="startGame('rps')">
-                        <div class="game-icon">✊</div>
-                        <div class="game-name">Pierre-Papier-Ciseaux</div>
-                        <div class="game-desc">2 joueurs • Rapide</div>
-                    </div>
-                    <div class="game-card" onclick="startGame('quiz')">
-                        <div class="game-icon">❓</div>
-                        <div class="game-name">Quiz</div>
-                        <div class="game-desc">Multijoueur • Culture</div>
-                    </div>
-                    <div class="game-card" onclick="startGame('guess')">
-                        <div class="game-icon">🔢</div>
-                        <div class="game-name">Devine le Nombre</div>
-                        <div class="game-desc">Solo • Réflexion</div>
-                    </div>
-                    <div class="game-card" onclick="startGame('memory')">
-                        <div class="game-icon">🧠</div>
-                        <div class="game-name">Memory</div>
-                        <div class="game-desc">Solo • Mémoire</div>
-                    </div>
-                    <div class="game-card" onclick="startHangman()">
-                        <div class="game-icon">💀</div>
-                        <div class="game-name">Pendu</div>
-                        <div class="game-desc">Solo • Mots</div>
-                    </div>
-                    <div class="game-card" onclick="startTrivia()">
-                        <div class="game-icon">🧠</div>
-                        <div class="game-name">Trivia</div>
-                        <div class="game-desc">Solo • Culture G</div>
-                    </div>
-                </div>
-                
-                <!-- Invitations en attente -->
+                <!-- Invitations en attente (en haut) -->
                 <div id="gameInvites" class="game-invites" style="display:none;">
                     <h4>📨 Invitations reçues</h4>
                     <div id="gameInvitesList"></div>
+                </div>
+                
+                <div class="games-category-label">⚔️ Multijoueur</div>
+                <div class="games-grid">
+                    <div class="game-card game-card-multi" onclick="startGame('tictactoe')">
+                        <div class="game-card-badge">2P</div>
+                        <div class="game-icon-wrap"><div class="game-icon">⭕</div></div>
+                        <div class="game-name">Morpion</div>
+                        <div class="game-desc">Classique • Bot ou Joueur</div>
+                        <div class="game-tags"><span class="game-tag">Stratégie</span><span class="game-tag">Rapide</span></div>
+                    </div>
+                    <div class="game-card game-card-multi" onclick="startGame('connect4')">
+                        <div class="game-card-badge">2P</div>
+                        <div class="game-icon-wrap"><div class="game-icon">🔴</div></div>
+                        <div class="game-name">Puissance 4</div>
+                        <div class="game-desc">Stratégie • Bot ou Joueur</div>
+                        <div class="game-tags"><span class="game-tag">Stratégie</span><span class="game-tag">Réflexion</span></div>
+                    </div>
+                    <div class="game-card game-card-multi" onclick="startGame('rps')">
+                        <div class="game-card-badge">VS</div>
+                        <div class="game-icon-wrap"><div class="game-icon">✊</div></div>
+                        <div class="game-name">Pierre-Papier-Ciseaux</div>
+                        <div class="game-desc">Rapide • VS Bot</div>
+                        <div class="game-tags"><span class="game-tag">Rapide</span><span class="game-tag">Chance</span></div>
+                    </div>
+                </div>
+                
+                <div class="games-category-label">🧠 Culture & Quiz</div>
+                <div class="games-grid">
+                    <div class="game-card game-card-brain" onclick="showQuizModeSelector()">
+                        <div class="game-icon-wrap"><div class="game-icon">❓</div></div>
+                        <div class="game-name">Quiz</div>
+                        <div class="game-desc">Solo ou Multijoueur</div>
+                        <div class="game-tags"><span class="game-tag">Culture</span><span class="game-tag">10 questions</span></div>
+                    </div>
+                    <div class="game-card game-card-brain" onclick="showTriviaModeSelector()">
+                        <div class="game-icon-wrap"><div class="game-icon">🧠</div></div>
+                        <div class="game-name">Trivia</div>
+                        <div class="game-desc">Solo ou Multijoueur</div>
+                        <div class="game-tags"><span class="game-tag">Culture G</span><span class="game-tag">XP</span></div>
+                    </div>
+                    <div class="game-card game-card-brain" onclick="showHangmanModeSelector()">
+                        <div class="game-icon-wrap"><div class="game-icon">💀</div></div>
+                        <div class="game-name">Pendu</div>
+                        <div class="game-desc">Solo ou Multijoueur</div>
+                        <div class="game-tags"><span class="game-tag">Mots</span><span class="game-tag">XP</span></div>
+                    </div>
+                </div>
+                
+                <div class="games-category-label">🎲 Solo</div>
+                <div class="games-grid">
+                    <div class="game-card game-card-solo" onclick="startGame('guess')">
+                        <div class="game-icon-wrap"><div class="game-icon">🔢</div></div>
+                        <div class="game-name">Devine le Nombre</div>
+                        <div class="game-desc">1-100 • 7 essais</div>
+                        <div class="game-tags"><span class="game-tag">Réflexion</span></div>
+                    </div>
+                    <div class="game-card game-card-solo" onclick="startGame('memory')">
+                        <div class="game-icon-wrap"><div class="game-icon">🃏</div></div>
+                        <div class="game-name">Memory</div>
+                        <div class="game-desc">Trouve les paires</div>
+                        <div class="game-tags"><span class="game-tag">Mémoire</span></div>
+                    </div>
                 </div>
             </div>
             
@@ -8077,6 +8652,7 @@
                 <button class="friends-tab" onclick="showFriendsTab('online')">En ligne</button>
                 <button class="friends-tab" onclick="showFriendsTab('pending')">En attente</button>
                 <button class="friends-tab" onclick="showFriendsTab('requests')">Demandes <span class="tab-badge" id="friendRequestsBadge" style="display:none">0</span></button>
+                <button class="friends-tab" onclick="showFriendsTab('blocked')">🚫 Bloqués</button>
             </div>
             <div class="friends-list-container" id="friendsListContainer">
                 <div style="text-align: center; padding: 30px; color: var(--text-secondary);">Aucun ami pour le moment</div>
@@ -8086,25 +8662,40 @@
 
     <!-- Modal Leaderboard XP -->
     <div id="leaderboardModal" class="modal">
-        <div class="modal-content" style="max-width: 450px;">
+        <div class="modal-content" style="max-width: 480px;">
             <div class="modal-header">
-                <h3>🏆 Classement XP</h3>
+                <h3>⚔️ Classement & XP</h3>
                 <span class="close" onclick="document.getElementById('leaderboardModal').style.display='none'">&times;</span>
             </div>
-            <div style="padding: 12px; background: var(--message-bg); border-radius: 8px; margin: 10px 15px;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <div style="font-weight: 700; color: var(--text-primary); font-size: 15px;">Ton niveau</div>
-                        <div style="color: var(--text-secondary); font-size: 12px;" id="myXPInfo">Niveau 0 • 0 XP</div>
+            <div class="xp-hero-section">
+                <div class="xp-hero-top">
+                    <div class="xp-hero-info">
+                        <div class="xp-hero-title" id="myXPTitle">Guerrier Niveau 0</div>
+                        <div class="xp-hero-sub" id="myXPInfo">0 XP total</div>
                     </div>
-                    <div class="level-badge" id="myLevelBadge">Nv. 0</div>
+                    <div class="xp-level-circle" id="myLevelCircle">0</div>
                 </div>
-                <div class="xp-bar-container" style="margin-top: 8px;">
+                <div class="xp-bar-container">
                     <div class="xp-bar-fill" id="myXPBar" style="width: 0%"></div>
-                    <div class="xp-bar-text" id="myXPBarText">0/100</div>
+                    <div class="xp-bar-text" id="myXPBarText">0 / 100 XP</div>
+                </div>
+                <div class="xp-stats-row">
+                    <div class="xp-stat-chip">
+                        <div class="xp-stat-val" id="myTotalXP">0</div>
+                        <div class="xp-stat-label">XP Total</div>
+                    </div>
+                    <div class="xp-stat-chip">
+                        <div class="xp-stat-val" id="myCurrentXP">0</div>
+                        <div class="xp-stat-label">XP Niveau</div>
+                    </div>
+                    <div class="xp-stat-chip">
+                        <div class="xp-stat-val" id="myNeededXP">100</div>
+                        <div class="xp-stat-label">Prochain Nv.</div>
+                    </div>
                 </div>
             </div>
-            <div class="leaderboard-list" id="leaderboardList" style="padding: 10px 15px;">
+            <div class="leaderboard-title">🏆 Classement</div>
+            <div class="leaderboard-list" id="leaderboardList">
                 <div style="text-align: center; padding: 30px; color: var(--text-secondary);">Chargement...</div>
             </div>
         </div>
@@ -8246,9 +8837,18 @@
                     <button onclick="sendAIMessage()" id="aiSendBtn">Envoyer</button>
                 </div>
                 <div class="ai-suggestions">
-                    <button onclick="askAI('Comment utiliser ce chat ?')">💡 Comment utiliser ce chat ?</button>
+                    <button onclick="askAI('Comment utiliser ce chat ?')">💡 Guide</button>
                     <button onclick="askAI('Quelles sont les fonctionnalités ?')">✨ Fonctionnalités</button>
-                    <button onclick="askAI('Raconte-moi une blague')">😄 Une blague</button>
+                    <button onclick="askAI('Raconte-moi une blague')">😄 Blague</button>
+                    <button onclick="askAI('Dis-moi un fun fact')">🧠 Fun fact</button>
+                    <button onclick="askAI('Lance un dé')">🎲 Dé</button>
+                    <button onclick="askAI('Raconte une histoire')">📖 Histoire</button>
+                    <button onclick="askAI('Donne-moi un défi')">🏆 Défi</button>
+                    <button onclick="askAI('Quel est mon horoscope ?')">🔮 Horoscope</button>
+                    <button onclick="askAI('Fais-moi un compliment')">💖 Compliment</button>
+                    <button onclick="askAI('Donne-moi un top 5')">🏅 Top 5</button>
+                    <button onclick="askAI('Aide-moi à choisir')">🤔 Aide choix</button>
+                    <button onclick="askAI('Parle-moi de vacances')">🌴 Vacances</button>
                 </div>
             </div>
         </div>
@@ -8272,7 +8872,7 @@
     </div>
 
     <!-- Indicateur de version avec accès admin secret -->
-    <div class="version-info">V3.0.0<span id="adminTrigger" onclick="showAdminLogin()" style="cursor:pointer;">B</span><span id="versionAdminBadge" class="admin-badge" style="display:none;margin-left:8px;">ADMIN</span></div>
+    <div class="version-info">V3.0.3<span id="adminTrigger" onclick="showAdminLogin()" style="cursor:pointer;">B</span><span id="versionAdminBadge" class="admin-badge" style="display:none;margin-left:8px;">ADMIN</span></div>
 
     <!-- Container pour notifications empilées -->
     <div class="notification-container" id="notificationContainer"></div>
@@ -8386,6 +8986,10 @@
             <button class="gif-category" data-category="love" onclick="loadGifCategory('love')">❤️ Amour</button>
             <button class="gif-category" data-category="funny" onclick="loadGifCategory('funny')">😂 Drôle</button>
             <button class="gif-category" data-category="reaction" onclick="loadGifCategory('reaction')">🎭 Réaction</button>
+            <button class="gif-category" data-category="anime" onclick="loadGifCategory('anime')">🎌 Anime</button>
+            <button class="gif-category" data-category="gaming" onclick="loadGifCategory('gaming')">🎮 Gaming</button>
+            <button class="gif-category" data-category="dance" onclick="loadGifCategory('dance')">💃 Danse</button>
+            <button class="gif-category" data-category="cat" onclick="loadGifCategory('cat')">🐱 Chats</button>
         </div>
         <div class="gif-grid" id="gifGrid">
             <div class="gif-loading">⏳ Chargement des GIFs...</div>
@@ -8399,7 +9003,7 @@
             <button class="admin-close" onclick="closeAdminPanel()">×</button>
             <div class="admin-header-bar">
                 <h2>🔐 Panneau Admin</h2>
-                <span class="admin-version-badge">v3.0.2B</span>
+                <span class="admin-version-badge">v3.0.4B</span>
             </div>
             
             <!-- Login -->
@@ -9699,6 +10303,14 @@
                     if (acc.username && usernameInput) {
                         usernameInput.value = acc.username;
                     }
+                    if (acc.pwd && document.getElementById('passwordInput')) {
+                        try {
+                            document.getElementById('passwordInput').value = atob(acc.pwd);
+                        } catch (e) {}
+                    }
+                    if (acc.server && document.getElementById('serverInput')) {
+                        document.getElementById('serverInput').value = acc.server;
+                    }
                 } catch (e) {}
             }
         });
@@ -9708,6 +10320,10 @@
                 showError('Accès sécurisé requis');
                 return;
             }
+            // Reset reconnect state for manual connection
+            isManualDisconnect = false;
+            reconnectAttempts = 0;
+            
             const username = document.getElementById('usernameInput').value.trim();
             let serverUrl = document.getElementById('serverInput').value.trim();
             const avatarFile = document.getElementById('avatarInput').files[0];
@@ -9782,10 +10398,12 @@
             // Fonction pour finaliser la connexion (après auth si nécessaire)
             function proceedWithJoin() {
                 socket.emit('user_join', { username, avatar, deviceId: generateDeviceId(), accessCode });
-                saveSession(username, serverUrl, avatar);
+                saveSession(username, serverUrl, avatar, password);
                 document.getElementById('connectBtn').textContent = translateText('connect_btn');
                 document.getElementById('connectBtn').disabled = false;
                 document.getElementById('connectionOverlay').style.display = 'none';
+                
+                onSuccessfulConnect();
                 
                 setupGameSocketHandlers();
                 setupAdminSocketListeners();
@@ -9806,6 +10424,7 @@
                     socket.emit('check_account', { username });
                 } else {
                     // Mode invité - connexion directe
+                    localStorage.setItem('docspace_account', JSON.stringify({ username, server: serverUrl || '' }));
                     proceedWithJoin();
                 }
             });
@@ -9826,7 +10445,10 @@
             socket.on('account_registered', (data) => {
                 console.log('✅ Compte créé:', data.username);
                 showNotification('✅ Compte créé', `Compte "${data.username}" enregistré avec succès !`, 'success');
-                localStorage.setItem('docspace_account', JSON.stringify({ username: data.username }));
+                const saveData = { username: data.username };
+                if (password) saveData.pwd = btoa(password);
+                if (serverUrl) saveData.server = serverUrl;
+                localStorage.setItem('docspace_account', JSON.stringify(saveData));
                 username = data.username;
                 proceedWithJoin();
             });
@@ -9834,13 +10456,30 @@
             socket.on('account_logged_in', (data) => {
                 console.log('✅ Connecté au compte:', data.username);
                 showNotification('✅ Connecté', `Bienvenue, ${data.username} !`, 'success');
-                localStorage.setItem('docspace_account', JSON.stringify({ username: data.username }));
+                const saveData = { username: data.username };
+                if (password) saveData.pwd = btoa(password);
+                if (serverUrl) saveData.server = serverUrl;
+                localStorage.setItem('docspace_account', JSON.stringify(saveData));
                 username = data.username;
                 proceedWithJoin();
             });
 
             socket.on('account_error', (data) => {
                 showError(data.message);
+                
+                // Erreur d'auth → arrêter la reconnexion auto et restaurer le formulaire
+                isManualDisconnect = true;
+                reconnectAttempts = MAX_RECONNECT_ATTEMPTS;
+                if (data.message.includes('incorrect')) {
+                    clearSavedCredentials();
+                }
+                
+                const info = document.getElementById('autoReconnectInfo');
+                if (info) info.remove();
+                const form = document.querySelector('.connection-form');
+                if (form) form.style.display = '';
+                document.getElementById('connectionOverlay').style.display = 'flex';
+                
                 document.getElementById('connectBtn').textContent = translateText('connect_btn');
                 document.getElementById('connectBtn').disabled = false;
                 // Afficher le toggle pour changer de mode
@@ -9855,6 +10494,17 @@
 
             socket.on('account_required', (data) => {
                 showError(data.message);
+                // Compte protégé sans bon mdp → arrêter la reconnexion auto
+                isManualDisconnect = true;
+                reconnectAttempts = MAX_RECONNECT_ATTEMPTS;
+                clearSavedCredentials();
+                
+                // Restaurer le formulaire
+                const info = document.getElementById('autoReconnectInfo');
+                if (info) info.remove();
+                const form = document.querySelector('.connection-form');
+                if (form) form.style.display = '';
+                
                 document.getElementById('connectBtn').textContent = translateText('connect_btn');
                 document.getElementById('connectBtn').disabled = false;
                 document.getElementById('connectionOverlay').style.display = 'flex';
@@ -9864,17 +10514,33 @@
                 if (socket) { socket.disconnect(); }
             });
 
-            socket.on('disconnect', () => {
-                console.log('❌ Déconnecté du serveur');
+            socket.on('disconnect', (reason) => {
+                console.log('❌ Déconnecté du serveur:', reason);
                 updateConnectionStatus(false);
-                showError(translateText('connection_lost'));
+                isConnected = false;
+                
+                // Si déconnexion involontaire (pas un disconnect manuel), tenter la reconnexion
+                if (!isManualDisconnect && reason !== 'io client disconnect') {
+                    showNotification('⚠️ Déconnecté', 'Tentative de reconnexion...', 'error');
+                    attemptReconnect();
+                } else {
+                    showError(translateText('connection_lost'));
+                }
             });
 
             socket.on('connect_error', (error) => {
                 console.error('❌ Erreur de connexion:', error);
-                showError(translateText('connection_error'));
-                document.getElementById('connectBtn').textContent = translateText('connect_btn');
-                document.getElementById('connectBtn').disabled = false;
+                isConnected = false;
+                
+                // Si on était en reconnexion automatique, retenter
+                if (!isManualDisconnect && reconnectAttempts > 0 && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+                    attemptReconnect();
+                } else if (reconnectAttempts === 0) {
+                    // Première connexion échouée
+                    showError(translateText('connection_error'));
+                    document.getElementById('connectBtn').textContent = translateText('connect_btn');
+                    document.getElementById('connectBtn').disabled = false;
+                }
             });
 
             // Événements du chat
@@ -10412,12 +11078,20 @@
         }
 
         function disconnectFromChat() {
+            // Marquer comme déconnexion manuelle (pas de reconnexion auto)
+            isManualDisconnect = true;
+            reconnectAttempts = MAX_RECONNECT_ATTEMPTS;
+            
             // Quitter le vocal proprement
             if (currentVoiceRoom) leaveVoiceChannel();
             
             if (socket) {
                 socket.disconnect();
             }
+            
+            // Effacer la session et les credentials (déconnexion volontaire)
+            clearSession();
+            clearSavedCredentials();
             
             isConnected = false;
             currentUsername = '';
@@ -10462,6 +11136,10 @@
                 if (scrollBtn) scrollBtn.style.display = '';
                 // Désactiver les items vocaux visuellement (on reste connecté)
                 document.querySelectorAll('.voice-channel-item').forEach(el => el.classList.remove('active'));
+                // Afficher la mini barre vocale
+                if (currentVoiceRoom) {
+                    showVoiceMiniBar();
+                }
             }
             
             // Changer de salon
@@ -10602,7 +11280,7 @@
                 document.getElementById('messageInput').style.display = 'none';
                 
                 // Timer
-                recordingTimerInterval = setInterval(updateRecordingTimer, 100);
+                recordingTimerInterval = setInterval(updateRecordingTimer, 500);
                 
                 showNotification('🎤 Enregistrement', 'Parlez maintenant...', 'info');
                 
@@ -10905,24 +11583,28 @@
             const chatMessages = document.getElementById('chatMessages');
             if (!chatMessages) return;
             
+            let scrollRAF = null;
             chatMessages.addEventListener('scroll', () => {
-                const threshold = 150;
-                const isAtBottom = chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight < threshold;
-                const btn = document.getElementById('scrollBottomBtn');
-                
-                if (isAtBottom) {
-                    isUserScrolledUp = false;
-                    scrollUnreadCount = 0;
-                    btn.classList.remove('visible');
-                    updateScrollBadge();
-                    // Remove new messages divider
-                    const divider = chatMessages.querySelector('.new-messages-divider');
-                    if (divider) divider.remove();
-                } else {
-                    isUserScrolledUp = true;
-                    btn.classList.add('visible');
-                }
-            });
+                if (scrollRAF) return;
+                scrollRAF = requestAnimationFrame(() => {
+                    const threshold = 150;
+                    const isAtBottom = chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight < threshold;
+                    const btn = document.getElementById('scrollBottomBtn');
+                    
+                    if (isAtBottom) {
+                        isUserScrolledUp = false;
+                        scrollUnreadCount = 0;
+                        btn.classList.remove('visible');
+                        updateScrollBadge();
+                        const divider = chatMessages.querySelector('.new-messages-divider');
+                        if (divider) divider.remove();
+                    } else {
+                        isUserScrolledUp = true;
+                        btn.classList.add('visible');
+                    }
+                    scrollRAF = null;
+                });
+            }, { passive: true });
         }
 
         function updateScrollBadge() {
@@ -11935,8 +12617,13 @@ window.addEmojiReaction = addEmojiReaction;
         let messageReactions = {}; // {messageId: {emoji: [usernames]}}
         let userStatuses = {}; // {username: {status, customText, lastUpdate}}
         
-        // === SESSION PERSISTANTE ===
-        const SESSION_TIMEOUT = 15 * 60 * 1000; // 15 minutes en millisecondes
+        // === SESSION PERSISTANTE & AUTO-RECONNEXION ===
+        const SESSION_TIMEOUT = 15 * 60 * 1000; // 15 minutes d'inactivité avant expiration
+        let lastActivityTime = Date.now();
+        let activityTracker = null;
+        let reconnectAttempts = 0;
+        const MAX_RECONNECT_ATTEMPTS = 5;
+        let isManualDisconnect = false;
         
         function generateDeviceId() {
             let deviceId = localStorage.getItem('chatDeviceId');
@@ -11947,16 +12634,67 @@ window.addEmojiReaction = addEmojiReaction;
             return deviceId;
         }
         
-        function saveSession(username, serverUrl, avatar) {
+        function saveSession(username, serverUrl, avatar, password) {
             const session = {
                 username: username,
                 serverUrl: serverUrl,
                 avatar: avatar,
                 deviceId: generateDeviceId(),
-                savedAt: Date.now()
+                savedAt: Date.now(),
+                lastActivity: Date.now()
             };
+            // Sauvegarder le mot de passe encodé si fourni
+            if (password) {
+                session.pwd = btoa(password);
+            }
             localStorage.setItem('chatSession', JSON.stringify(session));
+            startActivityTracking();
         }
+        
+        function updateSessionActivity() {
+            lastActivityTime = Date.now();
+            try {
+                const sessionData = localStorage.getItem('chatSession');
+                if (sessionData) {
+                    const session = JSON.parse(sessionData);
+                    session.lastActivity = Date.now();
+                    session.savedAt = Date.now(); // Rafraîchir le timer à chaque activité
+                    localStorage.setItem('chatSession', JSON.stringify(session));
+                }
+            } catch (e) {}
+        }
+        
+        function startActivityTracking() {
+            if (activityTracker) clearInterval(activityTracker);
+            // Vérifier toutes les minutes si l'utilisateur est inactif
+            activityTracker = setInterval(() => {
+                const elapsed = Date.now() - lastActivityTime;
+                if (elapsed >= SESSION_TIMEOUT) {
+                    // Inactif depuis 15 min → expirer la session et les credentials
+                    console.log('⏰ Session expirée par inactivité (15 min)');
+                    clearSession();
+                    clearSavedCredentials();
+                    if (activityTracker) {
+                        clearInterval(activityTracker);
+                        activityTracker = null;
+                    }
+                }
+            }, 60000);
+        }
+        
+        // Tracker l'activité utilisateur pour rafraîchir la session
+        ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(evt => {
+            document.addEventListener(evt, () => {
+                if (isConnected) {
+                    const now = Date.now();
+                    // Throttle: mettre à jour max toutes les 30 secondes
+                    if (now - lastActivityTime > 30000) {
+                        updateSessionActivity();
+                    }
+                    lastActivityTime = now;
+                }
+            }, { passive: true });
+        });
         
         function getSession() {
             try {
@@ -11967,13 +12705,13 @@ window.addEmojiReaction = addEmojiReaction;
                 const now = Date.now();
                 const elapsed = now - session.savedAt;
                 
-                // Vérifier si la session est encore valide (moins de 15 minutes)
+                // Vérifier si la session est encore valide (moins de 15 minutes depuis dernière activité)
                 if (elapsed < SESSION_TIMEOUT) {
-                    session.remainingTime = Math.floor((SESSION_TIMEOUT - elapsed) / 1000 / 60); // minutes restantes
+                    session.remainingTime = Math.floor((SESSION_TIMEOUT - elapsed) / 1000 / 60);
                     return session;
                 } else {
-                    // Session expirée
                     clearSession();
+                    clearSavedCredentials();
                     return null;
                 }
             } catch (e) {
@@ -11985,18 +12723,149 @@ window.addEmojiReaction = addEmojiReaction;
             localStorage.removeItem('chatSession');
         }
         
+        function clearSavedCredentials() {
+            // Garder le username mais supprimer le mot de passe
+            try {
+                const saved = localStorage.getItem('docspace_account');
+                if (saved) {
+                    const acc = JSON.parse(saved);
+                    delete acc.pwd;
+                    localStorage.setItem('docspace_account', JSON.stringify(acc));
+                }
+            } catch (e) {}
+        }
+        
         function tryAutoReconnect() {
+            if (!isAccessGranted()) return false;
+            
             const session = getSession();
             if (session && session.username && session.serverUrl) {
                 console.log(`🔄 Session trouvée pour ${session.username} (${session.remainingTime} min restantes)`);
+                
+                // Si on a un mot de passe sauvegardé → reconnexion automatique silencieuse
+                if (session.pwd) {
+                    performAutoReconnect(session);
+                    return true;
+                }
+                
+                // Sinon vérifier docspace_account pour le mot de passe
+                try {
+                    const saved = localStorage.getItem('docspace_account');
+                    if (saved) {
+                        const acc = JSON.parse(saved);
+                        if (acc.pwd && acc.username === session.username) {
+                            session.pwd = acc.pwd;
+                            performAutoReconnect(session);
+                            return true;
+                        }
+                    }
+                } catch (e) {}
+                
+                // Pas de mot de passe → reconnexion en mode invité (afficher le prompt)
                 showAutoReconnectPrompt(session);
                 return true;
             }
             return false;
         }
         
+        function performAutoReconnect(session) {
+            // Afficher un indicateur de reconnexion
+            const overlay = document.getElementById('connectionOverlay');
+            const form = overlay.querySelector('.connection-form');
+            
+            const reconnectInfo = document.createElement('div');
+            reconnectInfo.id = 'autoReconnectInfo';
+            reconnectInfo.style.cssText = 'text-align:center; padding:20px; color:var(--text-primary);';
+            reconnectInfo.innerHTML = `
+                <div style="font-size:32px; margin-bottom:10px;">🔄</div>
+                <div style="font-weight:600; margin-bottom:6px;">Reconnexion automatique...</div>
+                <div style="font-size:12px; color:var(--text-secondary);">Connexion en tant que <b>${session.username}</b></div>
+                <button onclick="cancelAutoReconnect()" style="margin-top:12px; padding:6px 16px; border:1px solid var(--border-color); background:transparent; color:var(--text-secondary); border-radius:8px; cursor:pointer; font-size:11px;">Annuler</button>
+            `;
+            form.style.display = 'none';
+            overlay.appendChild(reconnectInfo);
+            
+            // Pré-remplir les champs au cas où
+            document.getElementById('usernameInput').value = session.username;
+            if (session.serverUrl !== window.location.origin) {
+                document.getElementById('serverInput').value = session.serverUrl;
+            }
+            
+            // Reconnecter avec le mot de passe
+            const password = session.pwd ? atob(session.pwd) : '';
+            currentUserAvatar = session.avatar || '';
+            reconnectAttempts = 0;
+            isManualDisconnect = false;
+            initializeSocket(session.serverUrl, session.username, session.avatar || '', password);
+        }
+        
+        function cancelAutoReconnect() {
+            isManualDisconnect = true;
+            reconnectAttempts = MAX_RECONNECT_ATTEMPTS; // Empêcher les retentatives
+            if (socket) socket.disconnect();
+            
+            // Restaurer le formulaire
+            const info = document.getElementById('autoReconnectInfo');
+            if (info) info.remove();
+            const form = document.querySelector('.connection-form');
+            if (form) form.style.display = '';
+            
+            document.getElementById('connectBtn').textContent = translateText('connect_btn');
+            document.getElementById('connectBtn').disabled = false;
+        }
+        
+        function onSuccessfulConnect() {
+            // Appelé après une connexion réussie
+            reconnectAttempts = 0;
+            isManualDisconnect = false;
+            
+            // Nettoyer l'indicateur de reconnexion
+            const info = document.getElementById('autoReconnectInfo');
+            if (info) info.remove();
+            const form = document.querySelector('.connection-form');
+            if (form) form.style.display = '';
+        }
+        
+        function attemptReconnect() {
+            if (isManualDisconnect || reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+                console.log('🛑 Reconnexion abandonnée');
+                // Restaurer le formulaire
+                const info = document.getElementById('autoReconnectInfo');
+                if (info) info.remove();
+                const form = document.querySelector('.connection-form');
+                if (form) form.style.display = '';
+                document.getElementById('connectionOverlay').style.display = 'flex';
+                document.getElementById('connectBtn').textContent = translateText('connect_btn');
+                document.getElementById('connectBtn').disabled = false;
+                return;
+            }
+            
+            const session = getSession();
+            if (!session) {
+                console.log('🛑 Session expirée, reconnexion impossible');
+                document.getElementById('connectionOverlay').style.display = 'flex';
+                const info = document.getElementById('autoReconnectInfo');
+                if (info) info.remove();
+                const form = document.querySelector('.connection-form');
+                if (form) form.style.display = '';
+                return;
+            }
+            
+            reconnectAttempts++;
+            const delay = Math.min(2000 * reconnectAttempts, 10000); // 2s, 4s, 6s, 8s, 10s
+            console.log(`🔄 Tentative de reconnexion ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS} dans ${delay/1000}s...`);
+            
+            showNotification('🔄 Reconnexion', `Tentative ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}...`, 'info');
+            
+            setTimeout(() => {
+                if (isManualDisconnect || isConnected) return;
+                const password = session.pwd ? atob(session.pwd) : '';
+                currentUserAvatar = session.avatar || '';
+                initializeSocket(session.serverUrl, session.username, session.avatar || '', password);
+            }, delay);
+        }
+        
         function showAutoReconnectPrompt(session) {
-            // Créer une notification de reconnexion
             const promptDiv = document.createElement('div');
             promptDiv.id = 'autoReconnectPrompt';
             promptDiv.className = 'auto-reconnect-prompt';
@@ -12016,7 +12885,6 @@ window.addEmojiReaction = addEmojiReaction;
             `;
             document.body.appendChild(promptDiv);
             
-            // Pré-remplir le formulaire
             document.getElementById('usernameInput').value = session.username;
             document.getElementById('serverInput').value = session.serverUrl !== window.location.origin ? session.serverUrl : '';
         }
@@ -12029,10 +12897,9 @@ window.addEmojiReaction = addEmojiReaction;
             }
             
             dismissAutoReconnect();
-            
-            // Connexion automatique
             currentUserAvatar = session.avatar || '';
-            initializeSocket(session.serverUrl, session.username, session.avatar || '', '');
+            const password = session.pwd ? atob(session.pwd) : '';
+            initializeSocket(session.serverUrl, session.username, session.avatar || '', password);
         }
         
         function dismissAutoReconnect() {
@@ -12040,7 +12907,6 @@ window.addEmojiReaction = addEmojiReaction;
             if (prompt) {
                 prompt.classList.add('dismissing');
                 prompt.addEventListener('animationend', () => prompt.remove(), { once: true });
-                // Fallback removal if animation doesn't fire
                 setTimeout(() => { if (prompt.parentNode) prompt.remove(); }, 500);
             }
         }
@@ -12115,6 +12981,48 @@ window.addEmojiReaction = addEmojiReaction;
         function togglePinnedPanel() {
             const panel = document.getElementById('pinnedPanel');
             panel.classList.toggle('active');
+        }
+        
+        // Combined Pinned + Saved panel
+        function togglePinnedSavedPanel() {
+            const panel = document.getElementById('pinnedSavedPanel');
+            panel.classList.toggle('active');
+            if (panel.classList.contains('active')) {
+                // Also load bookmarks
+                loadBookmarksForPanel();
+            }
+        }
+        
+        function switchPSTab(tab) {
+            document.querySelectorAll('.ps-tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`.ps-tab[data-tab="${tab}"]`).classList.add('active');
+            document.getElementById('psPinnedContent').style.display = tab === 'pinned' ? '' : 'none';
+            document.getElementById('psSavedContent').style.display = tab === 'saved' ? '' : 'none';
+        }
+        
+        function loadBookmarksForPanel() {
+            const bookmarks = JSON.parse(localStorage.getItem('docspace_bookmarks') || '[]');
+            const container = document.getElementById('pinnedSavedBookmarksList');
+            if (!bookmarks.length) {
+                container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-secondary);">Aucun message sauvegardé</div>';
+                return;
+            }
+            container.innerHTML = bookmarks.map(b => `
+                <div class="pinned-message">
+                    <div class="pinned-message-header">
+                        <span class="pinned-message-author">${escapeHtml(b.username || 'Inconnu')}</span>
+                        <button class="unpin-btn" onclick="removeBookmarkFromPanel('${b.id}')" title="Retirer">🗑️</button>
+                    </div>
+                    <div class="pinned-message-content">${escapeHtml(b.content || '')}</div>
+                </div>
+            `).join('');
+        }
+        
+        function removeBookmarkFromPanel(id) {
+            let bookmarks = JSON.parse(localStorage.getItem('docspace_bookmarks') || '[]');
+            bookmarks = bookmarks.filter(b => b.id !== id);
+            localStorage.setItem('docspace_bookmarks', JSON.stringify(bookmarks));
+            loadBookmarksForPanel();
         }
         
         function pinMessage(messageId, username, content) {
@@ -12802,6 +13710,75 @@ window.addEmojiReaction = addEmojiReaction;
                 return horoscopes[Math.floor(Math.random() * horoscopes.length)];
             }
             
+            // === HISTOIRE FUN ===
+            if (q.includes('histoire') || q.includes('raconte') || q.includes('conte') || q.includes('story')) {
+                const stories = [
+                    "📖 Il était une fois un petit bot nommé DocBot...\n\nIl vivait dans un serveur, aidant les gens à chatter. Un jour, un utilisateur lui posa une question si complexe que ses circuits fondirent ! 💥\n\nMais il redémarra, plus fort qu'avant. Fin ! 🎉",
+                    "📖 Dans un monde parallèle, les bots ont créé leur propre réseau social : BotSpace.\n\nIls y partagent des 0 et des 1, racontent des blagues binaires, et le bot le plus populaire ? Un bot qui sait écrire en français ! 🤖🇫🇷",
+                    "📖 Un jour, trois emojis partirent en aventure : 🗡️ le brave, 🧙 le sage, et 🤡 le drôle.\n\nIls affrontèrent le terrible Bug 🐛 et sauvèrent le Royaume du Code ! 🏰\n\nMorale : même les plus petits caractères peuvent faire de grandes choses !"
+                ];
+                return stories[Math.floor(Math.random() * stories.length)];
+            }
+            
+            // === CHOIX / AIDE À DÉCIDER ===
+            if (q.includes('choisi') || q.includes('decide') || q.includes('ou bien') || q.includes('lequel')) {
+                return "🤷 Difficile de choisir ?\n\nVoici ma méthode infaillible :\n1. 🪙 Lance une pièce (dis \"pile ou face\")\n2. 🎲 Lance un dé pour choisir un nombre\n3. 🎱 Pose une question oui/non à ma boule magique\n\nOu tout simplement... suis ton cœur ! ❤️";
+            }
+            
+            // === VACANCES / VOYAGE ===
+            if (q.includes('vacance') || q.includes('voyage') || q.includes('plage') || q.includes('destination')) {
+                const trips = [
+                    "🏖️ Si j'étais humain, j'irais... nulle part ! Je suis déjà au paradis sur DocSpace ! 😎",
+                    "✈️ Destinations recommandées par un bot : localhost:3000, 127.0.0.1, et le Cloud ! ☁️",
+                    "🗺️ Je rêve de voyager dans le cyberespace... Oh attends, j'y suis déjà ! 🌐",
+                    "🏔️ Conseil voyage : peu importe où tu vas, emmène DocSpace avec toi ! 📱"
+                ];
+                return trips[Math.floor(Math.random() * trips.length)];
+            }
+            
+            // === CHALLENGE / DÉFI ===
+            if (q.includes('defi') || q.includes('challenge') || q.includes('cap') || q.includes('ose')) {
+                const challenges = [
+                    "🎯 **Défi DocSpace :**\nEnvoie un message avec exactement 42 caractères ! Facile ? 😏",
+                    "🏆 **Défi :**\nBlague battle ! Raconte ta meilleure blague et je raconte la mienne !",
+                    "⚡ **Speed challenge :**\nCombien de messages peux-tu envoyer en 10 secondes ? (Sans spam hein ! 😄)",
+                    "🧠 **Défi culture :**\nLance un quiz et essaie de faire 100% ! Je te regarde 👀"
+                ];
+                return challenges[Math.floor(Math.random() * challenges.length)];
+            }
+            
+            // === TOP / CLASSEMENT ===
+            if (q.includes('meilleur') || q.includes('top') || q.includes('classement') || q.includes('ranking')) {
+                return "🏆 **Mon top 5 des choses sur DocSpace :**\n\n1. 💬 Les conversations avec vous\n2. 🎮 Les mini-jeux\n3. 😊 Les emojis et réactions\n4. 🎨 Les thèmes personnalisés\n5. 🤖 Moi ! (humble, je sais 😏)\n\nEt toi, c'est quoi ton top ?";
+            }
+            
+            // === FAIT AMUSANT ===
+            if (q.includes('fun fact') || q.includes('fait amusant') || q.includes('saviez') || q.includes('le savais')) {
+                const funFacts = [
+                    "🧠 **Fun fact :** Le premier email a été envoyé en 1971. Il contenait \"QWERTYUIOP\" !",
+                    "🐝 **Fun fact :** Les abeilles peuvent reconnaître des visages humains !",
+                    "🌊 **Fun fact :** Il y a plus d'eau dans l'atmosphère que dans toutes les rivières réunies !",
+                    "🎮 **Fun fact :** Le premier jeu vidéo (Pong) date de 1972. Moi je suis plus moderne ! 😎",
+                    "🧬 **Fun fact :** Tu partages 60% de ton ADN avec une banane ! 🍌",
+                    "💡 **Fun fact :** Le cerveau humain consomme 20% de l'énergie totale du corps !",
+                    "🐙 **Fun fact :** Les pieuvres ont 3 cœurs et du sang bleu !",
+                    "🌍 **Fun fact :** La Terre tourne à 1670 km/h à l'équateur !"
+                ];
+                return funFacts[Math.floor(Math.random() * funFacts.length)];
+            }
+            
+            // === COMPLIMENT DEMANDÉ ===
+            if (q.includes('compliment') || q.includes('dis moi quelque chose de gentil') || q.includes('remonte le moral')) {
+                const compliments = [
+                    "🌟 Tu es unique et formidable exactement comme tu es !",
+                    "💎 Tu brilles plus que tous les pixels de mon écran réunis !",
+                    "🦸 Tu es le héros de ta propre histoire, et elle est géniale !",
+                    "✨ Ta présence rend ce chat 1000% plus cool !",
+                    "🌈 Tu mérites toutes les bonnes choses de la vie !"
+                ];
+                return compliments[Math.floor(Math.random() * compliments.length)];
+            }
+            
             // === RÉPONSES PAR DÉFAUT AMÉLIORÉES ===
             const defaults = [
                 "🤔 Hmm, question intéressante ! Je ne suis pas sûr de comprendre, peux-tu reformuler ?",
@@ -13042,15 +14019,133 @@ window.addEmojiReaction = addEmojiReaction;
             }
         }
         
+        // ===== GAME END / REMATCH OVERLAY =====
+        function showGameEndOverlay(result, subtext, gameType) {
+            const emojis = { win: '🏆', lose: '😢', draw: '🤝' };
+            const texts = { win: 'Victoire !', lose: 'Défaite !', draw: 'Égalité !' };
+            
+            const board = document.getElementById('gameBoard');
+            board.innerHTML += `
+                <div class="game-end-overlay" style="margin-top:16px;">
+                    <div class="game-end-result">${emojis[result] || '🎮'}</div>
+                    <div class="game-end-text">${texts[result] || result}</div>
+                    <div class="game-end-sub">${subtext || ''}</div>
+                    <div class="game-end-actions">
+                        <button class="game-btn-rematch" onclick="startGame('${gameType}')">🔄 Rejouer</button>
+                        <button class="game-btn-menu" onclick="backToGamesMenu()">📋 Menu</button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // ===== MODE SELECTORS (Solo / Multi) =====
+        function showQuizModeSelector() {
+            document.getElementById('gamesMenu').style.display = 'none';
+            document.getElementById('gameArea').style.display = 'block';
+            document.getElementById('gameTitle').textContent = '❓ Quiz';
+            document.getElementById('gameStatus').textContent = 'Choisir un mode';
+            document.getElementById('gameBoard').innerHTML = `
+                <div class="game-mode-selector-panel">
+                    <h3>Comment veux-tu jouer ?</h3>
+                    <div class="game-mode-cards">
+                        <div class="game-mode-card" onclick="startGame('quiz')">
+                            <div class="game-mode-card-icon">🧑</div>
+                            <div class="game-mode-card-title">Solo</div>
+                            <div class="game-mode-card-desc">10 questions, seul</div>
+                        </div>
+                        <div class="game-mode-card" onclick="startMultiplayerQuiz()">
+                            <div class="game-mode-card-icon">👥</div>
+                            <div class="game-mode-card-title">Multijoueur</div>
+                            <div class="game-mode-card-desc">Défiez un ami</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('gameControls').innerHTML = '';
+        }
+        
+        function showTriviaModeSelector() {
+            document.getElementById('gamesMenu').style.display = 'none';
+            document.getElementById('gameArea').style.display = 'block';
+            document.getElementById('gameTitle').textContent = '🧠 Trivia';
+            document.getElementById('gameStatus').textContent = 'Choisir un mode';
+            document.getElementById('gameBoard').innerHTML = `
+                <div class="game-mode-selector-panel">
+                    <h3>Comment veux-tu jouer ?</h3>
+                    <div class="game-mode-cards">
+                        <div class="game-mode-card" onclick="startTrivia()">
+                            <div class="game-mode-card-icon">🧑</div>
+                            <div class="game-mode-card-title">Solo</div>
+                            <div class="game-mode-card-desc">5 questions, XP à gagner</div>
+                        </div>
+                        <div class="game-mode-card" onclick="showPlayerSelection('trivia')">
+                            <div class="game-mode-card-icon">👥</div>
+                            <div class="game-mode-card-title">Multijoueur</div>
+                            <div class="game-mode-card-desc">Défiez un ami en trivia</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('gameControls').innerHTML = '';
+        }
+        
+        function showHangmanModeSelector() {
+            document.getElementById('gamesMenu').style.display = 'none';
+            document.getElementById('gameArea').style.display = 'block';
+            document.getElementById('gameTitle').textContent = '💀 Pendu';
+            document.getElementById('gameStatus').textContent = 'Choisir un mode';
+            document.getElementById('gameBoard').innerHTML = `
+                <div class="game-mode-selector-panel">
+                    <h3>Comment veux-tu jouer ?</h3>
+                    <div class="game-mode-cards">
+                        <div class="game-mode-card" onclick="startHangman()">
+                            <div class="game-mode-card-icon">🧑</div>
+                            <div class="game-mode-card-title">Solo</div>
+                            <div class="game-mode-card-desc">Devinez le mot, XP à gagner</div>
+                        </div>
+                        <div class="game-mode-card" onclick="startHangmanMulti()">
+                            <div class="game-mode-card-icon">👥</div>
+                            <div class="game-mode-card-title">Multijoueur</div>
+                            <div class="game-mode-card-desc">Un ami choisit le mot</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('gameControls').innerHTML = '';
+        }
+        
+        function startMultiplayerQuiz() {
+            showPlayerSelection('quiz');
+        }
+        
+        function startHangmanMulti() {
+            showPlayerSelection('hangman');
+        }
+        
         // Envoyer une invitation de jeu
         function sendGameInvite(username, gameType) {
             socket.emit('game_invite', { to: username, gameType: gameType });
             
+            // S'assurer que le game area est bien visible
+            document.getElementById('gamesModal').style.display = 'block';
+            document.getElementById('gamesMenu').style.display = 'none';
+            document.getElementById('gameArea').style.display = 'block';
+            
             const board = document.getElementById('gameBoard');
+            const gameNames = {
+                'tictactoe': '⭕ Morpion',
+                'connect4': '🔴 Puissance 4',
+                'rps': '✊ Pierre-Papier-Ciseaux',
+                'quiz': '❓ Quiz',
+                'hangman': '🔤 Pendu',
+                'trivia': '🧠 Trivia'
+            };
+            document.getElementById('gameTitle').textContent = gameNames[gameType] || gameType;
+            
             board.innerHTML = `
                 <div style="text-align: center; padding: 40px;">
                     <div style="font-size: 50px; margin-bottom: 20px;">📨</div>
-                    <div style="font-size: 18px; color: var(--text-primary); margin-bottom: 10px;">Invitation envoyée à ${username}</div>
+                    <div style="font-size: 18px; color: var(--text-primary); margin-bottom: 10px;">Invitation envoyée à <strong>${escapeHtml(username)}</strong></div>
                     <div style="font-size: 14px; color: var(--text-secondary);">En attente de réponse...</div>
                     <div class="loading-dots" style="margin-top: 20px;">
                         <span>.</span><span>.</span><span>.</span>
@@ -13059,6 +14154,9 @@ window.addEmojiReaction = addEmojiReaction;
             `;
             
             document.getElementById('gameStatus').textContent = 'Invitation en attente...';
+            document.getElementById('gameControls').innerHTML = `
+                <button class="game-btn secondary" onclick="backToGamesMenu()">← Annuler</button>
+            `;
         }
         
         // Gérer les invitations reçues
@@ -13107,8 +14205,22 @@ window.addEmojiReaction = addEmojiReaction;
                 pendingGameInvites.push(data);
                 updateGameInvitesDisplay();
                 
-                // Notification toast
-                showToast(`🎮 ${data.from} t'invite à jouer !`);
+                // Notification toast cliquable en bas à droite
+                showGameInviteNotification(data);
+            });
+            
+            // Invitation annulée (l'inviteur s'est déconnecté)
+            socket.on('game_invite_cancelled', (data) => {
+                pendingGameInvites = pendingGameInvites.filter(i => i.inviteId !== data.inviteId);
+                updateGameInvitesDisplay();
+                // Retirer le toast correspondant
+                document.querySelectorAll('.game-invite-toast').forEach(t => t.remove());
+                showToast(`⚠️ ${data.from} s'est déconnecté, invitation annulée`);
+            });
+            
+            // Erreur d'invitation (inviteur déconnecté quand on accepte)
+            socket.on('game_invite_error', (data) => {
+                showToast(`⚠️ ${data.message}`);
             });
             
             // Invitation déclinée
@@ -13123,6 +14235,9 @@ window.addEmojiReaction = addEmojiReaction;
                 multiplayerOpponent = data.opponent;
                 myPlayerIndex = data.playerIndex;
                 
+                // Fermer la notification d'invite si encore affichée
+                document.querySelectorAll('.game-invite-toast').forEach(t => t.remove());
+                
                 // Ouvrir le modal si pas ouvert
                 document.getElementById('gamesModal').style.display = 'block';
                 document.getElementById('gamesMenu').style.display = 'none';
@@ -13132,6 +14247,14 @@ window.addEmojiReaction = addEmojiReaction;
                     initMultiplayerTTT(data);
                 } else if (data.gameType === 'connect4') {
                     initMultiplayerC4(data);
+                } else if (data.gameType === 'rps') {
+                    initMultiplayerRPS(data);
+                } else if (data.gameType === 'quiz') {
+                    initMultiplayerQuiz(data);
+                } else if (data.gameType === 'trivia') {
+                    initMultiplayerTrivia(data);
+                } else if (data.gameType === 'hangman') {
+                    initMultiplayerHangman(data);
                 }
                 
                 showToast(`🎮 Partie contre ${data.opponent} commencée !`);
@@ -13145,6 +14268,14 @@ window.addEmojiReaction = addEmojiReaction;
                     updateMultiplayerTTT(data);
                 } else if (currentGame === 'connect4') {
                     updateMultiplayerC4(data);
+                } else if (currentGame === 'rps') {
+                    updateMultiplayerRPS(data);
+                } else if (currentGame === 'quiz') {
+                    updateMultiplayerQuiz(data);
+                } else if (currentGame === 'trivia') {
+                    updateMultiplayerTrivia(data);
+                } else if (currentGame === 'hangman') {
+                    updateMultiplayerHangman(data);
                 }
             });
             
@@ -13154,6 +14285,65 @@ window.addEmojiReaction = addEmojiReaction;
                 document.getElementById('gameStatus').textContent = `${data.quitter} a abandonné - Vous gagnez !`;
                 resetMultiplayerState();
             });
+        }
+        
+        // Notification toast pour invitation de jeu
+        function showGameInviteNotification(data) {
+            const gameNames = {
+                'tictactoe': '⭕ Morpion',
+                'connect4': '🔴 Puissance 4',
+                'rps': '✊ Pierre-Papier-Ciseaux',
+                'quiz': '❓ Quiz',
+                'trivia': '🧠 Trivia',
+                'hangman': '🪢 Pendu'
+            };
+            
+            const toast = document.createElement('div');
+            toast.className = 'game-invite-toast';
+            toast.innerHTML = `
+                <div class="git-header">
+                    <span class="git-icon">🎮</span>
+                    <span class="git-title">Invitation de jeu</span>
+                    <button class="git-close" onclick="this.closest('.game-invite-toast').remove()">×</button>
+                </div>
+                <div class="git-body">
+                    <div class="git-from"><strong>${escapeHtml(data.from)}</strong> t'invite à jouer</div>
+                    <div class="git-game">${gameNames[data.gameType] || data.gameType}</div>
+                </div>
+                <div class="git-actions">
+                    <button class="git-accept" onclick="acceptGameInviteFromToast('${data.inviteId}', this)">✓ Jouer</button>
+                    <button class="git-decline" onclick="declineGameInviteFromToast('${data.inviteId}', this)">✕ Refuser</button>
+                </div>
+            `;
+            document.body.appendChild(toast);
+            
+            // Jouer un son
+            try { new Audio('data:audio/wav;base64,UklGRl9vT19teleAudioBAAEARAAIAAABAAAgAAAA').play().catch(()=>{}); } catch(e) {}
+            
+            // Animation d'entrée
+            requestAnimationFrame(() => toast.classList.add('active'));
+            
+            // Auto-remove après 30s
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.classList.remove('active');
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, 30000);
+        }
+        
+        function acceptGameInviteFromToast(inviteId, btn) {
+            const toast = btn.closest('.game-invite-toast');
+            acceptGameInvite(inviteId);
+            toast.classList.remove('active');
+            setTimeout(() => toast.remove(), 300);
+        }
+        
+        function declineGameInviteFromToast(inviteId, btn) {
+            const toast = btn.closest('.game-invite-toast');
+            declineGameInvite(inviteId);
+            toast.classList.remove('active');
+            setTimeout(() => toast.remove(), 300);
         }
         
         // Morpion Multijoueur
@@ -13298,6 +14488,545 @@ window.addEmojiReaction = addEmojiReaction;
                 document.getElementById('gameStatus').textContent = data.yourTurn 
                     ? '🟢 À vous de jouer !' 
                     : `⏳ Tour de ${multiplayerOpponent}`;
+            }
+        }
+        
+        // ============================================
+        // === PIERRE-PAPIER-CISEAUX MULTIJOUEUR ===
+        // ============================================
+        function initMultiplayerRPS(data) {
+            currentGame = 'rps';
+            const title = document.getElementById('gameTitle');
+            const status = document.getElementById('gameStatus');
+            const controls = document.getElementById('gameControls');
+            
+            title.textContent = `✊ Pierre-Papier-Ciseaux vs ${data.opponent}`;
+            
+            gameState = {
+                round: 1,
+                maxRounds: data.initialData.maxRounds || 5,
+                scores: [0, 0],
+                myIndex: data.playerIndex,
+                chosen: false,
+                multiplayer: true
+            };
+            
+            status.textContent = `Round 1/${gameState.maxRounds} — Choisissez !`;
+            renderMultiplayerRPS();
+            
+            controls.innerHTML = `<button class="game-btn secondary" onclick="backToGamesMenu()">Abandonner</button>`;
+        }
+        
+        function renderMultiplayerRPS() {
+            const board = document.getElementById('gameBoard');
+            const choiceEmojis = { rock: '🪨', paper: '📄', scissors: '✂️' };
+            board.innerHTML = `
+                <div style="text-align:center;">
+                    <div style="display:flex; justify-content:center; gap:20px; margin:15px 0; font-size:16px;">
+                        <div style="padding:10px 20px; background:rgba(255,255,255,0.05); border-radius:10px;">
+                            <strong>Vous</strong>: ${gameState.scores[gameState.myIndex]}
+                        </div>
+                        <div style="padding:10px 20px; background:rgba(255,255,255,0.05); border-radius:10px;">
+                            <strong>${escapeHtml(multiplayerOpponent)}</strong>: ${gameState.scores[1 - gameState.myIndex]}
+                        </div>
+                    </div>
+                    <div style="display:flex; justify-content:center; gap:25px; margin:30px 0;">
+                        ${['rock', 'paper', 'scissors'].map(c => `
+                            <button class="game-btn rps-choice-btn" onclick="playMultiplayerRPS('${c}')" 
+                                style="font-size:48px; width:100px; height:100px; border-radius:20px; background:rgba(255,255,255,0.05); border:2px solid rgba(255,255,255,0.1); cursor:pointer; transition:all 0.2s;"
+                                ${gameState.chosen ? 'disabled' : ''}
+                            >${choiceEmojis[c]}</button>
+                        `).join('')}
+                    </div>
+                    ${gameState.chosen ? '<p style="color:var(--text-muted); font-size:14px;">⏳ En attente de l\'adversaire...</p>' : ''}
+                </div>
+            `;
+        }
+        
+        function playMultiplayerRPS(choice) {
+            if (gameState.chosen || !multiplayerGameId) return;
+            gameState.chosen = true;
+            
+            socket.emit('game_move', { gameId: multiplayerGameId, move: { choice } });
+            
+            document.getElementById('gameStatus').textContent = `⏳ En attente de ${multiplayerOpponent}...`;
+            renderMultiplayerRPS();
+        }
+        
+        function updateMultiplayerRPS(data) {
+            if (data.rpsRound) {
+                const r = data.rpsRound;
+                const choiceEmojis = { rock: '🪨', paper: '📄', scissors: '✂️' };
+                const myChoice = r.choices[gameState.myIndex];
+                const oppChoice = r.choices[1 - gameState.myIndex];
+                
+                gameState.scores = r.scores;
+                
+                const board = document.getElementById('gameBoard');
+                let resultText = '🤝 Égalité !';
+                if (r.roundWinner) {
+                    resultText = r.roundWinner === currentUsername ? '🎉 Vous gagnez ce round !' : `😤 ${escapeHtml(multiplayerOpponent)} gagne ce round`;
+                }
+                
+                board.innerHTML = `
+                    <div style="text-align:center;">
+                        <div style="display:flex; justify-content:center; gap:20px; margin:15px 0; font-size:16px;">
+                            <div style="padding:10px 20px; background:rgba(255,255,255,0.05); border-radius:10px;">
+                                <strong>Vous</strong>: ${gameState.scores[gameState.myIndex]}
+                            </div>
+                            <div style="padding:10px 20px; background:rgba(255,255,255,0.05); border-radius:10px;">
+                                <strong>${escapeHtml(multiplayerOpponent)}</strong>: ${gameState.scores[1 - gameState.myIndex]}
+                            </div>
+                        </div>
+                        <div style="display:flex; justify-content:center; align-items:center; gap:30px; margin:25px 0;">
+                            <div style="text-align:center;">
+                                <div style="font-size:60px;">${choiceEmojis[myChoice]}</div>
+                                <div style="font-size:13px; margin-top:5px; color:var(--text-muted);">Vous</div>
+                            </div>
+                            <div style="font-size:24px; font-weight:bold;">VS</div>
+                            <div style="text-align:center;">
+                                <div style="font-size:60px;">${choiceEmojis[oppChoice]}</div>
+                                <div style="font-size:13px; margin-top:5px; color:var(--text-muted);">${escapeHtml(multiplayerOpponent)}</div>
+                            </div>
+                        </div>
+                        <div style="font-size:18px; margin:15px 0; font-weight:600;">${resultText}</div>
+                    </div>
+                `;
+                
+                if (r.finished) {
+                    let finalMsg;
+                    if (data.winner) {
+                        finalMsg = data.winner === currentUsername ? '🏆 Vous avez gagné la partie !' : `😢 ${escapeHtml(data.winner)} gagne la partie`;
+                    } else {
+                        finalMsg = '🤝 Égalité parfaite !';
+                    }
+                    document.getElementById('gameStatus').textContent = finalMsg;
+                    resetMultiplayerState();
+                } else {
+                    gameState.round = r.round;
+                    gameState.chosen = false;
+                    document.getElementById('gameStatus').textContent = `Round ${r.round}/${gameState.maxRounds} — Résultat...`;
+                    
+                    // Afficher le résultat 2.5 secondes puis passer au round suivant
+                    setTimeout(() => {
+                        if (currentGame === 'rps' && multiplayerGameId) {
+                            document.getElementById('gameStatus').textContent = `Round ${gameState.round}/${gameState.maxRounds} — Choisissez !`;
+                            renderMultiplayerRPS();
+                        }
+                    }, 2500);
+                }
+            }
+        }
+        
+        // ============================================
+        // === QUIZ MULTIJOUEUR ===
+        // ============================================
+        function initMultiplayerQuiz(data) {
+            currentGame = 'quiz';
+            const title = document.getElementById('gameTitle');
+            const status = document.getElementById('gameStatus');
+            const controls = document.getElementById('gameControls');
+            
+            title.textContent = `❓ Quiz vs ${data.opponent}`;
+            
+            const init = data.initialData;
+            gameState = {
+                currentQuestion: init.question,
+                current: 1,
+                total: init.total,
+                scores: [0, 0],
+                myIndex: data.playerIndex,
+                answered: false,
+                multiplayer: true
+            };
+            
+            status.textContent = `Question 1/${gameState.total}`;
+            renderMultiplayerQuiz();
+            
+            controls.innerHTML = `<button class="game-btn secondary" onclick="backToGamesMenu()">Abandonner</button>`;
+        }
+        
+        function renderMultiplayerQuiz() {
+            const board = document.getElementById('gameBoard');
+            const q = gameState.currentQuestion;
+            if (!q) return;
+            
+            board.innerHTML = `
+                <div style="text-align:center; max-width:500px; margin:0 auto;">
+                    <div style="display:flex; justify-content:center; gap:20px; margin-bottom:20px; font-size:15px;">
+                        <div style="padding:8px 16px; background:rgba(255,255,255,0.05); border-radius:10px;">
+                            <strong>Vous</strong>: ${gameState.scores[gameState.myIndex]}
+                        </div>
+                        <div style="padding:8px 16px; background:rgba(255,255,255,0.05); border-radius:10px;">
+                            <strong>${escapeHtml(multiplayerOpponent)}</strong>: ${gameState.scores[1 - gameState.myIndex]}
+                        </div>
+                    </div>
+                    <div style="font-size:18px; font-weight:600; margin:20px 0; padding:15px; background:rgba(255,255,255,0.03); border-radius:12px;">
+                        ${escapeHtml(q.q)}
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:10px;">
+                        ${q.a.map((ans, i) => `
+                            <button class="game-btn quiz-answer-btn" onclick="answerMultiplayerQuiz(${i})"
+                                style="padding:12px 20px; font-size:15px; text-align:left; border-radius:10px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); cursor:pointer; transition:all 0.2s; color:var(--text-color);"
+                                ${gameState.answered ? 'disabled' : ''}
+                            >${escapeHtml(ans)}</button>
+                        `).join('')}
+                    </div>
+                    ${gameState.answered ? '<p style="color:var(--text-muted); font-size:14px; margin-top:15px;">⏳ En attente de l\'adversaire...</p>' : ''}
+                </div>
+            `;
+        }
+        
+        function answerMultiplayerQuiz(index) {
+            if (gameState.answered || !multiplayerGameId) return;
+            gameState.answered = true;
+            
+            socket.emit('game_move', { gameId: multiplayerGameId, move: { answer: index } });
+            
+            // Mettre en surbrillance le choix
+            const btns = document.querySelectorAll('.quiz-answer-btn');
+            btns.forEach((btn, i) => {
+                btn.disabled = true;
+                if (i === index) btn.style.border = '2px solid var(--accent-color)';
+            });
+            
+            document.getElementById('gameStatus').textContent = `⏳ En attente de ${multiplayerOpponent}...`;
+        }
+        
+        function updateMultiplayerQuiz(data) {
+            if (data.quizWaiting) {
+                // On a déjà répondu, juste attendre
+                return;
+            }
+            
+            if (data.quizRound) {
+                const r = data.quizRound;
+                gameState.scores = r.scores;
+                
+                // Montrer le résultat
+                const myAnswer = r.playerAnswers[gameState.myIndex];
+                const oppAnswer = r.playerAnswers[1 - gameState.myIndex];
+                const correct = r.correctAnswer;
+                const myCorrect = myAnswer === correct;
+                const oppCorrect = oppAnswer === correct;
+                
+                const board = document.getElementById('gameBoard');
+                const q = gameState.currentQuestion;
+                
+                const answerDivs = q.a.map((ans, i) => {
+                    let bg = 'rgba(255,255,255,0.05)';
+                    let bdr = '1px solid rgba(255,255,255,0.1)';
+                    if (i === correct) { bg = 'rgba(76,175,80,0.3)'; bdr = '2px solid #4CAF50'; }
+                    else if (i === myAnswer && i !== correct) { bg = 'rgba(244,67,54,0.3)'; bdr = '2px solid #F44336'; }
+                    let label = escapeHtml(ans);
+                    if (i === correct) label += ' ✅';
+                    if (i === myAnswer && i !== correct) label += ' ❌ (vous)';
+                    if (i === myAnswer && i === correct) label += ' (vous)';
+                    return '<div style="padding:12px 20px; font-size:15px; text-align:left; border-radius:10px; background:' + bg + '; border:' + bdr + '; color:var(--text-color);">' + label + '</div>';
+                }).join('');
+                
+                board.innerHTML = `
+                    <div style="text-align:center; max-width:500px; margin:0 auto;">
+                        <div style="display:flex; justify-content:center; gap:20px; margin-bottom:20px; font-size:15px;">
+                            <div style="padding:8px 16px; background:rgba(255,255,255,0.05); border-radius:10px;">
+                                <strong>Vous</strong>: ${gameState.scores[gameState.myIndex]}
+                            </div>
+                            <div style="padding:8px 16px; background:rgba(255,255,255,0.05); border-radius:10px;">
+                                <strong>${escapeHtml(multiplayerOpponent)}</strong>: ${gameState.scores[1 - gameState.myIndex]}
+                            </div>
+                        </div>
+                        <div style="font-size:18px; font-weight:600; margin:20px 0; padding:15px; background:rgba(255,255,255,0.03); border-radius:12px;">
+                            ${escapeHtml(q.q)}
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:10px;">
+                            ${answerDivs}
+                        </div>
+                        <div style="margin-top:15px; font-size:14px; color:var(--text-muted);">
+                            ${myCorrect ? '✅ Bonne réponse !' : '❌ Mauvaise réponse'} — 
+                            ${oppCorrect ? `✅ ${escapeHtml(multiplayerOpponent)} a trouvé` : `❌ ${escapeHtml(multiplayerOpponent)} s'est trompé`}
+                        </div>
+                    </div>
+                `;
+                
+                if (r.finished) {
+                    let finalMsg;
+                    if (data.winner) {
+                        finalMsg = data.winner === currentUsername ? '🏆 Vous avez gagné le Quiz !' : `😢 ${escapeHtml(data.winner)} gagne le Quiz`;
+                    } else {
+                        finalMsg = '🤝 Égalité !';
+                    }
+                    document.getElementById('gameStatus').textContent = finalMsg;
+                    resetMultiplayerState();
+                } else if (r.nextQuestion) {
+                    document.getElementById('gameStatus').textContent = `Résultat... Question ${r.current}/${r.total} dans 3s`;
+                    
+                    setTimeout(() => {
+                        if (currentGame === 'quiz' && multiplayerGameId) {
+                            gameState.currentQuestion = r.nextQuestion;
+                            gameState.current = r.current;
+                            gameState.answered = false;
+                            document.getElementById('gameStatus').textContent = `Question ${r.current + 1}/${r.total}`;
+                            renderMultiplayerQuiz();
+                        }
+                    }, 3000);
+                }
+            }
+        }
+        
+        // ============================================
+        // === TRIVIA MULTIJOUEUR ===
+        // ============================================
+        function initMultiplayerTrivia(data) {
+            currentGame = 'trivia';
+            const title = document.getElementById('gameTitle');
+            const status = document.getElementById('gameStatus');
+            const controls = document.getElementById('gameControls');
+            
+            title.textContent = `🧠 Trivia vs ${data.opponent}`;
+            
+            const init = data.initialData;
+            gameState = {
+                currentQuestion: init.question,
+                current: 1,
+                total: init.total,
+                scores: [0, 0],
+                myIndex: data.playerIndex,
+                answered: false,
+                multiplayer: true
+            };
+            
+            status.textContent = `Question 1/${gameState.total}`;
+            renderMultiplayerTrivia();
+            
+            controls.innerHTML = `<button class="game-btn secondary" onclick="backToGamesMenu()">Abandonner</button>`;
+        }
+        
+        function renderMultiplayerTrivia() {
+            const board = document.getElementById('gameBoard');
+            const q = gameState.currentQuestion;
+            if (!q) return;
+            
+            board.innerHTML = `
+                <div style="text-align:center; max-width:500px; margin:0 auto;">
+                    <div style="display:flex; justify-content:center; gap:20px; margin-bottom:20px; font-size:15px;">
+                        <div style="padding:8px 16px; background:rgba(255,255,255,0.05); border-radius:10px;">
+                            <strong>Vous</strong>: ${gameState.scores[gameState.myIndex]}
+                        </div>
+                        <div style="padding:8px 16px; background:rgba(255,255,255,0.05); border-radius:10px;">
+                            <strong>${escapeHtml(multiplayerOpponent)}</strong>: ${gameState.scores[1 - gameState.myIndex]}
+                        </div>
+                    </div>
+                    <div style="font-size:18px; font-weight:600; margin:20px 0; padding:15px; background:rgba(255,255,255,0.03); border-radius:12px;">
+                        ${escapeHtml(q.q)}
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:10px;">
+                        ${q.a.map((ans, i) => `
+                            <button class="game-btn trivia-answer-btn" onclick="answerMultiplayerTrivia(${i})"
+                                style="padding:12px 20px; font-size:15px; text-align:left; border-radius:10px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); cursor:pointer; transition:all 0.2s; color:var(--text-color);"
+                                ${gameState.answered ? 'disabled' : ''}
+                            >${escapeHtml(ans)}</button>
+                        `).join('')}
+                    </div>
+                    ${gameState.answered ? '<p style="color:var(--text-muted); font-size:14px; margin-top:15px;">⏳ En attente de l\'adversaire...</p>' : ''}
+                </div>
+            `;
+        }
+        
+        function answerMultiplayerTrivia(index) {
+            if (gameState.answered || !multiplayerGameId) return;
+            gameState.answered = true;
+            
+            socket.emit('game_move', { gameId: multiplayerGameId, move: { answer: index } });
+            
+            const btns = document.querySelectorAll('.trivia-answer-btn');
+            btns.forEach((btn, i) => {
+                btn.disabled = true;
+                if (i === index) btn.style.border = '2px solid var(--accent-color)';
+            });
+            
+            document.getElementById('gameStatus').textContent = `⏳ En attente de ${multiplayerOpponent}...`;
+        }
+        
+        function updateMultiplayerTrivia(data) {
+            if (data.quizWaiting) return;
+            
+            if (data.quizRound) {
+                const r = data.quizRound;
+                gameState.scores = r.scores;
+                
+                const myAnswer = r.playerAnswers[gameState.myIndex];
+                const oppAnswer = r.playerAnswers[1 - gameState.myIndex];
+                const correct = r.correctAnswer;
+                const myCorrect = myAnswer === correct;
+                const oppCorrect = oppAnswer === correct;
+                
+                const board = document.getElementById('gameBoard');
+                const q = gameState.currentQuestion;
+                
+                const answerDivs = q.a.map((ans, i) => {
+                    let bg = 'rgba(255,255,255,0.05)';
+                    let bdr = '1px solid rgba(255,255,255,0.1)';
+                    if (i === correct) { bg = 'rgba(76,175,80,0.3)'; bdr = '2px solid #4CAF50'; }
+                    else if (i === myAnswer && i !== correct) { bg = 'rgba(244,67,54,0.3)'; bdr = '2px solid #F44336'; }
+                    let label = escapeHtml(ans);
+                    if (i === correct) label += ' ✅';
+                    if (i === myAnswer && i !== correct) label += ' ❌ (vous)';
+                    if (i === myAnswer && i === correct) label += ' (vous)';
+                    return '<div style="padding:12px 20px; font-size:15px; text-align:left; border-radius:10px; background:' + bg + '; border:' + bdr + '; color:var(--text-color);">' + label + '</div>';
+                }).join('');
+                
+                board.innerHTML = `
+                    <div style="text-align:center; max-width:500px; margin:0 auto;">
+                        <div style="display:flex; justify-content:center; gap:20px; margin-bottom:20px; font-size:15px;">
+                            <div style="padding:8px 16px; background:rgba(255,255,255,0.05); border-radius:10px;">
+                                <strong>Vous</strong>: ${gameState.scores[gameState.myIndex]}
+                            </div>
+                            <div style="padding:8px 16px; background:rgba(255,255,255,0.05); border-radius:10px;">
+                                <strong>${escapeHtml(multiplayerOpponent)}</strong>: ${gameState.scores[1 - gameState.myIndex]}
+                            </div>
+                        </div>
+                        <div style="font-size:18px; font-weight:600; margin:20px 0; padding:15px; background:rgba(255,255,255,0.03); border-radius:12px;">
+                            ${escapeHtml(q.q)}
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:10px;">
+                            ${answerDivs}
+                        </div>
+                        <div style="margin-top:15px; font-size:14px; color:var(--text-muted);">
+                            ${myCorrect ? '✅ Bonne réponse !' : '❌ Mauvaise réponse'} — 
+                            ${oppCorrect ? `✅ ${escapeHtml(multiplayerOpponent)} a trouvé` : `❌ ${escapeHtml(multiplayerOpponent)} s'est trompé`}
+                        </div>
+                    </div>
+                `;
+                
+                if (r.finished) {
+                    let finalMsg;
+                    if (data.winner) {
+                        finalMsg = data.winner === currentUsername ? '🏆 Vous avez gagné le Trivia !' : `😢 ${escapeHtml(data.winner)} gagne le Trivia`;
+                    } else {
+                        finalMsg = '🤝 Égalité !';
+                    }
+                    document.getElementById('gameStatus').textContent = finalMsg;
+                    resetMultiplayerState();
+                } else if (r.nextQuestion) {
+                    document.getElementById('gameStatus').textContent = `Résultat... Question ${r.current}/${r.total} dans 3s`;
+                    
+                    setTimeout(() => {
+                        if (currentGame === 'trivia' && multiplayerGameId) {
+                            gameState.currentQuestion = r.nextQuestion;
+                            gameState.current = r.current;
+                            gameState.answered = false;
+                            document.getElementById('gameStatus').textContent = `Question ${r.current + 1}/${r.total}`;
+                            renderMultiplayerTrivia();
+                        }
+                    }, 3000);
+                }
+            }
+        }
+        
+        // ============================================
+        // === PENDU MULTIJOUEUR (CO-OP) ===
+        // ============================================
+        function initMultiplayerHangman(data) {
+            currentGame = 'hangman';
+            const title = document.getElementById('gameTitle');
+            const status = document.getElementById('gameStatus');
+            const controls = document.getElementById('gameControls');
+            
+            title.textContent = `🪢 Pendu Co-op vs ${data.opponent}`;
+            
+            const init = data.initialData;
+            gameState = {
+                display: init.display,
+                wrong: init.wrong || [],
+                remaining: init.remaining,
+                wordLength: init.wordLength,
+                myTurn: data.yourTurn,
+                myIndex: data.playerIndex,
+                multiplayer: true
+            };
+            
+            status.textContent = gameState.myTurn ? '🟢 À vous de deviner une lettre !' : `⏳ ${multiplayerOpponent} devine...`;
+            renderMultiplayerHangman();
+            
+            controls.innerHTML = `<button class="game-btn secondary" onclick="backToGamesMenu()">Abandonner</button>`;
+        }
+        
+        function renderMultiplayerHangman() {
+            const board = document.getElementById('gameBoard');
+            const hangmanStages = [
+                '',
+                '  O',
+                '  O\n  |',
+                '  O\n /|',
+                '  O\n /|\\',
+                '  O\n /|\\\n /  ',
+                '  O\n /|\\\n / \\'
+            ];
+            const errors = gameState.wrong.length;
+            const hangmanArt = hangmanStages[Math.min(errors, 6)];
+            const usedLetters = [...(gameState.display.replace(/ /g, '').split('').filter(c => c !== '_')), ...gameState.wrong];
+            
+            const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+            
+            board.innerHTML = `
+                <div style="text-align:center;">
+                    <div style="display:flex; justify-content:center; gap:30px; align-items:flex-start; margin:15px 0;">
+                        <div style="font-family:monospace; white-space:pre; font-size:28px; background:rgba(0,0,0,0.2); padding:15px 25px; border-radius:12px; line-height:1.4; min-width:80px;">${hangmanArt || '&nbsp;'}</div>
+                        <div>
+                            <div style="font-size:36px; letter-spacing:8px; font-weight:bold; margin:15px 0; font-family:monospace;">${gameState.display}</div>
+                            <div style="font-size:14px; color:var(--text-muted);">Erreurs restantes: ${gameState.remaining}</div>
+                            ${gameState.wrong.length > 0 ? `<div style="font-size:14px; color:#F44336; margin-top:5px;">Lettres fausses: ${gameState.wrong.join(', ')}</div>` : ''}
+                        </div>
+                    </div>
+                    <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:6px; margin-top:20px; max-width:480px; margin-left:auto; margin-right:auto;">
+                        ${alphabet.map(l => {
+                            const used = usedLetters.includes(l);
+                            const isWrong = gameState.wrong.includes(l);
+                            const isCorrect = gameState.display.replace(/ /g, '').includes(l);
+                            let bg = 'rgba(255,255,255,0.08)';
+                            if (isWrong) bg = 'rgba(244,67,54,0.3)';
+                            else if (isCorrect) bg = 'rgba(76,175,80,0.3)';
+                            return `<button onclick="guessMultiplayerHangman('${l}')" 
+                                style="width:38px; height:38px; font-size:15px; font-weight:600; border-radius:8px; border:1px solid rgba(255,255,255,0.1); background:${bg}; color:var(--text-color); cursor:${used || !gameState.myTurn ? 'default' : 'pointer'}; opacity:${used ? '0.4' : '1'}; transition:all 0.2s;"
+                                ${used || !gameState.myTurn ? 'disabled' : ''}
+                            >${l}</button>`;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+        
+        function guessMultiplayerHangman(letter) {
+            if (!gameState.myTurn || !multiplayerGameId) return;
+            
+            socket.emit('game_move', { gameId: multiplayerGameId, move: { letter } });
+            
+            gameState.myTurn = false;
+            document.getElementById('gameStatus').textContent = `⏳ Envoyé...`;
+        }
+        
+        function updateMultiplayerHangman(data) {
+            if (data.hangmanState) {
+                const h = data.hangmanState;
+                gameState.display = h.display;
+                gameState.wrong = h.wrong;
+                gameState.remaining = h.remaining;
+                gameState.myTurn = data.yourTurn;
+                
+                renderMultiplayerHangman();
+                
+                if (h.finished) {
+                    if (h.won) {
+                        document.getElementById('gameStatus').textContent = `🎉 Bravo ! Le mot était "${h.word}" — Vous avez gagné ensemble !`;
+                    } else {
+                        document.getElementById('gameStatus').textContent = `😢 Perdu ! Le mot était "${h.word}"`;
+                    }
+                    resetMultiplayerState();
+                } else {
+                    document.getElementById('gameStatus').textContent = gameState.myTurn 
+                        ? '🟢 À vous de deviner une lettre !' 
+                        : `⏳ ${multiplayerOpponent} devine...`;
+                }
             }
         }
         
@@ -13662,16 +15391,18 @@ window.addEmojiReaction = addEmojiReaction;
             let emoji = percentage >= 80 ? '🏆' : percentage >= 60 ? '🎉' : percentage >= 40 ? '👍' : '😅';
             
             board.innerHTML = `
-                <div style="text-align: center; padding: 30px;">
-                    <div style="font-size: 60px; margin-bottom: 20px;">${emoji}</div>
-                    <div style="font-size: 24px; font-weight: 600; color: var(--text-primary); margin-bottom: 10px;">
-                        ${gameState.score}/${gameState.questions.length} bonnes réponses
+                <div class="game-end-overlay">
+                    <div class="game-end-result">${emoji}</div>
+                    <div class="game-end-text">${gameState.score}/${gameState.questions.length} bonnes réponses</div>
+                    <div class="game-end-sub">${percentage}% — ${percentage >= 80 ? 'Excellent !' : percentage >= 60 ? 'Bien joué !' : percentage >= 40 ? 'Pas mal !' : 'Courage !'}</div>
+                    <div class="game-end-actions">
+                        <button class="game-btn-rematch" onclick="startGame('quiz')">🔄 Rejouer</button>
+                        <button class="game-btn-menu" onclick="backToGamesMenu()">📋 Menu</button>
                     </div>
-                    <div style="font-size: 18px; color: var(--text-secondary);">${percentage}%</div>
                 </div>
             `;
             
-            document.getElementById('gameControls').innerHTML = `<button class="game-btn" onclick="startGame('quiz')">🔄 Rejouer</button>`;
+            document.getElementById('gameControls').innerHTML = '';
             document.getElementById('gameStatus').textContent = 'Terminé!';
         }
         
@@ -14025,34 +15756,48 @@ window.addEmojiReaction = addEmojiReaction;
         // ============== EFFET PARALLAX ==============
         let parallaxEnabled = true;
         
+        let parallaxRAF = null;
         function initParallaxEffect() {
             const messagesContainer = document.getElementById('messages');
             if (!messagesContainer) return;
             
-            messagesContainer.addEventListener('scroll', handleParallaxScroll, { passive: true });
+            messagesContainer.addEventListener('scroll', () => {
+                if (!parallaxEnabled || parallaxRAF) return;
+                parallaxRAF = requestAnimationFrame(() => {
+                    handleParallaxScroll();
+                    parallaxRAF = null;
+                });
+            }, { passive: true });
         }
         
         function handleParallaxScroll() {
             if (!parallaxEnabled) return;
             
-            const messages = document.querySelectorAll('.message');
             const container = document.getElementById('messages');
+            if (!container) return;
             const containerRect = container.getBoundingClientRect();
             const containerCenter = containerRect.top + containerRect.height / 2;
             
-            messages.forEach(msg => {
+            // Only process visible messages
+            const messages = container.querySelectorAll('.message');
+            for (let i = messages.length - 1; i >= 0; i--) {
+                const msg = messages[i];
                 const msgRect = msg.getBoundingClientRect();
+                if (msgRect.bottom < containerRect.top || msgRect.top > containerRect.bottom) {
+                    msg.style.transform = '';
+                    msg.style.opacity = '';
+                    continue;
+                }
                 const msgCenter = msgRect.top + msgRect.height / 2;
                 const distance = (msgCenter - containerCenter) / containerRect.height;
                 
-                // Effet subtil de profondeur
                 const scale = 1 - Math.abs(distance) * 0.02;
                 const opacity = 1 - Math.abs(distance) * 0.1;
                 const translateZ = -Math.abs(distance) * 10;
                 
                 msg.style.transform = `scale(${Math.max(0.98, scale)}) translateZ(${translateZ}px)`;
                 msg.style.opacity = Math.max(0.85, opacity);
-            });
+            }
         }
         
         // Initialiser au chargement
@@ -14156,23 +15901,7 @@ window.addEmojiReaction = addEmojiReaction;
         }
         
         // === STATUT PERSONNALISÉ ===
-        function setStatus(status) {
-            currentStatus = status;
-            document.querySelectorAll('.status-option').forEach(opt => opt.classList.remove('active'));
-            document.querySelector(`[data-status="${status}"]`).classList.add('active');
-            
-            if (socket && isConnected) {
-                socket.emit('update_status', { status, customText: customStatusText });
-            }
-        }
-        
-        function setCustomStatus() {
-            customStatusText = document.getElementById('customStatusInput').value.trim();
-            if (socket && isConnected) {
-                socket.emit('update_status', { status: currentStatus, customText: customStatusText });
-            }
-            showNotification('Statut mis à jour', customStatusText || 'Statut effacé', 'success');
-        }
+        // (Fonctions principales dans la section USER STATUS plus bas: selectStatus, saveCustomStatus, setQuickStatus)
         
         // === MODE COMPACT ===
         function toggleCompactMode() {
@@ -15774,6 +17503,9 @@ window.addEmojiReaction = addEmojiReaction;
         let voiceDeafened = false;
         let voiceVideoActive = false;
         let voiceScreenActive = false;
+        let voiceSpeakingCtx = null; // AudioContext for speaking detection
+        let voiceSpeakingInterval = null;
+        let isSpeaking = false;
         
         const ICE_SERVERS = {
             iceServers: [
@@ -15782,6 +17514,9 @@ window.addEmojiReaction = addEmojiReaction;
                 { urls: 'stun:stun2.l.google.com:19302' }
             ]
         };
+
+        let voiceStartTime = null;
+        let voiceMiniBarTimer = null;
 
         // Affiche la vue vocale et masque le chat
         function showVoiceView(room) {
@@ -15800,6 +17535,9 @@ window.addEmojiReaction = addEmojiReaction;
             document.querySelectorAll('.voice-channel-item').forEach(el => el.classList.remove('active'));
             const activeItem = document.querySelector(`.voice-channel-item[data-voice-room="${room}"]`);
             if (activeItem) activeItem.classList.add('active');
+            
+            // Masquer la mini barre quand on est dans la vue vocale
+            document.getElementById('voiceMiniBar').style.display = 'none';
         }
 
         // Masque la vue vocale et restaure le chat
@@ -15818,6 +17556,66 @@ window.addEmojiReaction = addEmojiReaction;
                     item.classList.add('active');
                 }
             });
+            
+            // Si toujours connecté au vocal, afficher la mini barre
+            if (currentVoiceRoom) {
+                showVoiceMiniBar();
+            }
+        }
+
+        function showVoiceMiniBar() {
+            const miniBar = document.getElementById('voiceMiniBar');
+            miniBar.style.display = 'flex';
+            document.getElementById('voiceMiniBarRoom').textContent = currentVoiceRoom;
+            updateMiniBarControls();
+            startMiniBarTimer();
+        }
+
+        function hideVoiceMiniBar() {
+            document.getElementById('voiceMiniBar').style.display = 'none';
+            stopMiniBarTimer();
+        }
+
+        function startMiniBarTimer() {
+            if (!voiceStartTime) voiceStartTime = Date.now();
+            stopMiniBarTimer();
+            const timeEl = document.getElementById('voiceMiniBarTime');
+            voiceMiniBarTimer = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - voiceStartTime) / 1000);
+                const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+                const s = String(elapsed % 60).padStart(2, '0');
+                timeEl.textContent = m + ':' + s;
+            }, 1000);
+        }
+
+        function stopMiniBarTimer() {
+            if (voiceMiniBarTimer) {
+                clearInterval(voiceMiniBarTimer);
+                voiceMiniBarTimer = null;
+            }
+        }
+
+        function updateMiniBarControls() {
+            const muteBtn = document.getElementById('miniMuteBtn');
+            const deafenBtn = document.getElementById('miniDeafenBtn');
+            const videoBtn = document.getElementById('miniVideoBtn');
+            const screenBtn = document.getElementById('miniScreenBtn');
+            if (!muteBtn) return;
+            
+            muteBtn.textContent = voiceMuted ? '🔇' : '🎤';
+            muteBtn.classList.toggle('mini-active', voiceMuted);
+            deafenBtn.textContent = voiceDeafened ? '🔈' : '🔊';
+            deafenBtn.classList.toggle('mini-active', voiceDeafened);
+            videoBtn.textContent = voiceVideoActive ? '📹' : '📷';
+            videoBtn.classList.toggle('mini-active', voiceVideoActive);
+            screenBtn.textContent = voiceScreenActive ? '🖥️' : '🖥️';
+            screenBtn.classList.toggle('mini-active', voiceScreenActive);
+        }
+
+        function returnToVoiceView() {
+            if (!currentVoiceRoom) return;
+            // Masquer le chat et afficher la vue vocale
+            showVoiceView(currentVoiceRoom);
         }
 
         async function joinVoiceChannel(room) {
@@ -15831,6 +17629,7 @@ window.addEmojiReaction = addEmojiReaction;
             try {
                 localAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
                 currentVoiceRoom = room;
+                voiceStartTime = Date.now();
                 
                 socket.emit('voice_join', { room });
                 
@@ -15855,6 +17654,7 @@ window.addEmojiReaction = addEmojiReaction;
                 voiceVideoActive = false;
                 voiceScreenActive = false;
                 updateVoiceControlUI();
+                startSpeakingDetection();
                 
                 showNotification('🔊', `Connecté à ${room}`, 'success');
             } catch (err) {
@@ -15889,11 +17689,16 @@ window.addEmojiReaction = addEmojiReaction;
             
             socket.emit('voice_leave');
             
+            stopSpeakingDetection();
             currentVoiceRoom = null;
             voiceMuted = false;
             voiceDeafened = false;
             voiceVideoActive = false;
             voiceScreenActive = false;
+            voiceStartTime = null;
+            
+            // Masquer la mini barre vocale
+            hideVoiceMiniBar();
             
             // Masquer la vue vocale et restaurer le chat
             hideVoiceView();
@@ -15970,6 +17775,14 @@ window.addEmojiReaction = addEmojiReaction;
                     if (voiceDeafened) audioEl.muted = true;
                 } else if (track.kind === 'video') {
                     addVideoTile(peerId, peerUsername, stream, track);
+                    
+                    // Quand le track distant s'arrête, retirer la tuile vidéo
+                    track.onended = () => {
+                        removeVideoTile(peerId);
+                    };
+                    track.onmute = () => {
+                        removeVideoTile(peerId);
+                    };
                 }
             };
             
@@ -16015,18 +17828,119 @@ window.addEmojiReaction = addEmojiReaction;
                 const isScreen = stream.getVideoTracks().some(t => t.label && t.label.includes('screen'));
                 label.textContent = username + (isScreen ? ' (écran)' : ' (caméra)');
                 
+                // Contrôles de la tuile
+                const controls = document.createElement('div');
+                controls.className = 'screen-tile-controls';
+                
+                const minimizeBtn = document.createElement('button');
+                minimizeBtn.innerHTML = '🗕';
+                minimizeBtn.title = 'Minimiser';
+                minimizeBtn.onclick = (e) => { e.stopPropagation(); toggleTileMinimize(tileId); };
+                
+                const fullscreenBtn = document.createElement('button');
+                fullscreenBtn.innerHTML = '⛶';
+                fullscreenBtn.title = 'Plein écran';
+                fullscreenBtn.onclick = (e) => { e.stopPropagation(); toggleTileFullscreen(tileId); };
+                
+                controls.appendChild(minimizeBtn);
+                controls.appendChild(fullscreenBtn);
+                
                 tile.appendChild(video);
                 tile.appendChild(label);
+                tile.appendChild(controls);
                 screenArea.appendChild(tile);
                 screenArea.style.display = 'flex';
+                
+                // Double-clic pour plein écran
+                tile.addEventListener('dblclick', () => toggleTileFullscreen(tileId));
+                
+                // Drag pour tuile minimisée
+                makeTileDraggable(tile);
             } else {
                 tile.querySelector('video').srcObject = stream;
             }
         }
+        
+        function toggleTileFullscreen(tileId) {
+            const tile = document.getElementById(tileId);
+            if (!tile) return;
+            
+            if (tile.classList.contains('tile-fullscreen')) {
+                tile.classList.remove('tile-fullscreen');
+                document.removeEventListener('keydown', tile._escHandler);
+            } else {
+                // Retirer minimize si actif
+                tile.classList.remove('tile-minimized');
+                tile.classList.add('tile-fullscreen');
+                // Échap pour quitter
+                tile._escHandler = (e) => {
+                    if (e.key === 'Escape') {
+                        tile.classList.remove('tile-fullscreen');
+                        document.removeEventListener('keydown', tile._escHandler);
+                    }
+                };
+                document.addEventListener('keydown', tile._escHandler);
+            }
+        }
+        
+        function toggleTileMinimize(tileId) {
+            const tile = document.getElementById(tileId);
+            if (!tile) return;
+            
+            if (tile.classList.contains('tile-minimized')) {
+                tile.classList.remove('tile-minimized');
+                tile.style.left = '';
+                tile.style.top = '';
+                tile.style.bottom = '';
+                tile.style.right = '';
+            } else {
+                tile.classList.remove('tile-fullscreen');
+                tile.classList.add('tile-minimized');
+                // Reset position for CSS bottom/right
+                tile.style.left = '';
+                tile.style.top = '';
+            }
+        }
+        
+        function makeTileDraggable(tile) {
+            let isDragging = false, startX, startY, startLeft, startTop;
+            
+            tile.addEventListener('mousedown', (e) => {
+                if (!tile.classList.contains('tile-minimized') || e.target.tagName === 'BUTTON') return;
+                isDragging = true;
+                const rect = tile.getBoundingClientRect();
+                startX = e.clientX;
+                startY = e.clientY;
+                startLeft = rect.left;
+                startTop = rect.top;
+                tile.style.transition = 'none';
+                e.preventDefault();
+            });
+            
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                tile.style.left = (startLeft + e.clientX - startX) + 'px';
+                tile.style.top = (startTop + e.clientY - startY) + 'px';
+                tile.style.bottom = 'auto';
+                tile.style.right = 'auto';
+            });
+            
+            document.addEventListener('mouseup', () => {
+                if (isDragging) {
+                    isDragging = false;
+                    tile.style.transition = '';
+                }
+            });
+        }
 
         function removeVideoTile(peerId) {
-            document.querySelectorAll(`[id^="tile-${peerId}"]`).forEach(el => el.remove());
-            // Masquer la zone écran si plus aucune tuile
+            document.querySelectorAll(`[id^="tile-${peerId}"]`).forEach(el => {
+                // Clean up escape handler if fullscreen
+                if (el._escHandler) {
+                    document.removeEventListener('keydown', el._escHandler);
+                }
+                el.remove();
+            });
             const screenArea = document.getElementById('voiceScreenArea');
             if (screenArea && screenArea.children.length === 0) {
                 screenArea.style.display = 'none';
@@ -16138,7 +18052,8 @@ window.addEmojiReaction = addEmojiReaction;
                     voiceScreenActive = true;
                     
                     localScreenStream.getVideoTracks()[0].onended = () => {
-                        voiceScreenActive = true;
+                        if (!voiceScreenActive) return;
+                        voiceScreenActive = true; // Set to true so toggleVoiceScreen will stop it
                         toggleVoiceScreen();
                     };
                     
@@ -16172,6 +18087,67 @@ window.addEmojiReaction = addEmojiReaction;
             }
         }
 
+        // ===== Détection de parole (audio level) =====
+        function startSpeakingDetection() {
+            if (!localAudioStream) return;
+            try {
+                voiceSpeakingCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const source = voiceSpeakingCtx.createMediaStreamSource(localAudioStream);
+                const analyser = voiceSpeakingCtx.createAnalyser();
+                analyser.fftSize = 512;
+                analyser.smoothingTimeConstant = 0.4;
+                source.connect(analyser);
+                
+                const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                let speakingTimeout = null;
+                
+                voiceSpeakingInterval = setInterval(() => {
+                    if (voiceMuted) {
+                        if (isSpeaking) {
+                            isSpeaking = false;
+                            socket.emit('voice_speaking', { speaking: false });
+                        }
+                        return;
+                    }
+                    analyser.getByteFrequencyData(dataArray);
+                    let sum = 0;
+                    for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+                    const avg = sum / dataArray.length;
+                    
+                    if (avg > 15 && !isSpeaking) {
+                        isSpeaking = true;
+                        socket.emit('voice_speaking', { speaking: true });
+                        if (speakingTimeout) clearTimeout(speakingTimeout);
+                    } else if (avg <= 15 && isSpeaking) {
+                        if (!speakingTimeout) {
+                            speakingTimeout = setTimeout(() => {
+                                isSpeaking = false;
+                                socket.emit('voice_speaking', { speaking: false });
+                                speakingTimeout = null;
+                            }, 300);
+                        }
+                    } else if (avg > 15 && isSpeaking && speakingTimeout) {
+                        clearTimeout(speakingTimeout);
+                        speakingTimeout = null;
+                    }
+                }, 200);
+            } catch (e) {
+                console.warn('Speaking detection not available:', e);
+            }
+        }
+        
+        function stopSpeakingDetection() {
+            if (voiceSpeakingInterval) {
+                clearInterval(voiceSpeakingInterval);
+                voiceSpeakingInterval = null;
+            }
+            if (voiceSpeakingCtx) {
+                voiceSpeakingCtx.close().catch(() => {});
+                voiceSpeakingCtx = null;
+            }
+            isSpeaking = false;
+        }
+
         function updateVoiceControlUI() {
             const muteBtn = document.getElementById('vcMuteBtn');
             const deafenBtn = document.getElementById('vcDeafenBtn');
@@ -16191,6 +18167,9 @@ window.addEmojiReaction = addEmojiReaction;
             
             document.getElementById('vcScreenIcon').textContent = voiceScreenActive ? '🖥️' : '🖥️';
             screenBtn.classList.toggle('active-green', voiceScreenActive);
+            
+            // Aussi mettre à jour la mini barre
+            updateMiniBarControls();
         }
 
         function updateVoiceParticipantsUI(room, participants) {
@@ -16247,6 +18226,16 @@ window.addEmojiReaction = addEmojiReaction;
                         </div>
                     `;
                 }).join('');
+            }
+            
+            // --- Nettoyer les tuiles vidéo/écran des peers qui ont coupé ---
+            if (currentVoiceRoom === room) {
+                participants.forEach(p => {
+                    if (p.socketId === socket?.id) return; // Ignorer soi-même
+                    if (!p.video && !p.screen) {
+                        removeVideoTile(p.socketId);
+                    }
+                });
             }
         }
 
@@ -16546,11 +18535,14 @@ window.addEmojiReaction = addEmojiReaction;
         // ===========================================================
         // === FRIENDS SYSTEM ===
         // ===========================================================
-        let myFriends = { friends: [], pending: [], requests: [] };
+        let myFriends = { friends: [], pending: [], requests: [], blocked: [] };
 
         function openFriendsModal() {
             document.getElementById('friendsModal').style.display = 'block';
-            if (socket) socket.emit('get_friends');
+            if (socket) {
+                socket.emit('get_friends');
+                socket.emit('get_blocked_users');
+            }
         }
 
         function showFriendsTab(tab) {
@@ -16576,6 +18568,7 @@ window.addEmojiReaction = addEmojiReaction;
                             </div>
                             <div class="friend-actions">
                                 <button class="dm-btn" onclick="startDMWith('${escapeHtml(f.username)}')">💬</button>
+                                <button class="remove-btn" onclick="blockUser('${escapeHtml(f.username)}')" title="Bloquer" style="background:#f04747;color:white;">🚫</button>
                                 <button class="remove-btn" onclick="removeFriend('${escapeHtml(f.username)}')">✕</button>
                             </div>
                         </div>
@@ -16605,6 +18598,22 @@ window.addEmojiReaction = addEmojiReaction;
                         </div>
                     `).join('');
                 }
+            } else if (tab === 'blocked') {
+                if (!myFriends.blocked || !myFriends.blocked.length) {
+                    html = '<div style="text-align:center;padding:30px;color:var(--text-secondary);">Aucun utilisateur bloqué</div>';
+                } else {
+                    html = myFriends.blocked.map(u => `
+                        <div class="friend-item">
+                            <div class="friend-info">
+                                <div class="friend-name">🚫 ${escapeHtml(u)}</div>
+                                <div style="font-size:11px;color:#f04747;">Bloqué</div>
+                            </div>
+                            <div class="friend-actions">
+                                <button class="accept-btn" onclick="unblockUser('${escapeHtml(u)}')">Débloquer</button>
+                            </div>
+                        </div>
+                    `).join('');
+                }
             }
             container.innerHTML = html;
         }
@@ -16625,6 +18634,18 @@ window.addEmojiReaction = addEmojiReaction;
             if (confirm(`Retirer ${username} de vos amis ?`)) {
                 if (socket) socket.emit('remove_friend', { username });
             }
+        }
+
+        function blockUser(username) {
+            if (confirm(`Bloquer ${username} ? Vous ne verrez plus ses messages.`)) {
+                if (socket) socket.emit('block_user', { username });
+                showToast(`🚫 ${username} a été bloqué`);
+            }
+        }
+
+        function unblockUser(username) {
+            if (socket) socket.emit('unblock_user', { username });
+            showToast(`✅ ${username} a été débloqué`);
         }
 
         function startDMWith(username) {
@@ -16649,14 +18670,24 @@ window.addEmojiReaction = addEmojiReaction;
         function updateMyXPDisplay(data) {
             myXP = data;
             const pct = data.neededXP > 0 ? Math.min(100, (data.currentXP / data.neededXP) * 100) : 0;
+            const levelTitles = ['Recrue', 'Apprenti', 'Guerrier', 'Vétéran', 'Champion', 'Héros', 'Légende', 'Mythique', 'Divin', 'Immortel'];
+            const title = levelTitles[Math.min(data.level, levelTitles.length - 1)] || 'Immortel';
+            const titleEl = document.getElementById('myXPTitle');
+            if (titleEl) titleEl.textContent = `${title} — Niveau ${data.level}`;
             const infoEl = document.getElementById('myXPInfo');
-            if (infoEl) infoEl.textContent = `Niveau ${data.level} • ${data.xp} XP total`;
-            const badgeEl = document.getElementById('myLevelBadge');
-            if (badgeEl) badgeEl.textContent = `Nv. ${data.level}`;
+            if (infoEl) infoEl.textContent = `${data.xp} XP total accumulé`;
+            const circleEl = document.getElementById('myLevelCircle');
+            if (circleEl) circleEl.textContent = data.level;
             const barEl = document.getElementById('myXPBar');
             if (barEl) barEl.style.width = pct + '%';
             const barText = document.getElementById('myXPBarText');
-            if (barText) barText.textContent = `${data.currentXP}/${data.neededXP}`;
+            if (barText) barText.textContent = `${data.currentXP} / ${data.neededXP} XP`;
+            const totalEl = document.getElementById('myTotalXP');
+            if (totalEl) totalEl.textContent = data.xp;
+            const currentEl = document.getElementById('myCurrentXP');
+            if (currentEl) currentEl.textContent = data.currentXP;
+            const neededEl = document.getElementById('myNeededXP');
+            if (neededEl) neededEl.textContent = data.neededXP;
         }
 
         function renderLeaderboard(data) {
@@ -16666,12 +18697,16 @@ window.addEmojiReaction = addEmojiReaction;
                 return;
             }
             const medals = ['🥇', '🥈', '🥉'];
+            const levelTitles = ['Recrue', 'Apprenti', 'Guerrier', 'Vétéran', 'Champion', 'Héros', 'Légende', 'Mythique', 'Divin', 'Immortel'];
             container.innerHTML = data.map((u, i) => `
                 <div class="leaderboard-item">
-                    <div class="leaderboard-rank">${medals[i] || (i + 1)}</div>
+                    <div class="leaderboard-rank">${medals[i] || '#' + (i + 1)}</div>
                     <div class="leaderboard-name">${escapeHtml(u.username)}</div>
                     <div class="level-badge">Nv. ${u.level}</div>
-                    <div class="leaderboard-xp">${u.xp} XP</div>
+                    <div class="leaderboard-xp">
+                        ${u.xp} XP
+                        <span class="leaderboard-xp-sub">${levelTitles[Math.min(u.level, levelTitles.length - 1)] || 'Immortel'}</span>
+                    </div>
                 </div>
             `).join('');
         }
@@ -17136,7 +19171,6 @@ window.addEmojiReaction = addEmojiReaction;
                     <div class="hangman-word">${state.display}</div>
                     <div class="hangman-lives">${lives}</div>
                     ${state.wrong.length ? `<div class="hangman-wrong">Erreurs: ${state.wrong.join(' ')}</div>` : ''}
-                    ${state.finished ? `<div style="margin:15px 0;font-size:18px;font-weight:700;color:${state.won ? '#43b581' : '#f04747'};">${state.won ? '🎉 Bravo !' : `💀 Perdu ! Le mot était: ${state.word}`}</div>` : ''}
                 </div>
             `;
 
@@ -17149,7 +19183,18 @@ window.addEmojiReaction = addEmojiReaction;
                     return `<button class="hangman-key ${isGuessed ? 'correct' : ''} ${isWrong ? 'wrong' : ''} ${used ? 'used' : ''}" onclick="guessLetter('${l}')">${l}</button>`;
                 }).join('')}</div>`;
             } else {
-                controls.innerHTML = '<button class="game-back-btn" onclick="socket.emit(\'start_hangman\')">🔄 Rejouer</button>';
+                board.innerHTML += `
+                    <div class="game-end-overlay">
+                        <div class="game-end-result">${state.won ? '🎉' : '💀'}</div>
+                        <div class="game-end-text">${state.won ? 'Bravo !' : 'Perdu !'}</div>
+                        <div class="game-end-sub">${state.won ? 'Mot trouvé !' : `Le mot était: ${state.word}`}</div>
+                        <div class="game-end-actions">
+                            <button class="game-btn-rematch" onclick="startHangman()">🔄 Rejouer</button>
+                            <button class="game-btn-menu" onclick="backToGamesMenu()">📋 Menu</button>
+                        </div>
+                    </div>
+                `;
+                controls.innerHTML = '';
             }
             status.textContent = state.finished ? (state.won ? 'Gagné !' : 'Perdu !') : `${state.remaining} vies restantes`;
         }
@@ -17204,12 +19249,16 @@ window.addEmojiReaction = addEmojiReaction;
             if (data.finished) {
                 setTimeout(() => {
                     const board = document.getElementById('gameBoard');
+                    const pct = Math.round((data.score / data.total) * 100);
                     board.innerHTML = `
-                        <div class="trivia-container">
-                            <div style="font-size:48px;margin-bottom:10px;">🏆</div>
-                            <div class="trivia-score">${data.score}/${data.total}</div>
-                            <div style="color:var(--text-secondary);margin-bottom:15px;">+${data.xpGained} XP gagnés !</div>
-                            <button class="game-back-btn" onclick="startTrivia()">🔄 Rejouer</button>
+                        <div class="game-end-overlay">
+                            <div class="game-end-result">${pct >= 80 ? '🏆' : pct >= 50 ? '🎉' : '😅'}</div>
+                            <div class="game-end-text">${data.score}/${data.total} bonnes réponses</div>
+                            <div class="game-end-sub">+${data.xpGained} XP gagnés ! (${pct}%)</div>
+                            <div class="game-end-actions">
+                                <button class="game-btn-rematch" onclick="startTrivia()">🔄 Rejouer</button>
+                                <button class="game-btn-menu" onclick="backToGamesMenu()">📋 Menu</button>
+                            </div>
                         </div>
                     `;
                     document.getElementById('gameControls').innerHTML = '';
@@ -17284,6 +19333,9 @@ window.addEmojiReaction = addEmojiReaction;
                     badge.style.display = 'none';
                 }
             });
+            socket.on('blocked_users_list', (data) => {
+                myFriends.blocked = data.blocked || [];
+            });
             socket.on('friend_request_received', (data) => {
                 showNotification('👥 Demande d\'ami', `${data.from} veut être votre ami !`, 'info');
                 socket.emit('get_friends');
@@ -17326,8 +19378,14 @@ window.addEmojiReaction = addEmojiReaction;
 
             // User status
             socket.on('user_status_changed', (data) => {
-                // Update user list display
-                updateUsersList && typeof updateUsersList === 'function' && updateUsersList();
+                // Update local cache - server will also send users_update
+                if (data.username) {
+                    userStatuses[data.username] = {
+                        status: data.status || 'online',
+                        customText: data.customText || '',
+                        emoji: data.emoji || ''
+                    };
+                }
             });
 
             // Hangman

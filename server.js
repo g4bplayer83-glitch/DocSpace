@@ -16,6 +16,7 @@ const io = socketIo(server, {
     pingTimeout: 60000,
     pingInterval: 25000
 });
+global.io = io;
 
 // Configuration multer pour les fichiers
 const uploadDir = path.join(__dirname, 'uploads');
@@ -964,16 +965,20 @@ io.on('connection', (socket) => {
         
         const username = user.username;
         
+        // Préserver les champs existants quand non fournis (ex: auto-idle)
+        const existing = userStatuses[username] || {};
+        
         // Sauvegarder le statut
         userStatuses[username] = {
             status: status || 'online',
-            customText: (customText || '').substring(0, 50),
+            customText: (customText !== undefined ? customText : existing.customText || '').toString().substring(0, 50),
+            emoji: existing.emoji || '',
             lastUpdate: new Date()
         };
         
         // Mettre à jour les données utilisateur
-        user.status = status;
-        user.customStatus = customText;
+        user.status = status || 'online';
+        user.customStatus = userStatuses[username].customText;
         connectedUsers.set(socket.id, user);
         
         logActivity('PROFILE', `Statut mis à jour`, { 
@@ -2102,7 +2107,8 @@ io.on('connection', (socket) => {
             muted: false,
             deafened: false,
             video: false,
-            screen: false
+            screen: false,
+            speaking: false
         });
         socket.join('voice_' + room);
         
@@ -2157,6 +2163,18 @@ io.on('connection', (socket) => {
         io.to(targetId).emit('voice_ice_candidate', { fromId: socket.id, candidate });
     });
     
+    // Détection de parole
+    socket.on('voice_speaking', (data) => {
+        for (const [rName, rData] of Object.entries(voiceRooms)) {
+            const participant = rData.participants.get(socket.id);
+            if (participant) {
+                participant.speaking = !!data.speaking;
+                io.emit('voice_participants_update', { room: rName, participants: getVoiceParticipants(rName) });
+                break;
+            }
+        }
+    });
+
     // Mise à jour du statut vocal (mute, deafen, video, screen)
     socket.on('voice_status_update', (data) => {
         for (const [rName, rData] of Object.entries(voiceRooms)) {
@@ -2219,6 +2237,48 @@ io.on('connection', (socket) => {
             if (typingUsers.has(socket.id)) {
                 typingUsers.delete(socket.id);
                 updateTypingIndicator();
+            }
+            
+            // Nettoyer les invitations de jeu en attente
+            if (global.gameInvites) {
+                for (const [inviteId, invite] of global.gameInvites) {
+                    if (invite.from === user.username) {
+                        // L'inviteur se déconnecte → notifier le destinataire
+                        const toSocket = findCurrentSocket(invite.to);
+                        if (toSocket) {
+                            io.to(toSocket).emit('game_invite_cancelled', { inviteId, from: invite.from });
+                        }
+                        global.gameInvites.delete(inviteId);
+                    } else if (invite.to === user.username) {
+                        // Le destinataire se déconnecte → notifier l'inviteur
+                        const fromSocket = findCurrentSocket(invite.from);
+                        if (fromSocket) {
+                            io.to(fromSocket).emit('game_declined', { by: user.username, gameType: invite.gameType });
+                        }
+                        global.gameInvites.delete(inviteId);
+                    }
+                }
+            }
+            
+            // Nettoyer les parties actives
+            if (global.activeGames) {
+                for (const [gameId, game] of global.activeGames) {
+                    const playerInGame = game.players.find(p => p.username === user.username);
+                    if (playerInGame) {
+                        game.players.forEach(p => {
+                            if (p.username !== user.username) {
+                                const opponentSocket = findCurrentSocket(p.username);
+                                if (opponentSocket) {
+                                    io.to(opponentSocket).emit('game_opponent_quit', {
+                                        gameId: gameId,
+                                        quitter: user.username
+                                    });
+                                }
+                            }
+                        });
+                        global.activeGames.delete(gameId);
+                    }
+                }
             }
             
             // Retirer l'utilisateur
@@ -2500,6 +2560,15 @@ io.on('connection', (socket) => {
     if (!global.activeGames) global.activeGames = new Map();
     if (!global.gameInvites) global.gameInvites = new Map();
     
+    // Helper: trouver le socket actuel d'un utilisateur par son username
+    function findCurrentSocket(username) {
+        let sid = null;
+        connectedUsers.forEach((u, socketId) => {
+            if (u.username === username) sid = socketId;
+        });
+        return sid;
+    }
+    
     // Envoyer une invitation de jeu
     socket.on('game_invite', (data) => {
         const sender = connectedUsers.get(socket.id);
@@ -2508,20 +2577,13 @@ io.on('connection', (socket) => {
         const { to, gameType } = data;
         
         // Trouver le destinataire
-        let recipientSocket = null;
-        connectedUsers.forEach((u, sid) => {
-            if (u.username === to) {
-                recipientSocket = sid;
-            }
-        });
+        const recipientSocket = findCurrentSocket(to);
         
         if (recipientSocket) {
             const inviteId = `${sender.username}-${to}-${Date.now()}`;
             global.gameInvites.set(inviteId, {
                 from: sender.username,
-                fromSocket: socket.id,
                 to: to,
-                toSocket: recipientSocket,
                 gameType: gameType,
                 timestamp: Date.now()
             });
@@ -2549,37 +2611,66 @@ io.on('connection', (socket) => {
         
         if (!invite) return;
         
+        // Résoudre les sockets ACTUELS par username (pas les anciens stockés)
+        const fromSocket = findCurrentSocket(invite.from);
+        const toSocket = socket.id; // L'accepteur est le socket actuel
+        
+        if (!fromSocket) {
+            // L'inviteur n'est plus connecté
+            socket.emit('game_invite_error', { message: `${invite.from} n'est plus connecté` });
+            global.gameInvites.delete(inviteId);
+            return;
+        }
+        
         const gameId = `game-${Date.now()}`;
         const game = {
             id: gameId,
             type: invite.gameType,
             players: [
-                { username: invite.from, socket: invite.fromSocket },
-                { username: invite.to, socket: invite.toSocket }
+                { username: invite.from, socket: fromSocket },
+                { username: invite.to, socket: toSocket }
             ],
             state: initGameState(invite.gameType),
-            currentTurn: 0, // Index du joueur dont c'est le tour
+            currentTurn: 0,
             started: Date.now()
         };
         
         global.activeGames.set(gameId, game);
         global.gameInvites.delete(inviteId);
         
-        // Notifier les deux joueurs
-        io.to(invite.fromSocket).emit('game_start', {
+        // Préparer les données initiales selon le type de jeu
+        let initialData = {};
+        if (invite.gameType === 'quiz' || invite.gameType === 'trivia') {
+            const q = game.state.questions[0];
+            initialData = {
+                question: invite.gameType === 'quiz' ? { q: q.q, a: q.a } : { q: q.q, a: q.a },
+                current: 1,
+                total: game.state.total
+            };
+        } else if (invite.gameType === 'rps') {
+            initialData = { round: 1, maxRounds: game.state.maxRounds, scores: [0, 0] };
+        } else if (invite.gameType === 'hangman') {
+            const display = game.state.word.split('').map(() => '_').join(' ');
+            initialData = { display, wrong: [], remaining: game.state.maxErrors, wordLength: game.state.word.length };
+        }
+        
+        // Notifier les deux joueurs avec les sockets actuels
+        io.to(fromSocket).emit('game_start', {
             gameId: gameId,
             gameType: invite.gameType,
             opponent: invite.to,
             yourTurn: true,
-            playerIndex: 0
+            playerIndex: 0,
+            initialData
         });
         
-        io.to(invite.toSocket).emit('game_start', {
+        io.to(toSocket).emit('game_start', {
             gameId: gameId,
             gameType: invite.gameType,
             opponent: invite.from,
             yourTurn: false,
-            playerIndex: 1
+            playerIndex: 1,
+            initialData
         });
         
         logActivity('GAME', `Partie commencée`, {
@@ -2595,10 +2686,14 @@ io.on('connection', (socket) => {
         
         if (!invite) return;
         
-        io.to(invite.fromSocket).emit('game_declined', {
-            by: invite.to,
-            gameType: invite.gameType
-        });
+        // Résoudre le socket actuel de l'inviteur
+        const fromSocket = findCurrentSocket(invite.from);
+        if (fromSocket) {
+            io.to(fromSocket).emit('game_declined', {
+                by: invite.to,
+                gameType: invite.gameType
+            });
+        }
         
         global.gameInvites.delete(inviteId);
     });
@@ -2613,32 +2708,42 @@ io.on('connection', (socket) => {
         const user = connectedUsers.get(socket.id);
         if (!user) return;
         
-        // Vérifier que c'est bien le tour du joueur
+        // Vérifier que le joueur fait partie de la partie
         const playerIndex = game.players.findIndex(p => p.username === user.username);
-        if (playerIndex === -1 || playerIndex !== game.currentTurn) return;
+        if (playerIndex === -1) return;
+        
+        // Pour les jeux tour par tour (tictactoe, connect4, hangman), vérifier le tour
+        const turnBasedGames = ['tictactoe', 'connect4', 'hangman'];
+        if (turnBasedGames.includes(game.type) && playerIndex !== game.currentTurn) return;
         
         // Appliquer le coup selon le type de jeu
         const result = applyGameMove(game, move, playerIndex);
         
         if (result.valid) {
             game.state = result.state;
-            game.currentTurn = result.nextTurn;
+            if (result.nextTurn !== undefined) game.currentTurn = result.nextTurn;
             
-            // Notifier les deux joueurs
-            game.players.forEach((p, idx) => {
-                io.to(p.socket).emit('game_update', {
-                    gameId: gameId,
-                    state: game.state,
-                    yourTurn: idx === game.currentTurn,
-                    lastMove: move,
-                    lastMoveBy: user.username,
-                    winner: result.winner,
-                    draw: result.draw
+            // Les jeux avec customEmit gèrent leur propre émission
+            if (!result.customEmit) {
+                game.players.forEach((p, idx) => {
+                    const currentSid = findCurrentSocket(p.username);
+                    if (currentSid) {
+                        io.to(currentSid).emit('game_update', {
+                            gameId: gameId,
+                            state: game.state,
+                            yourTurn: idx === game.currentTurn,
+                            lastMove: move,
+                            lastMoveBy: user.username,
+                            winner: result.winner,
+                            draw: result.draw,
+                            hangmanState: result.hangmanState || null
+                        });
+                    }
                 });
-            });
+            }
             
             // Fin de partie
-            if (result.winner || result.draw) {
+            if ((result.winner || result.draw) && !result.waiting) {
                 global.activeGames.delete(gameId);
                 logActivity('GAME', `Partie terminée`, {
                     game: game.type,
@@ -2658,13 +2763,16 @@ io.on('connection', (socket) => {
         const user = connectedUsers.get(socket.id);
         if (!user) return;
         
-        // Notifier l'adversaire
+        // Notifier l'adversaire (résoudre socket actuel)
         game.players.forEach(p => {
             if (p.username !== user.username) {
-                io.to(p.socket).emit('game_opponent_quit', {
-                    gameId: gameId,
-                    quitter: user.username
-                });
+                const opponentSocket = findCurrentSocket(p.username);
+                if (opponentSocket) {
+                    io.to(opponentSocket).emit('game_opponent_quit', {
+                        gameId: gameId,
+                        quitter: user.username
+                    });
+                }
             }
         });
         
@@ -2868,6 +2976,59 @@ io.on('connection', (socket) => {
             return { username: f, online };
         });
         socket.emit('friends_list', { friends: friendsWithStatus, pending: data.pending, requests: data.requests });
+    });
+
+    // =========================================
+    // === BLOCK USERS ===
+    // =========================================
+    if (!global.blockedUsers) global.blockedUsers = {};
+
+    socket.on('block_user', (data) => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+        const target = data.username;
+        if (!target || target === user.username) return;
+
+        if (!global.blockedUsers[user.username]) global.blockedUsers[user.username] = [];
+        if (!global.blockedUsers[user.username].includes(target)) {
+            global.blockedUsers[user.username].push(target);
+        }
+
+        // Also remove from friends
+        if (friendships[user.username]) {
+            friendships[user.username].friends = friendships[user.username].friends.filter(u => u !== target);
+        }
+        if (friendships[target]) {
+            friendships[target].friends = friendships[target].friends.filter(u => u !== user.username);
+        }
+        saveFriendships();
+
+        socket.emit('user_blocked', { username: target });
+        socket.emit('blocked_users_list', { blocked: global.blockedUsers[user.username] || [] });
+        emitFriendsListTo(user.username);
+
+        logActivity('BLOCK', `${user.username} a bloqué ${target}`);
+    });
+
+    socket.on('unblock_user', (data) => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+        const target = data.username;
+
+        if (global.blockedUsers[user.username]) {
+            global.blockedUsers[user.username] = global.blockedUsers[user.username].filter(u => u !== target);
+        }
+
+        socket.emit('user_unblocked', { username: target });
+        socket.emit('blocked_users_list', { blocked: global.blockedUsers[user.username] || [] });
+
+        logActivity('UNBLOCK', `${user.username} a débloqué ${target}`);
+    });
+
+    socket.on('get_blocked_users', () => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+        socket.emit('blocked_users_list', { blocked: global.blockedUsers[user.username] || [] });
     });
 
     // =========================================
@@ -3182,6 +3343,45 @@ function initGameState(gameType) {
             return { board: ['', '', '', '', '', '', '', '', ''] };
         case 'connect4':
             return { board: Array(6).fill(null).map(() => Array(7).fill('')) };
+        case 'rps':
+            return { choices: [null, null], scores: [0, 0], round: 1, maxRounds: 5 };
+        case 'quiz': {
+            const allQuestions = [
+                { q: "Quelle est la capitale de la France?", a: ["Paris", "Lyon", "Marseille", "Nice"], c: 0 },
+                { q: "Combien font 7 × 8?", a: ["54", "56", "58", "64"], c: 1 },
+                { q: "Qui a peint La Joconde?", a: ["Picasso", "Van Gogh", "Léonard de Vinci", "Michel-Ange"], c: 2 },
+                { q: "Quel est le plus grand océan?", a: ["Atlantique", "Indien", "Pacifique", "Arctique"], c: 2 },
+                { q: "En quelle année la Révolution française?", a: ["1789", "1799", "1776", "1815"], c: 0 },
+                { q: "Quel gaz les plantes absorbent-elles?", a: ["Oxygène", "Azote", "CO2", "Hydrogène"], c: 2 },
+                { q: "Combien de pattes a une araignée?", a: ["6", "8", "10", "4"], c: 1 },
+                { q: "Quelle planète est la plus proche du Soleil?", a: ["Vénus", "Mars", "Mercure", "Terre"], c: 2 },
+                { q: "Qui a écrit 'Les Misérables'?", a: ["Zola", "Balzac", "Hugo", "Flaubert"], c: 2 },
+                { q: "Quelle est la monnaie du Japon?", a: ["Won", "Yuan", "Yen", "Ringgit"], c: 2 }
+            ];
+            const questions = allQuestions.sort(() => Math.random() - 0.5).slice(0, 5);
+            return { questions, current: 0, scores: [0, 0], answers: [null, null], total: questions.length };
+        }
+        case 'trivia': {
+            const triviaQuestions = [
+                { q: "Quelle est la capitale de la France ?", a: ["Paris", "Lyon", "Marseille", "Toulouse"], correct: 0 },
+                { q: "Combien de continents y a-t-il ?", a: ["5", "6", "7", "8"], correct: 2 },
+                { q: "Quel est le plus grand océan ?", a: ["Atlantique", "Pacifique", "Indien", "Arctique"], correct: 1 },
+                { q: "En quelle année a été créé Internet ?", a: ["1969", "1983", "1991", "2000"], correct: 0 },
+                { q: "Quel langage a créé le Web ?", a: ["Java", "Python", "HTML", "C++"], correct: 2 },
+                { q: "Combien de pattes a une araignée ?", a: ["6", "8", "10", "4"], correct: 1 },
+                { q: "Quelle planète est la plus proche du Soleil ?", a: ["Vénus", "Mercure", "Mars", "Terre"], correct: 1 },
+                { q: "Quel est le plus long fleuve du monde ?", a: ["Amazone", "Nil", "Yangtsé", "Mississippi"], correct: 1 },
+                { q: "Qui a peint la Joconde ?", a: ["Michel-Ange", "Raphaël", "Léonard de Vinci", "Botticelli"], correct: 2 },
+                { q: "Combien d'os a le corps humain adulte ?", a: ["186", "206", "226", "256"], correct: 1 }
+            ];
+            const questions = triviaQuestions.sort(() => Math.random() - 0.5).slice(0, 5);
+            return { questions, current: 0, scores: [0, 0], answers: [null, null], total: questions.length };
+        }
+        case 'hangman': {
+            const words = ['JAVASCRIPT','PYTHON','SERVEUR','DISCORD','ORDINATEUR','INTERNET','CLAVIER','PROGRAMME','MUSIQUE','GALAXIE','PLANETE','DRAGON','CHATEAU','PIRATE','ROBOT','AVENTURE'];
+            const word = words[Math.floor(Math.random() * words.length)];
+            return { word, guessed: [], wrong: [], maxErrors: 6, currentGuesser: 0 };
+        }
         default:
             return {};
     }
@@ -3238,9 +3438,187 @@ function applyGameMove(game, move, playerIndex) {
             };
         }
         
+        case 'rps': {
+            const { choice } = move; // 'rock', 'paper', 'scissors'
+            if (!['rock', 'paper', 'scissors'].includes(choice)) return { valid: false };
+            if (game.state.choices[playerIndex] !== null) return { valid: false };
+            
+            game.state.choices[playerIndex] = choice;
+            
+            // Les deux ont joué ?
+            if (game.state.choices[0] !== null && game.state.choices[1] !== null) {
+                const c0 = game.state.choices[0];
+                const c1 = game.state.choices[1];
+                let roundWinner = null;
+                
+                if (c0 !== c1) {
+                    if ((c0 === 'rock' && c1 === 'scissors') || (c0 === 'paper' && c1 === 'rock') || (c0 === 'scissors' && c1 === 'paper')) {
+                        game.state.scores[0]++;
+                        roundWinner = game.players[0].username;
+                    } else {
+                        game.state.scores[1]++;
+                        roundWinner = game.players[1].username;
+                    }
+                }
+                
+                const finished = game.state.round >= game.state.maxRounds;
+                const resultState = { ...game.state, roundResult: { choices: [c0, c1], roundWinner } };
+                
+                if (!finished) {
+                    game.state.choices = [null, null];
+                    game.state.round++;
+                }
+                
+                let finalWinner = null;
+                let finalDraw = false;
+                if (finished) {
+                    if (game.state.scores[0] > game.state.scores[1]) finalWinner = game.players[0].username;
+                    else if (game.state.scores[1] > game.state.scores[0]) finalWinner = game.players[1].username;
+                    else finalDraw = true;
+                }
+                
+                // Envoyer individuellement à chaque joueur (ils doivent voir les 2 choix)
+                game.players.forEach((p, idx) => {
+                    const sid = findCurrentSocketGlobal(p.username);
+                    if (sid) {
+                        global.io.to(sid).emit('game_update', {
+                            gameId: game.id,
+                            state: resultState,
+                            yourTurn: !finished,
+                            lastMove: move,
+                            lastMoveBy: null,
+                            winner: finalWinner,
+                            draw: finalDraw,
+                            rpsRound: { choices: [c0, c1], roundWinner, round: resultState.round, scores: resultState.scores, finished }
+                        });
+                    }
+                });
+                
+                return { valid: true, state: game.state, nextTurn: -1, winner: finalWinner, draw: finalDraw, customEmit: true };
+            }
+            
+            // Seulement 1 joueur a joué, attendre l'autre
+            return { valid: true, state: game.state, nextTurn: (playerIndex + 1) % 2, winner: null, draw: false, waiting: true, customEmit: true };
+        }
+        
+        case 'quiz':
+        case 'trivia': {
+            const { answer } = move;
+            if (game.state.answers[playerIndex] !== null) return { valid: false };
+            
+            game.state.answers[playerIndex] = answer;
+            
+            // Les deux ont répondu ?
+            if (game.state.answers[0] !== null && game.state.answers[1] !== null) {
+                const q = game.state.questions[game.state.current];
+                const correctIdx = game.type === 'quiz' ? q.c : q.correct;
+                
+                if (game.state.answers[0] === correctIdx) game.state.scores[0]++;
+                if (game.state.answers[1] === correctIdx) game.state.scores[1]++;
+                
+                const wasLast = game.state.current >= game.state.total - 1;
+                
+                const resultData = {
+                    correctAnswer: correctIdx,
+                    playerAnswers: [game.state.answers[0], game.state.answers[1]],
+                    scores: [...game.state.scores],
+                    current: game.state.current + 1,
+                    total: game.state.total,
+                    finished: wasLast
+                };
+                
+                let finalWinner = null;
+                let finalDraw = false;
+                if (wasLast) {
+                    if (game.state.scores[0] > game.state.scores[1]) finalWinner = game.players[0].username;
+                    else if (game.state.scores[1] > game.state.scores[0]) finalWinner = game.players[1].username;
+                    else finalDraw = true;
+                } else {
+                    // Prochaine question
+                    game.state.current++;
+                    game.state.answers = [null, null];
+                }
+                
+                // Envoyer à chaque joueur
+                game.players.forEach((p, idx) => {
+                    const sid = findCurrentSocketGlobal(p.username);
+                    if (sid) {
+                        const nextQ = !wasLast ? game.state.questions[game.state.current] : null;
+                        global.io.to(sid).emit('game_update', {
+                            gameId: game.id,
+                            state: game.state,
+                            yourTurn: !wasLast,
+                            winner: finalWinner,
+                            draw: finalDraw,
+                            quizRound: {
+                                ...resultData,
+                                nextQuestion: nextQ ? (game.type === 'quiz' ? { q: nextQ.q, a: nextQ.a } : { q: nextQ.q, a: nextQ.a }) : null
+                            }
+                        });
+                    }
+                });
+                
+                return { valid: true, state: game.state, nextTurn: -1, winner: finalWinner, draw: finalDraw, customEmit: true };
+            }
+            
+            // Seulement 1 joueur a répondu
+            const sid = findCurrentSocketGlobal(game.players[playerIndex].username);
+            if (sid) {
+                global.io.to(sid).emit('game_update', {
+                    gameId: game.id,
+                    state: {},
+                    yourTurn: false,
+                    quizWaiting: true
+                });
+            }
+            return { valid: true, state: game.state, nextTurn: -1, winner: null, draw: false, customEmit: true };
+        }
+        
+        case 'hangman': {
+            const letter = (move.letter || '').toUpperCase().charAt(0);
+            if (!letter) return { valid: false };
+            if (game.state.guessed.includes(letter) || game.state.wrong.includes(letter)) return { valid: false };
+            
+            if (game.state.word.includes(letter)) {
+                game.state.guessed.push(letter);
+            } else {
+                game.state.wrong.push(letter);
+            }
+            
+            const display = game.state.word.split('').map(c => game.state.guessed.includes(c) ? c : '_').join(' ');
+            const won = !display.includes('_');
+            const lost = game.state.wrong.length >= game.state.maxErrors;
+            
+            // Alterner qui devine ou les deux devinent ensemble (co-op style)
+            return {
+                valid: true,
+                state: game.state,
+                nextTurn: (won || lost) ? -1 : (playerIndex + 1) % 2,
+                winner: won ? 'COOP_WIN' : (lost ? 'COOP_LOSE' : null),
+                draw: false,
+                hangmanState: {
+                    display,
+                    wrong: game.state.wrong,
+                    remaining: game.state.maxErrors - game.state.wrong.length,
+                    finished: won || lost,
+                    won,
+                    word: (won || lost) ? game.state.word : undefined
+                }
+            };
+        }
+        
         default:
             return { valid: false };
     }
+}
+
+// Helper global pour trouver un socket par username (utilisé par applyGameMove)
+function findCurrentSocketGlobal(username) {
+    let sid = null;
+    connectedUsers.forEach((u, socketId) => {
+        if (u.username === username) sid = socketId;
+    });
+    return sid;
 }
 
 function checkTTTWinner(board) {
@@ -3321,7 +3699,8 @@ function getVoiceParticipants(room) {
             muted: data.muted,
             deafened: data.deafened,
             video: data.video,
-            screen: data.screen
+            screen: data.screen,
+            speaking: data.speaking || false
         });
     });
     return participants;

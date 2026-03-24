@@ -1,7 +1,53 @@
 {
-  "currentVersion": "3.0.2B",
-  "lastUpdate": "2026-03-23",
+  "currentVersion": "3.0.4B",
+  "lastUpdate": "2026-03-24",
   "versions": [
+    {
+      "version": "3.0.4B",
+      "date": "2026-03-24",
+      "title": "🎮 Refonte Jeux, XP & Interface",
+      "changes": [
+        "🔧 Fix synchronisation jeux multijoueur - Les invitations fonctionnent correctement",
+        "🔄 Résolution dynamique des sockets - Plus de parties fantômes ou abandons incorrects",
+        "🧹 Nettoyage automatique des parties/invitations à la déconnexion",
+        "📨 Notifications d'invitation de jeu redessinées - Toast en bas à droite avec accept/refus",
+        "🎮 Interface des jeux redessinée - 3 catégories (Multijoueur, Culture & Quiz, Solo)",
+        "🏷️ Badges et tags sur les cartes de jeux (2J, VS, Solo, Culture...)",
+        "🔄 Système de rematch ajouté sur tous les jeux",
+        "🎯 Sélecteur Solo/Multi pour Quiz, Trivia et Pendu",
+        "✊ Pierre-Papier-Ciseaux multijoueur complet - 5 rounds, scores en temps réel",
+        "❓ Quiz multijoueur complet - Questions simultanées, résultats comparés, scores",
+        "🧠 Trivia multijoueur complet - Même principe que le Quiz avec questions culture générale",
+        "🪢 Pendu Co-op multijoueur - Devinez le mot à tour de rôle avec un ami",
+        "🚫 Système de blocage d'utilisateurs complet (bloquer/débloquer, onglet Bloqués)",
+        "📌 Panneau combiné Épinglés + Sauvegardés avec onglets",
+        "🗂️ Header réorganisé - Boutons groupés par catégorie, Stockage déplacé en sidebar",
+        "🤖 IA améliorée - 7 nouvelles catégories (histoire, défis, vacances, fun facts, compliments...)",
+        "💡 12 boutons de suggestion dans le chat IA (dé, histoire, défi, horoscope, top 5...)",
+        "⚔️ Affichage XP redessiné - Cercle de niveau animé, titres de rang (Recrue → Immortel)",
+        "📊 Stats XP détaillées avec 3 chips et barre de progression brillante",
+        "😊 Emoji Picker redessiné - Animation d'entrée, scrollbar stylisée, hover amélioré",
+        "🎞️ GIF Picker redessiné - 4 nouvelles catégories (anime, gaming, danse, chats)",
+        "🎨 Animations fluides sur les deux pickers (scale, fade, bordures accent)"
+      ]
+    },
+    {
+      "version": "3.0.3B",
+      "date": "2026-03-24",
+      "title": "🔊 Salons Vocaux & WebRTC",
+      "changes": [
+        "🎙️ Salons vocaux - 3 salons : Vocal Général, Gaming, Musique",
+        "🗣️ Communication audio WebRTC en temps réel entre utilisateurs",
+        "📹 Partage de caméra et d'écran dans les salons vocaux",
+        "🟢 Détection de parole - Contour animé vert quand quelqu'un parle",
+        "👥 Vue Discord-style - Cartes utilisateurs avec avatar et statut",
+        "📊 Participants visibles dans la sidebar sous chaque salon vocal",
+        "🎨 Interface vocale redessinée - Animations, ondes, effets visuels",
+        "🔇 Contrôles micro, son, caméra, écran avec feedback visuel",
+        "🔄 Synchronisation en temps réel des participants vocaux",
+        "✨ Animations d'apparition des cartes et effets de survol"
+      ]
+    },
     {
       "version": "3.0.2B",
       "date": "2026-03-23",

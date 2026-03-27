@@ -88,7 +88,7 @@ let serverStats = {
 };
 
 // === SALONS MULTIPLES (BETA) ===
-const AVAILABLE_CHANNELS = ['général', 'présentation', 'jeux', 'musique', 'films', 'random', 'aide'];
+const AVAILABLE_CHANNELS = ['général', 'présentation', 'jeux', 'musique', 'films', 'random', 'aide', 'ia'];
 const VOICE_CHANNELS = ['Vocal Général', 'Vocal Gaming', 'Vocal Musique'];
 let voiceRooms = {}; // { roomName: { participants: Map(socketId -> {username, muted, deafened, video, screen}) } }
 VOICE_CHANNELS.forEach(vc => {
@@ -141,6 +141,12 @@ function getLevelFromXP(xp) {
         totalNeeded += getXPForLevel(level);
     }
     return { level, currentXP: xp - totalNeeded, neededXP: getXPForLevel(level + 1) };
+}
+
+function getBananaPoints(username) {
+    const data = userXP[username];
+    if (!data) return 0;
+    return Math.floor(data.xp / 10);
 }
 
 // === REMINDERS ===
@@ -850,6 +856,10 @@ app.post('/api/gemini', express.json(), async (req, res) => {
         console.error('Gemini Server Error:', error);
         res.status(500).json({ error: 'Erreur serveur', message: error.message });
     }
+});
+
+app.get('/ADMIN', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // Route de santé pour Render avec stats détaillées
@@ -1805,6 +1815,66 @@ io.on('connection', (socket) => {
         }
     });
 
+    let lastAIResponse = 0;
+    async function generateAIResponse(userMessage, username, channel) {
+        const now = Date.now();
+        if (now - lastAIResponse < 3000) return;
+        lastAIResponse = now;
+
+        try {
+            const systemPrompt = `Tu es GeminiBot, l'IA de DocSpace. Tu réponds en français de façon naturelle, vivante et conversationnelle.
+Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser quelques emojis avec modération.`;
+
+            const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ role: 'user', parts: [{ text: `${systemPrompt}\n\nUtilisateur (${username}) : ${userMessage}` }] }],
+                    generationConfig: {
+                        temperature: 0.9,
+                        topK: 40,
+                        topP: 0.95,
+                        maxOutputTokens: 512,
+                    },
+                    safetySettings: [
+                        { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+                        { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+                        { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+                        { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' }
+                    ]
+                })
+            });
+
+            if (!response.ok) return;
+            const data = await response.json();
+            const aiText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (!aiText) return;
+
+            const botMessage = {
+                type: 'user',
+                id: messageId++,
+                username: '🤖 GeminiBot',
+                avatar: 'https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg',
+                content: aiText.substring(0, 500),
+                timestamp: new Date(),
+                userId: 'gemini-bot',
+                replyTo: null,
+                attachment: null,
+                channel: channel,
+                isBot: true
+            };
+
+            addToChannelHistory(botMessage, channel);
+            addToHistory(botMessage);
+            io.emit('new_message', botMessage);
+            serverStats.totalMessages++;
+            saveHistory();
+            saveChannelHistories();
+        } catch (error) {
+            logActivity('ERROR', 'Erreur auto-réponse IA', { error: error.message });
+        }
+    }
+
     // Réception d'un message
     socket.on('send_message', (messageData) => {
         try {
@@ -1945,6 +2015,12 @@ io.on('connection', (socket) => {
             // Sauvegarder l'historique après chaque message
             saveHistory();
             saveChannelHistories();
+
+            if (channel === 'ia' && message.content && !message.content.startsWith('🤖')) {
+                setTimeout(() => {
+                    generateAIResponse(message.content, user.username, channel);
+                }, 500);
+            }
             
             // Arrêter l'indicateur de frappe pour cet utilisateur
             if (typingUsers.has(socket.id)) {
@@ -3039,15 +3115,41 @@ io.on('connection', (socket) => {
         if (!user) return;
         const data = userXP[user.username] || { xp: 0, level: 0, totalMessages: 0 };
         const levelData = getLevelFromXP(data.xp);
-        socket.emit('xp_data', { xp: data.xp, ...levelData, totalMessages: data.totalMessages });
+        socket.emit('xp_data', { xp: data.xp, ...levelData, totalMessages: data.totalMessages, bananaPoints: getBananaPoints(user.username) });
     });
 
     socket.on('get_leaderboard', () => {
         const leaderboard = Object.entries(userXP)
-            .map(([username, data]) => ({ username, xp: data.xp, ...getLevelFromXP(data.xp), totalMessages: data.totalMessages }))
+            .map(([username, data]) => ({ username, xp: data.xp, ...getLevelFromXP(data.xp), totalMessages: data.totalMessages, bananaPoints: getBananaPoints(username) }))
             .sort((a, b) => b.xp - a.xp)
             .slice(0, 20);
         socket.emit('leaderboard_data', { leaderboard });
+    });
+
+    socket.on('banana_use', (data) => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+
+        const costs = { confetti: 5, shake: 3, flash: 3, rain: 8, fireworks: 10 };
+        const effect = data.effect;
+        const cost = costs[effect];
+        if (!cost) {
+            socket.emit('banana_error', { message: 'Effet inconnu' });
+            return;
+        }
+
+        const bananas = getBananaPoints(user.username);
+        if (bananas < cost) {
+            socket.emit('banana_error', { message: `Pas assez de bananes ! (${bananas}/${cost} 🍌)` });
+            return;
+        }
+
+        if (!userXP[user.username]) userXP[user.username] = { xp: 0, level: 0, totalMessages: 0, lastXpGain: 0 };
+        userXP[user.username].xp = Math.max(0, userXP[user.username].xp - cost * 10);
+        saveXP();
+
+        io.emit('banana_effect', { effect, username: user.username });
+        socket.emit('banana_updated', { bananaPoints: getBananaPoints(user.username) });
     });
 
     // =========================================

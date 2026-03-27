@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>DocSpace V3.0.4B</title>
+    <title>DocSpace V3.2.0</title>
     
     <!-- Favicon - Icône du chat -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%235865F2' rx='20' width='100' height='100'/><text y='.9em' font-size='80' x='50%' text-anchor='middle'>🗄️</text></svg>">
@@ -154,7 +154,7 @@
             --typing-bg: rgba(255, 45, 146, 0.15);
             --hover-bg: #FFCCD8;
             --success-color: #FF69B4;
-            --danger-color: #FF3B30;
+            --danger-color: #FF1744;
         }
 
         /* Thème Mint Fresh */
@@ -164,9 +164,9 @@
             --chat-bg: linear-gradient(180deg, #E0FFF4 0%, #B2F5EA 50%, #C6F6D5 100%);
             --message-own-bg: linear-gradient(135deg, #00C9A7 0%, #38B2AC 100%);
             --message-other-bg: linear-gradient(135deg, #E6FFFA 0%, #C6F6D5 100%);
-            --text-primary: #1A4A3A;
+            --text-primary: #1A4D3A;
             --text-secondary: #4A7C6F;
-            --border-color: #81E6D9;
+            --border-color: #7ED9C4;
             --sidebar-bg: linear-gradient(180deg, #F0FFF4 0%, #E6FFFA 100%);
             --input-bg: rgba(240, 255, 244, 0.95);
             --accent-color: #00C9A7;
@@ -462,7 +462,7 @@
             color: var(--text-primary);
             padding: 10px 16px;
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-end;
             align-items: center;
             flex-shrink: 0;
             border-bottom: 1px solid var(--border-color);
@@ -503,8 +503,11 @@
         .header-stats {
             display: flex;
             align-items: center;
+            justify-content: flex-end;
             gap: 10px;
             position: relative;
+            margin-left: auto;
+            width: 100%;
         }
 
         .connection-status {
@@ -653,6 +656,26 @@
             font-weight: 600;
         }
 
+        .user-voice-badge {
+            width: 20px;
+            height: 20px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(67, 181, 129, 0.18);
+            color: #43b581;
+            cursor: pointer;
+            font-size: 11px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.15s ease, background 0.15s ease;
+        }
+
+        .user-voice-badge:hover {
+            transform: scale(1.08);
+            background: rgba(67, 181, 129, 0.3);
+        }
+
         .user-avatar {
             width: 22px;
             height: 22px;
@@ -673,7 +696,7 @@
             padding: 10px 14px;
             padding-right: 32px;
             border-radius: 12px;
-            max-width: 75%;
+            max-width: 76%;
             word-wrap: break-word;
             overflow-wrap: break-word;
             animation: messageSlide 0.3s cubic-bezier(0.22, 0.61, 0.36, 1);
@@ -717,19 +740,25 @@
         }
 
         .message.own {
-            background: var(--message-own-bg);
-            color: white;
+            background: rgba(var(--accent-rgb), 0.16);
+            color: var(--text-primary);
             margin-left: auto;
-            border-radius: 18px 18px 4px 18px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+            margin-right: 0;
+            max-width: 76%;
+            border-radius: 18px 18px 8px 18px;
+            border: 1px solid rgba(var(--accent-rgb), 0.32);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
         }
 
         .message.other {
-            background: var(--message-other-bg);
-            border-left: 3px solid var(--accent-color);
+            background: rgba(0, 0, 0, 0.08);
+            margin-right: auto;
+            margin-left: 0;
+            border-left: 3px solid rgba(var(--accent-rgb), 0.28);
             color: var(--text-primary);
-            border-radius: 4px 18px 18px 18px;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+            border-radius: 10px;
+            box-shadow: none;
+            max-width: 76%;
         }
 
         .message.system {
@@ -785,8 +814,9 @@
         }
 
         .message.own .message-header {
-            opacity: 0.9;
+            opacity: 0.95;
             flex-direction: row-reverse;
+            justify-content: flex-start;
         }
 
         .message-avatar {
@@ -816,7 +846,11 @@
         }
 
         .message.own .message-username {
-            color: rgba(255, 255, 255, 0.95);
+            color: var(--text-primary);
+        }
+
+        .message.own .message-content {
+            text-align: left;
         }
 
         .message.other .message-username {
@@ -1139,7 +1173,7 @@
             position: absolute;
             top: 6px;
             right: 6px;
-            z-index: 50;
+            z-index: 200;
         }
 
         .message-menu-btn {
@@ -1178,7 +1212,7 @@
             box-shadow: 0 4px 16px rgba(0,0,0,0.3);
             min-width: 160px;
             display: none;
-            z-index: 1000;
+            z-index: 9999;
             overflow: hidden;
         }
 
@@ -1537,7 +1571,7 @@
             margin: 8px 0;
             font-size: 13px;
             color: var(--text-secondary);
-            display: none;
+            display: none !important;
             align-items: center;
             gap: 10px;
             max-width: 85%;
@@ -1641,9 +1675,15 @@
         }
 
         .chat-input-container {
-            padding: 8px 16px 12px 16px;
+            width: calc(100% - 270px);
+            margin-left: auto;
+            margin-right: 14px;
+            margin-bottom: 8px;
+            padding: 6px 12px 8px 12px;
             background: var(--sidebar-bg);
-            border-top: 1px solid var(--border-color);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            box-shadow: 0 10px 22px rgba(0, 0, 0, 0.2);
             flex-shrink: 0;
         }
 
@@ -1651,10 +1691,87 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 8px;
-            padding: 6px 10px;
+            gap: 8px;
+            margin-bottom: 10px;
+            padding: 6px 8px;
             background: var(--input-bg);
+            border-radius: 12px;
+            border: 1px solid rgba(var(--accent-rgb), 0.2);
+        }
+
+        .user-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .chat-activity-status {
+            font-size: 13px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+            flex: 1;
+            min-width: 0;
+            min-height: 30px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0 12px;
             border-radius: 10px;
+            background: rgba(var(--accent-rgb), 0.14);
+            border: 1px solid rgba(var(--accent-rgb), 0.2);
+        }
+
+        .chat-activity-status.active {
+            color: var(--text-primary);
+            font-weight: 600;
+            background: rgba(var(--accent-rgb), 0.26);
+            animation: activityPulse 1.2s ease-in-out infinite;
+        }
+
+        .chat-activity-avatar {
+            width: 22px;
+            height: 22px;
+            min-width: 22px;
+            border-radius: 50%;
+            overflow: hidden;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            font-size: 12px;
+        }
+
+        .chat-activity-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .chat-activity-text {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .chat-activity-dots {
+            letter-spacing: 1px;
+            animation: typingDots 1.1s steps(3, end) infinite;
+        }
+
+        @keyframes typingDots {
+            0% { opacity: 0.2; }
+            50% { opacity: 1; }
+            100% { opacity: 0.2; }
+        }
+
+        @keyframes activityPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(var(--accent-rgb), 0.2); }
+            50% { box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.08); }
         }
 
         .current-user {
@@ -1678,11 +1795,6 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-        }
-
-        .user-controls {
-            display: flex;
-            gap: 8px;
         }
 
         .settings-btn, .disconnect-btn {
@@ -1733,15 +1845,17 @@
 
         .chat-input {
             display: flex;
+            width: 100%;
             gap: 8px;
-            align-items: flex-end;
+            align-items: center;
+            position: relative;
         }
 
         #messageInput {
             flex: 1;
-            padding: 10px 14px;
+            padding: 10px 16px;
             border: 2px solid var(--border-color);
-            border-radius: 20px;
+            border-radius: 18px;
             outline: none;
             font-size: 14px;
             transition: all 0.2s ease;
@@ -1749,7 +1863,7 @@
             color: var(--text-primary);
             resize: none;
             max-height: 120px;
-            min-height: 40px;
+            min-height: 38px;
         }
         
         #messageInput::placeholder {
@@ -1764,9 +1878,15 @@
         .input-actions {
             display: flex;
             gap: 4px;
+            position: relative;
         }
 
-        .file-input-btn {
+        .input-plus-btn,
+        .input-notif-btn,
+        .file-input-btn,
+        .voice-btn,
+        .gif-btn,
+        .poll-btn {
             width: 38px;
             height: 38px;
             border-radius: 10px;
@@ -1778,32 +1898,60 @@
             justify-content: center;
             transition: all 0.2s ease;
             font-size: 16px;
+            color: var(--text-primary);
         }
 
-        .file-input-btn:hover {
+        .input-plus-btn:hover,
+        .input-notif-btn:hover,
+        .file-input-btn:hover,
+        .voice-btn:hover,
+        .gif-btn:hover,
+        .poll-btn:hover {
             border-color: var(--accent-color);
-            background: var(--accent-color);
+            background: rgba(var(--accent-rgb), 0.22);
+            color: var(--text-primary);
+        }
+
+        .input-notif-btn.active {
+            border-color: #f04747;
+            color: #f04747;
+            background: rgba(240, 71, 71, 0.14);
+        }
+
+        .input-action-menu {
+            display: none;
+            position: absolute;
+            bottom: 46px;
+            left: 0;
+            min-width: 180px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            background: var(--sidebar-bg);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+            z-index: 2100;
+            overflow: hidden;
+        }
+
+        .input-action-menu.active {
+            display: block;
+        }
+
+        .input-action-menu button {
+            width: 100%;
+            text-align: left;
+            border: none;
+            background: transparent;
+            color: var(--text-primary);
+            padding: 10px 12px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .input-action-menu button:hover {
+            background: rgba(var(--accent-rgb), 0.2);
         }
 
         /* Bouton Message Vocal */
-        .voice-btn {
-            width: 38px;
-            height: 38px;
-            border-radius: 10px;
-            background: var(--input-bg);
-            border: 2px solid var(--border-color);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-            font-size: 16px;
-        }
-
-        .voice-btn:hover {
-            border-color: var(--accent-color);
-            background: var(--accent-color);
-        }
 
         .voice-btn.recording {
             background: #F04747;
@@ -2314,13 +2462,16 @@
         .notification-container {
             position: fixed;
             top: 20px;
-            right: 20px;
             z-index: 3000;
             display: flex;
             flex-direction: column;
             gap: 10px;
             pointer-events: none;
+            transition: all 0.3s ease;
         }
+        .notification-container.pos-left { left: 20px; right: auto; }
+        .notification-container.pos-center { left: 50%; right: auto; transform: translateX(-50%); }
+        .notification-container.pos-right { right: 20px; left: auto; }
         
         /* Notifications style Discord - empilables */
         .notification {
@@ -2385,7 +2536,7 @@
         @keyframes notifSlideIn {
             from {
                 opacity: 0;
-                transform: translateX(100%) scale(0.8);
+                transform: translateX(-100%) scale(0.8);
             }
             to {
                 opacity: 1;
@@ -2400,13 +2551,18 @@
             }
             to {
                 opacity: 0;
-                transform: translateX(100%) scale(0.8);
+                transform: translateX(-100%) scale(0.8);
             }
         }
         
         @keyframes fadeOut {
             from { opacity: 1; transform: scale(1); }
             to { opacity: 0; transform: scale(0.95); }
+        }
+        @keyframes bananaShake {
+            0%, 100% { transform: translateX(0); }
+            10%, 50%, 90% { transform: translateX(-8px); }
+            30%, 70% { transform: translateX(8px); }
         }
         
         /* Badge Admin */
@@ -2620,15 +2776,19 @@
         /* Indicateur de version */
         .version-info {
             position: fixed;
-            bottom: 8px;
-            left: 8px;
+            top: 10px;
+            left: 10px;
             background: var(--sidebar-bg);
-            color: var(--text-secondary);
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 11px;
-            z-index: 1000;
+            color: var(--text-primary);
+            padding: 7px 14px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+            z-index: 4000;
             border: 1px solid var(--border-color);
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+            backdrop-filter: blur(6px);
         }
 
         /* Touch-friendly pour mobile */
@@ -2714,12 +2874,12 @@
             .header-stats {
                 flex-wrap: wrap;
                 gap: 4px;
-                justify-content: center;
+                justify-content: flex-end;
             }
             
             .header-actions {
                 gap: 3px;
-                justify-content: center;
+                justify-content: flex-end;
             }
             
             .header-btn {
@@ -2756,6 +2916,15 @@
             }
             
             .chat-input-container {
+                width: 100%;
+                margin-left: 0;
+                margin-right: 0;
+                margin-bottom: 0;
+                border-radius: 0;
+                border-left: none;
+                border-right: none;
+                border-bottom: none;
+                box-shadow: none;
                 padding: 6px 8px;
             }
             
@@ -2862,7 +3031,7 @@
             background: rgba(var(--accent-rgb), 0.08) !important;
             backdrop-filter: blur(40px) saturate(1.8);
             -webkit-backdrop-filter: blur(40px) saturate(1.8);
-            border-top: 1px solid rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.15);
         }
 
         body.liquid-glass .modal-content,
@@ -3899,16 +4068,18 @@
 
         /* ========== SALONS MULTIPLES (BETA) ========== */
         .channels-sidebar {
-            width: 220px;
+            width: 248px;
             background: var(--sidebar-bg);
             border-right: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
             flex-shrink: 0;
             overflow: hidden;
+            height: 100%;
+            position: relative;
         }
         .channels-header {
-            padding: 14px 16px;
+            padding: 11px 14px;
             border-bottom: 1px solid var(--border-color);
             display: flex;
             justify-content: space-between;
@@ -3939,19 +4110,27 @@
         .channels-list {
             flex: 1;
             overflow-y: auto;
-            padding: 8px;
+            padding: 4px 6px 2px 6px;
+            padding-bottom: 126px;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
         }
+
+        .channels-list::-webkit-scrollbar {
+            display: none;
+        }
+
         .channel-item {
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 8px 12px;
+            padding: 6px 9px;
             border-radius: 6px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 13px;
             color: var(--text-secondary);
             transition: all 0.15s;
-            margin-bottom: 2px;
+            margin-bottom: 1px;
         }
         .channel-item:hover {
             background: var(--hover-bg);
@@ -4016,13 +4195,13 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 8px 12px;
+            padding: 6px 9px;
             border-radius: 6px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 13px;
             color: var(--text-secondary);
             transition: all 0.15s;
-            margin-bottom: 2px;
+            margin-bottom: 1px;
         }
         .voice-channel-item:hover {
             background: var(--hover-bg);
@@ -4239,44 +4418,13 @@
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
         }
 
-        /* ===== SPEAKING — contour animé vert ===== */
+        /* ===== SPEAKING — simple ring ===== */
         .voice-user-card.speaking {
-            border-color: transparent;
-            background: var(--sidebar-bg);
-        }
-        .voice-user-card.speaking::before {
-            content: '';
-            position: absolute;
-            inset: -3px;
-            border-radius: 18px;
-            background: conic-gradient(
-                from var(--speaking-angle, 0deg),
-                #43B581 0deg,
-                transparent 60deg,
-                #43B581 120deg,
-                transparent 180deg,
-                #43B581 240deg,
-                transparent 300deg,
-                #43B581 360deg
-            );
-            z-index: -1;
-            animation: speakingRotate 2s linear infinite;
-            opacity: 0.9;
-        }
-        .voice-user-card.speaking::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            border-radius: 16px;
-            background: var(--sidebar-bg);
-            z-index: -1;
-        }
-        @keyframes speakingRotate {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            border-color: #43B581;
+            box-shadow: 0 0 12px rgba(67,181,129,0.3);
         }
         .voice-user-card.speaking .voice-user-card-avatar {
-            box-shadow: 0 0 20px rgba(67, 181, 129, 0.4), 0 0 40px rgba(67, 181, 129, 0.15);
+            box-shadow: 0 0 12px rgba(67, 181, 129, 0.4);
         }
         
         .voice-user-card.is-muted {
@@ -4302,11 +4450,6 @@
         }
         .voice-user-card.speaking .voice-user-card-avatar {
             border-color: #43B581;
-            animation: speakingPulse 1.2s ease-in-out infinite;
-        }
-        @keyframes speakingPulse {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(67, 181, 129, 0.5); }
-            50% { box-shadow: 0 0 0 10px rgba(67, 181, 129, 0), 0 0 25px rgba(67, 181, 129, 0.2); }
         }
         .voice-user-card-avatar img {
             width: 100%;
@@ -4355,119 +4498,190 @@
             height: 100%;
             object-fit: cover;
         }
-
-        /* Zone partage d'écran */
-        .voice-view-screen-area {
-            padding: 0 20px 10px;
-            display: flex;
-            justify-content: center;
-            animation: fadeSlideUp 0.4s ease;
+        .voice-user-card-video-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 16px;
+            overflow: hidden;
+            z-index: 2;
         }
+        .voice-user-card-video-container video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .voice-user-card.has-video .voice-user-card-avatar,
+        .voice-user-card.has-video .voice-user-card-name {
+            display: none;
+        }
+        .voice-user-card.has-video {
+            min-height: 180px;
+        }
+
+        .voice-user-card.hidden-for-camera {
+            display: none;
+        }
+
+        /* ===== Zone vidéo / partage d'écran - Style Discord ===== */
+        .voice-view-screen-area {
+            flex: 1;
+            display: grid;
+            gap: 8px;
+            padding: 8px;
+            min-height: 0;
+            animation: fadeSlideUp 0.3s ease;
+        }
+        /* 1 seule tuile → plein écran */
+        .voice-view-screen-area.tiles-1 {
+            grid-template-columns: 1fr;
+            grid-template-rows: 1fr;
+        }
+        /* 2 tuiles → côte à côte */
+        .voice-view-screen-area.tiles-2 {
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr;
+        }
+        /* 3 tuiles → 2 en haut, 1 en bas */
+        .voice-view-screen-area.tiles-3 {
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+        }
+        .voice-view-screen-area.tiles-3 .voice-screen-tile:first-child {
+            grid-column: 1 / -1;
+        }
+        /* 4+ tuiles → grille 2x2 */
+        .voice-view-screen-area.tiles-4 {
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+        }
+        /* Quand il y a des tuiles, la grille utilisateurs se réduit */
+        .voice-channel-view.has-video-tiles .voice-users-grid {
+            flex: 0 0 auto;
+            padding: 8px 16px;
+            gap: 10px;
+            max-height: 100px;
+            justify-content: flex-start;
+            align-content: flex-start;
+            overflow-x: auto;
+            overflow-y: hidden;
+            flex-wrap: nowrap;
+        }
+        .voice-channel-view.has-video-tiles .voice-user-card {
+            width: auto;
+            min-width: 56px;
+            max-width: 80px;
+            padding: 8px 6px;
+            gap: 4px;
+        }
+        .voice-channel-view.has-video-tiles .voice-user-card-avatar {
+            width: 36px;
+            height: 36px;
+            font-size: 16px;
+        }
+        .voice-channel-view.has-video-tiles .voice-user-card-name {
+            font-size: 10px;
+            max-width: 72px;
+        }
+        .voice-channel-view.has-video-tiles .voice-user-card-status {
+            display: none;
+        }
+
         @keyframes fadeSlideUp {
             0% { opacity: 0; transform: translateY(10px); }
             100% { opacity: 1; transform: translateY(0); }
         }
+
+        /* ===== Tuile vidéo Discord-like ===== */
         .voice-screen-tile {
             position: relative;
             width: 100%;
-            max-height: 50vh;
-            background: #111;
-            border-radius: 12px;
+            height: 100%;
+            background: #1e1f22;
+            border-radius: 8px;
             overflow: hidden;
-            border: 2px solid var(--accent-color);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            transition: all 0.3s ease;
-        }
-        .voice-screen-tile.tile-fullscreen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            max-height: 100vh;
-            height: 100vh;
-            border-radius: 0;
-            z-index: 10000;
-            border: none;
-        }
-        .voice-screen-tile.tile-fullscreen .screen-tile-controls {
-            top: 20px;
-            right: 20px;
-            gap: 8px;
-        }
-        .voice-screen-tile.tile-fullscreen .screen-tile-controls button {
-            width: 40px;
-            height: 40px;
-            font-size: 20px;
-        }
-        .voice-screen-tile.tile-minimized {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 320px;
-            max-height: 200px;
-            z-index: 9999;
-            border-radius: 10px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-            cursor: move;
-        }
-        .voice-screen-tile.tile-minimized video {
-            max-height: 200px;
-        }
-        .voice-screen-tile.tile-minimized .screen-tile-controls {
-            top: 4px;
-            right: 4px;
-            gap: 2px;
-        }
-        .voice-screen-tile.tile-minimized .screen-tile-controls button {
-            width: 24px;
-            height: 24px;
-            font-size: 12px;
-        }
-        .voice-screen-tile.tile-minimized .screen-label {
-            font-size: 10px;
-            padding: 2px 8px;
+            transition: all 0.2s ease;
         }
         .voice-screen-tile video {
             width: 100%;
             height: 100%;
-            max-height: 50vh;
             object-fit: contain;
+            display: block;
         }
+        .voice-screen-tile.camera-tile video {
+            object-fit: cover;
+        }
+
+        /* Label pseudo en bas à gauche (style Discord) */
         .voice-screen-tile .screen-label {
             position: absolute;
-            top: 10px;
-            left: 10px;
-            background: rgba(0,0,0,0.75);
-            color: white;
-            padding: 4px 12px;
-            border-radius: 8px;
-            font-size: 12px;
+            bottom: 8px;
+            left: 8px;
+            background: rgba(0, 0, 0, 0.65);
+            color: #fff;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 13px;
             font-weight: 600;
-            backdrop-filter: blur(4px);
+            backdrop-filter: blur(6px);
+            z-index: 3;
+            line-height: 1.3;
         }
+
+        /* Bordure verte quand la personne parle */
+        .voice-screen-tile.speaking {
+            box-shadow: 0 0 0 3px #43B581;
+            border-radius: 8px;
+        }
+
+        /* Track temporairement muted (renegociation) — garder la tuile visible */
+        .voice-screen-tile.track-muted video {
+            opacity: 0.3;
+        }
+
+        /* Tuile focus (clic pour agrandir — style Discord) */
+        .voice-view-screen-area.has-focus {
+            grid-template-columns: 1fr 200px;
+            grid-template-rows: 1fr;
+            gap: 4px;
+        }
+        .voice-view-screen-area.has-focus.tiles-1 {
+            grid-template-columns: 1fr;
+        }
+        .voice-screen-tile.tile-focused {
+            grid-column: 1;
+            grid-row: 1 / -1;
+        }
+        .voice-view-screen-area.has-focus .voice-screen-tile:not(.tile-focused) {
+            max-height: 120px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        /* Contrôles hover */
         .screen-tile-controls {
             position: absolute;
-            top: 10px;
-            right: 10px;
+            top: 8px;
+            right: 8px;
             display: flex;
-            gap: 6px;
+            gap: 4px;
             opacity: 0;
             transition: opacity 0.2s ease;
-            z-index: 2;
+            z-index: 4;
         }
-        .voice-screen-tile:hover .screen-tile-controls,
-        .voice-screen-tile.tile-minimized .screen-tile-controls,
-        .voice-screen-tile.tile-fullscreen .screen-tile-controls {
+        .voice-screen-tile:hover .screen-tile-controls {
             opacity: 1;
         }
         .screen-tile-controls button {
-            width: 32px;
-            height: 32px;
+            width: 30px;
+            height: 30px;
             border: none;
-            border-radius: 8px;
-            background: rgba(0,0,0,0.7);
+            border-radius: 6px;
+            background: rgba(0, 0, 0, 0.65);
             color: white;
-            font-size: 16px;
+            font-size: 14px;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -4479,21 +4693,68 @@
             background: rgba(var(--accent-rgb), 0.8);
         }
 
+        /* Fullscreen */
+        .voice-screen-tile.tile-fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            border-radius: 0;
+            z-index: 10000;
+        }
+        .voice-screen-tile.tile-fullscreen .screen-tile-controls {
+            top: 16px;
+            right: 16px;
+            opacity: 1;
+        }
+        .voice-screen-tile.tile-fullscreen .screen-tile-controls button {
+            width: 36px;
+            height: 36px;
+            font-size: 18px;
+        }
+
+        /* Minimized */
+        .voice-screen-tile.tile-minimized {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 320px;
+            height: 180px;
+            z-index: 9999;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            cursor: move;
+        }
+        .voice-screen-tile.tile-minimized .screen-tile-controls {
+            top: 4px;
+            right: 4px;
+            opacity: 1;
+        }
+        .voice-screen-tile.tile-minimized .screen-tile-controls button {
+            width: 22px;
+            height: 22px;
+            font-size: 11px;
+        }
+        .voice-screen-tile.tile-minimized .screen-label {
+            font-size: 10px;
+            padding: 2px 6px;
+        }
+
         /* Mini barre vocale persistante */
         .voice-mini-bar {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
+            position: relative;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 8px 16px;
+            padding: 6px 12px;
             background: rgba(var(--accent-rgb), 0.15);
             border-top: 2px solid rgba(var(--accent-rgb), 0.4);
             backdrop-filter: blur(12px);
             z-index: 100;
+            flex-shrink: 0;
             animation: miniBarSlideUp 0.25s ease;
+            display: none !important;
         }
         @keyframes miniBarSlideUp {
             from { transform: translateY(100%); opacity: 0; }
@@ -4559,6 +4820,228 @@
         }
         .voice-mini-bar-disconnect:hover {
             background: rgba(240, 71, 71, 0.5) !important;
+        }
+
+        .sidebar-voice-bar {
+            display: none;
+            flex-direction: column;
+            padding: 8px;
+            background: linear-gradient(180deg, rgba(8, 37, 20, 0.9), rgba(11, 48, 26, 0.92));
+            border-top: 1px solid rgba(67, 181, 129, 0.26);
+            border-bottom: 1px solid rgba(67, 181, 129, 0.2);
+            flex-shrink: 0;
+            gap: 8px;
+            position: relative;
+        }
+        .sidebar-voice-bar.active { display: flex; }
+        .sidebar-voice-bar-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .sidebar-voice-user {
+            font-size: 13px;
+            font-weight: 700;
+            color: #d7ffe8;
+            max-width: 135px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .sidebar-voice-bar-info {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            padding: 4px 6px;
+            border-radius: 6px;
+            transition: background 0.15s;
+            flex: 1;
+        }
+        .sidebar-voice-bar-info:hover { background: rgba(255,255,255,0.06); }
+        .sidebar-voice-bar-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #43b581;
+            animation: voicePulse 1.5s ease infinite;
+        }
+        .sidebar-voice-bar-text {
+            font-size: 12px;
+            font-weight: 600;
+            color: #43b581;
+        }
+        .sidebar-voice-bar-room {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.75);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .sidebar-voice-bar-time {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.7);
+            font-variant-numeric: tabular-nums;
+        }
+        .sidebar-voice-bar-controls {
+            display: flex;
+            gap: 4px;
+        }
+        .sidebar-voice-bar-controls button {
+            flex: 1;
+            height: 30px;
+            border: none;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.06);
+            color: var(--text-primary);
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s;
+        }
+        .sidebar-voice-bar-controls button:hover { background: rgba(255,255,255,0.12); }
+        .sidebar-voice-bar-disconnect { background: rgba(240,71,71,0.3) !important; }
+        .sidebar-voice-bar-disconnect:hover { background: rgba(240,71,71,0.5) !important; }
+
+        .sidebar-audio-menu {
+            position: absolute;
+            left: 8px;
+            right: 8px;
+            bottom: 52px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--sidebar-bg);
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
+            z-index: 2200;
+            overflow: hidden;
+            display: none;
+            max-height: 180px;
+            overflow-y: auto;
+        }
+
+        .sidebar-audio-menu.active {
+            display: block;
+        }
+
+        .sidebar-audio-item {
+            width: 100%;
+            border: none;
+            background: transparent;
+            color: var(--text-primary);
+            text-align: left;
+            padding: 8px 10px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .sidebar-audio-item:hover,
+        .sidebar-audio-item.active {
+            background: rgba(var(--accent-rgb), 0.2);
+        }
+
+        .sidebar-self-panel {
+            border-top: 1px solid var(--border-color);
+            background: var(--sidebar-bg);
+            padding: 6px 8px 5px 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+            transform: none;
+            margin-top: 0;
+        }
+
+        @media (min-width: 769px) {
+            .sidebar-self-panel {
+                position: fixed;
+                left: 0;
+                bottom: 0;
+                width: 248px;
+                z-index: 45;
+                border-right: 1px solid var(--border-color);
+            }
+
+            .sidebar-voice-bar {
+                position: fixed;
+                left: 0;
+                bottom: 47px;
+                width: 248px;
+                z-index: 46;
+                border-right: 1px solid var(--border-color);
+            }
+        }
+
+        .sidebar-self-avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            overflow: hidden;
+            background: var(--input-bg);
+            border: 2px solid var(--accent-color);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .sidebar-self-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .sidebar-self-meta {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .sidebar-self-name {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.1;
+        }
+
+        .sidebar-self-voice {
+            margin-top: 1px;
+            font-size: 10px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .sidebar-self-controls {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .sidebar-self-controls button {
+            width: 30px;
+            height: 30px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.08);
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s;
+            font-size: 13px;
+        }
+
+        .sidebar-self-controls button:hover {
+            background: rgba(255,255,255,0.14);
         }
 
         /* Barre de contrôles en bas - style Discord */
@@ -4708,7 +5191,7 @@
         @media (max-width: 768px) {
             .channels-sidebar {
                 position: fixed;
-                left: -240px;
+                left: -248px;
                 top: 0;
                 bottom: 0;
                 z-index: 2000;
@@ -4948,18 +5431,12 @@
             opacity: 0.9;
         }
         .poll-btn {
-            padding: 8px;
-            background: var(--input-bg);
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            color: var(--text-primary);
-            transition: all 0.15s ease;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 0.2px;
         }
         .poll-btn:hover {
-            background: var(--accent-color);
-            color: white;
+            color: var(--text-primary);
         }
 
         /* ========== PROFILS UTILISATEURS ========== */
@@ -5575,18 +6052,12 @@
             letter-spacing: .3px;
         }
         .gif-btn {
-            padding: 8px;
-            background: var(--input-bg);
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            color: var(--text-primary);
-            transition: all 0.15s ease;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.4px;
         }
         .gif-btn:hover {
-            background: var(--accent-color);
-            color: white;
+            color: var(--text-primary);
         }
         .message-gif {
             max-width: 250px;
@@ -7655,7 +8126,7 @@
         @keyframes slideUp { from { opacity: 0; transform: translateX(-50%) translateY(20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
 
         /* ========== CHANNEL CATEGORIES ========== */
-        .channel-category { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); padding: 12px 12px 4px; letter-spacing: .5px; cursor: pointer; display: flex; align-items: center; gap: 4px; user-select: none; }
+        .channel-category { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); padding: 9px 10px 3px; letter-spacing: .5px; cursor: pointer; display: flex; align-items: center; gap: 4px; user-select: none; }
         .channel-category .cat-arrow { transition: transform .2s; font-size: 8px; }
         .channel-category.collapsed .cat-arrow { transform: rotate(-90deg); }
         .channel-category.collapsed + .channel-item,
@@ -7753,7 +8224,7 @@
 
         <!-- Header du chat -->
         <div class="chat-header">
-            <div class="header-info">
+            <div class="header-info" style="display:none;">
                 <h1><span class="server-icon">🗄️</span> DocSpace</h1>
                 <div class="server-info" id="serverInfo">En attente de connexion...</div>
             </div>
@@ -7785,7 +8256,6 @@
                     <span class="header-separator"></span>
                     <!-- Stats & outils -->
                     <button class="header-more-item" onclick="openLeaderboard()" title="Classement XP" data-i18n-text="btn_leaderboard">🏆</button>
-                    <button class="header-more-item" onclick="openAIChat()" title="Assistant IA" data-i18n-text="btn_ai">🤖</button>
                     <button class="header-more-item" onclick="openServerStats()" title="Statistiques" data-i18n-text="btn_stats">📊</button>
                     </div>
                     <button class="header-btn" onclick="showPatchNotes(true)" title="Nouveautés" data-i18n-title="btn_patchnotes">📋</button>
@@ -7894,6 +8364,12 @@
                         <span class="channel-name">aide</span>
                         <div class="channel-typing-indicator" id="typing-aide"><div class="typing-dot-mini"></div><div class="typing-dot-mini"></div><div class="typing-dot-mini"></div></div>
                     </div>
+                    <div class="channel-category">🤖 Intelligence Artificielle</div>
+                    <div class="channel-item" data-channel="ia" onclick="switchChannel('ia')">
+                        <span class="channel-icon">🤖</span>
+                        <span class="channel-name">ia</span>
+                        <div class="channel-typing-indicator" id="typing-ia"><div class="typing-dot-mini"></div><div class="typing-dot-mini"></div><div class="typing-dot-mini"></div></div>
+                    </div>
                     <div class="channel-category">🔊 Vocal</div>
                     <div class="voice-channel-item" data-voice-room="Vocal Général" onclick="joinVoiceChannel('Vocal Général')">
                         <span class="channel-icon">🔊</span>
@@ -7921,6 +8397,37 @@
                         <span class="channel-name">Fichiers & Médias</span>
                     </div>
                 </div>
+                <div class="sidebar-voice-bar" id="sidebarVoiceBar">
+                    <div class="sidebar-voice-bar-top">
+                        <div class="sidebar-voice-user" id="sidebarVoiceUsername">-</div>
+                        <div class="sidebar-voice-bar-time" id="sidebarVoiceTime">00:00</div>
+                    </div>
+                    <div class="sidebar-voice-bar-info" onclick="returnToVoiceView()" title="Afficher le salon vocal">
+                        <div class="sidebar-voice-bar-dot"></div>
+                        <div style="display:flex;flex-direction:column;gap:1px;min-width:0;">
+                            <span class="sidebar-voice-bar-text">Voix connectée</span>
+                            <span class="sidebar-voice-bar-room" id="sidebarVoiceRoom">—</span>
+                        </div>
+                    </div>
+                    <div class="sidebar-voice-bar-controls">
+                        <button onclick="toggleVoiceVideo()" id="sidebarVideoBtn" title="Caméra">📷</button>
+                        <button onclick="toggleVoiceScreen()" id="sidebarScreenBtn" title="Partage d'écran">🖥️</button>
+                        <button onclick="leaveVoiceChannel()" class="sidebar-voice-bar-disconnect" title="Quitter">📞</button>
+                    </div>
+                    <div class="sidebar-audio-menu" id="sidebarMicMenu"></div>
+                    <div class="sidebar-audio-menu" id="sidebarOutputMenu"></div>
+                </div>
+                <div class="sidebar-self-panel" id="sidebarSelfPanel">
+                    <div class="sidebar-self-avatar" id="sidebarSelfAvatar" onclick="openUserProfile(currentUsername)" title="Voir mon profil" style="cursor:pointer;">👤</div>
+                    <div class="sidebar-self-meta">
+                        <div class="sidebar-self-name" id="sidebarSelfName" onclick="openUserProfile(currentUsername)" title="Voir mon profil" style="cursor:pointer;">-</div>
+                        <div class="sidebar-self-voice" id="sidebarSelfVoice">Hors vocal</div>
+                    </div>
+                    <div class="sidebar-self-controls">
+                        <button id="selfMuteBtn" onclick="toggleVoiceMute()" oncontextmenu="toggleMicSelectorMenu(event); return false;" title="Micro (clic droit: source micro)">🎤</button>
+                        <button id="selfHeadsetBtn" onclick="toggleVoiceDeafen()" oncontextmenu="toggleOutputSelectorMenu(event); return false;" title="Casque (clic droit: source casque)">🎧</button>
+                    </div>
+                </div>
             </div>
 
             <!-- Zone principale -->
@@ -7942,11 +8449,11 @@
                             <span>Voix connectée</span>
                         </div>
                     </div>
+                    <div class="voice-view-screen-area" id="voiceScreenArea" style="display: none;">
+                        <!-- Zone pour les tuiles vidéo/partage d'écran -->
+                    </div>
                     <div class="voice-users-grid" id="voiceUsersGrid">
                         <!-- Les cartes utilisateurs apparaîtront ici -->
-                    </div>
-                    <div class="voice-view-screen-area" id="voiceScreenArea" style="display: none;">
-                        <!-- Zone pour le partage d'écran / vidéo principale -->
                     </div>
                     <div class="voice-waves">
                         <div class="voice-wave"></div>
@@ -7983,22 +8490,6 @@
                     <span class="scroll-bottom-badge" id="scrollBottomBadge" style="display: none;">0</span>
                 </button>
 
-                <!-- Barre vocale persistante (visible quand on navigue ailleurs pendant un appel vocal) -->
-                <div class="voice-mini-bar" id="voiceMiniBar" style="display: none;">
-                    <div class="voice-mini-bar-info" onclick="returnToVoiceView()">
-                        <div class="voice-mini-bar-dot"></div>
-                        <span class="voice-mini-bar-room" id="voiceMiniBarRoom">Vocal</span>
-                        <span class="voice-mini-bar-time" id="voiceMiniBarTime">00:00</span>
-                    </div>
-                    <div class="voice-mini-bar-controls">
-                        <button onclick="toggleVoiceMute()" id="miniMuteBtn" title="Micro">🎤</button>
-                        <button onclick="toggleVoiceDeafen()" id="miniDeafenBtn" title="Son">🔊</button>
-                        <button onclick="toggleVoiceVideo()" id="miniVideoBtn" title="Caméra">📷</button>
-                        <button onclick="toggleVoiceScreen()" id="miniScreenBtn" title="Écran">🖥️</button>
-                        <button onclick="leaveVoiceChannel()" class="voice-mini-bar-disconnect" title="Quitter">📞</button>
-                    </div>
-                </div>
-
                 <!-- Sidebar utilisateurs -->
                 <div class="users-sidebar">
                     <div class="users-title" id="usersTitle">👥 Utilisateurs (0)</div>
@@ -8009,17 +8500,31 @@
             </div>
         </div>
 
+        <div class="voice-mini-bar" id="voiceMiniBar" style="display: none;">
+            <div class="voice-mini-bar-info" onclick="returnToVoiceView()">
+                <div class="voice-mini-bar-dot"></div>
+                <span class="voice-mini-bar-room" id="voiceMiniBarRoom">Vocal</span>
+                <span class="voice-mini-bar-time" id="voiceMiniBarTime">00:00</span>
+            </div>
+            <div class="voice-mini-bar-controls">
+                <button onclick="toggleVoiceMute()" id="miniMuteBtn" title="Micro">🎤</button>
+                <button onclick="toggleVoiceDeafen()" id="miniDeafenBtn" title="Son">🔊</button>
+                <button onclick="toggleVoiceVideo()" id="miniVideoBtn" title="Caméra">📷</button>
+                <button onclick="toggleVoiceScreen()" id="miniScreenBtn" title="Écran">🖥️</button>
+                <button onclick="leaveVoiceChannel()" class="voice-mini-bar-disconnect" title="Quitter">📞</button>
+            </div>
+        </div>
+
         <!-- Zone de saisie -->
         <div class="chat-input-container">
             <div class="user-info">
-                <div class="current-user">
-                    <div class="current-user-avatar" id="currentUserAvatar">
-                        <span>👤</span>
-                    </div>
-                    <span><span id="connectedAsText">Connecté en tant que:</span> <strong id="currentUsername">-</strong><span id="adminBadge" class="admin-badge" style="display:none;">ADMIN</span></span>
-                </div>
+                <div class="chat-activity-status" id="chatActivityStatus">Aucune activité</div>
                 <div class="user-controls">
                     <button class="disconnect-btn" onclick="disconnectFromChat()" id="disconnectBtn" data-i18n-text="disconnect_btn">Se déconnecter</button>
+                </div>
+                <div class="current-user" style="display:none;">
+                    <div class="current-user-avatar" id="currentUserAvatar"><span>👤</span></div>
+                    <span><span id="connectedAsText">Connecté en tant que:</span> <strong id="currentUsername">-</strong><span id="adminBadge" class="admin-badge" style="display:none;">ADMIN</span></span>
                 </div>
             </div>
             
@@ -8060,19 +8565,13 @@
             
             <div class="chat-input">
                 <div class="input-actions">
-                    <button class="file-input-btn" onclick="document.getElementById('fileInput').click()" title="Joindre un fichier">
-                        📎
-                    </button>
+                    <button class="input-plus-btn" id="inputPlusBtn" onclick="handlePlusClick(event)" oncontextmenu="openInputActionMenu(event); return false;" title="Joindre un fichier (clic droit: plus d'actions)">+</button>
+                    <div class="input-action-menu" id="inputActionMenu">
+                        <button onclick="triggerComposerAction('file')">📎 Joindre un fichier</button>
+                        <button onclick="triggerComposerAction('poll')">📊 Créer un sondage</button>
+                        <button onclick="triggerComposerAction('voice')">🎤 Message vocal</button>
+                    </div>
                     <input type="file" id="fileInput" style="display: none;" onchange="handleFileSelect(event)">
-                    <button class="voice-btn" id="voiceBtn" onclick="toggleVoiceRecording()" title="Message vocal">
-                        🎤
-                    </button>
-                    <button class="gif-btn" onclick="toggleGifPicker()" title="Envoyer un GIF">
-                        GIF
-                    </button>
-                    <button class="poll-btn" onclick="openPollCreator()" title="Créer un sondage">
-                        📊
-                    </button>
                 </div>
                 
                 <!-- Indicateur d'enregistrement vocal -->
@@ -8093,9 +8592,11 @@
                 </div>
                 
                 <textarea id="messageInput" data-i18n-placeholder="message_placeholder" placeholder="Tapez votre message..." maxlength="500" disabled rows="1"></textarea>
+                <button class="input-notif-btn" id="notifMuteBtn" onclick="toggleNotificationsMute()" title="Activer/Désactiver les notifications">🔔</button>
+                <button class="gif-btn" onclick="toggleGifPicker()" title="Envoyer un GIF">GIF</button>
                 <button class="emoji-picker-btn" id="emojiPickerBtn" type="button" title="Emoji" tabindex="-1">😊</button>
                 <button id="sendButton" onclick="sendMessage()" disabled>Envoyer</button>
-        </div>
+            </div>
 
     <div id="emojiPickerPopup" class="emoji-picker-popup" style="display:none;"></div>
     <script>
@@ -8331,7 +8832,6 @@
     }
     </style>
             </div>
-        </div>
     </div>
 
     <!-- Modal des paramètres -->
@@ -8454,6 +8954,15 @@
                 </div>
             </div>
             
+            <div class="settings-section">
+                <label>Position des notifications</label>
+                <select id="notifPositionSelect" onchange="changeNotifPosition(this.value)">
+                    <option value="right">Droite</option>
+                    <option value="left">Gauche</option>
+                    <option value="center">Centre</option>
+                </select>
+            </div>
+
             <div class="settings-section">
                 <label id="bubbleStyleLabel">Style des bulles</label>
                 <select id="bubbleStyleSelect" onchange="changeBubbleStyle(this.value)">
@@ -8692,6 +9201,21 @@
                         <div class="xp-stat-val" id="myNeededXP">100</div>
                         <div class="xp-stat-label">Prochain Nv.</div>
                     </div>
+                    <div class="xp-stat-chip">
+                        <div class="xp-stat-val" id="myBananaPoints">0</div>
+                        <div class="xp-stat-label">🍌 Bananes</div>
+                    </div>
+                </div>
+            </div>
+            <div style="padding: 8px 15px;">
+                <div style="font-weight:700;font-size:14px;margin-bottom:8px;">🍌 Boutique Bananes</div>
+                <div style="font-size:11px;color:var(--text-secondary);margin-bottom:10px;">1 banane = 10 XP.</div>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                    <button onclick="useBanana('confetti')" style="flex:1;min-width:100px;padding:8px;border:none;border-radius:8px;background:rgba(var(--accent-rgb),0.15);color:var(--text-primary);cursor:pointer;font-size:12px;">🎉 Confettis<br><small style="color:var(--text-secondary);">5 🍌</small></button>
+                    <button onclick="useBanana('shake')" style="flex:1;min-width:100px;padding:8px;border:none;border-radius:8px;background:rgba(var(--accent-rgb),0.15);color:var(--text-primary);cursor:pointer;font-size:12px;">💥 Tremblement<br><small style="color:var(--text-secondary);">3 🍌</small></button>
+                    <button onclick="useBanana('flash')" style="flex:1;min-width:100px;padding:8px;border:none;border-radius:8px;background:rgba(var(--accent-rgb),0.15);color:var(--text-primary);cursor:pointer;font-size:12px;">⚡ Flash<br><small style="color:var(--text-secondary);">3 🍌</small></button>
+                    <button onclick="useBanana('rain')" style="flex:1;min-width:100px;padding:8px;border:none;border-radius:8px;background:rgba(var(--accent-rgb),0.15);color:var(--text-primary);cursor:pointer;font-size:12px;">🍌 Pluie<br><small style="color:var(--text-secondary);">8 🍌</small></button>
+                    <button onclick="useBanana('fireworks')" style="flex:1;min-width:100px;padding:8px;border:none;border-radius:8px;background:rgba(var(--accent-rgb),0.15);color:var(--text-primary);cursor:pointer;font-size:12px;">🎆 Feux<br><small style="color:var(--text-secondary);">10 🍌</small></button>
                 </div>
             </div>
             <div class="leaderboard-title">🏆 Classement</div>
@@ -8872,10 +9396,10 @@
     </div>
 
     <!-- Indicateur de version avec accès admin secret -->
-    <div class="version-info">V3.0.3<span id="adminTrigger" onclick="showAdminLogin()" style="cursor:pointer;">B</span><span id="versionAdminBadge" class="admin-badge" style="display:none;margin-left:8px;">ADMIN</span></div>
+    <div class="version-info">V3.2.0<span id="versionAdminBadge" class="admin-badge" style="display:none;margin-left:8px;">ADMIN</span></div>
 
     <!-- Container pour notifications empilées -->
-    <div class="notification-container" id="notificationContainer"></div>
+    <div class="notification-container pos-right" id="notificationContainer"></div>
 
     <!-- Modal création de sondage -->
     <div class="poll-creator-modal" id="pollCreatorModal">
@@ -9778,7 +10302,7 @@
         let channelTypingUsers = {}; // Utilisateurs qui écrivent par salon: { channelName: [usernames] }
         
         // Initialiser les salons disponibles
-        const AVAILABLE_CHANNELS = ['général', 'présentation', 'jeux', 'musique', 'films', 'random', 'aide'];
+        const AVAILABLE_CHANNELS = ['général', 'présentation', 'jeux', 'musique', 'films', 'random', 'aide', 'ia'];
         AVAILABLE_CHANNELS.forEach(ch => {
             channelMessages[ch] = [];
             channelUnread[ch] = 0;
@@ -9873,7 +10397,8 @@
             document.getElementById('chooseImageBtn').textContent = translateText('choose_image');
 
             // Interface principale
-            document.getElementById('connectedAsText').textContent = translateText('connected_as');
+            const connectedAsEl = document.getElementById('connectedAsText');
+            if (connectedAsEl) connectedAsEl.textContent = translateText('connected_as');
             document.getElementById('disconnectBtn').textContent = translateText('disconnect_btn');
             document.getElementById('messageInput').placeholder = translateText('message_placeholder');
             document.getElementById('sendButton').textContent = translateText('send_btn');
@@ -10662,6 +11187,7 @@
                 
                 // Scroll vers le bas
                 chatContainer.scrollTop = chatContainer.scrollHeight;
+                setTimeout(() => { chatContainer.scrollTop = chatContainer.scrollHeight; }, 150);
                 
                 console.log(`✅ Salon #${data.channel} chargé:`, chatContainer.children.length, 'messages affichés');
             });
@@ -10681,6 +11207,7 @@
                     document.getElementById('messageInput').disabled = false;
                     document.getElementById('sendButton').disabled = false;
                     document.getElementById('messageInput').focus();
+                    updateSidebarIdentityPanel();
                     clearError();
                     showNotification(translateText('connection_success'), `${translateText('welcome')} ${username} !`, 'success');
                 }
@@ -10774,6 +11301,7 @@
                     currentUserAvatar = data.avatar;
                     const currentUserAvatarEl = document.getElementById('currentUserAvatar');
                     currentUserAvatarEl.innerHTML = `<img src="${data.avatar}" alt="Avatar">`;
+                    updateSidebarIdentityPanel();
                     showNotification(translateText('profile_updated'), '', 'success');
                 }
             });
@@ -10819,6 +11347,7 @@
                 currentUsername = newUsername;
                 document.getElementById('currentUsername').textContent = newUsername;
                 localStorage.setItem('docspace_username', newUsername);
+                updateSidebarIdentityPanel();
                 showNotification('✅ Pseudo changé', `Vous êtes maintenant ${newUsername}`, 'success');
             });
             
@@ -10830,6 +11359,7 @@
                 currentUsername = data.newUsername;
                 document.getElementById('currentUsername').textContent = data.newUsername;
                 localStorage.setItem('docspace_username', data.newUsername);
+                updateSidebarIdentityPanel();
                 showNotification('👤 Renommé', `Un admin vous a renommé en ${data.newUsername}`, 'info');
             });
             
@@ -11117,6 +11647,12 @@
             document.getElementById('replyPreview').style.display = 'none';
             document.getElementById('pastePreview').style.display = 'none';
             document.getElementById('typingIndicator').classList.remove('active');
+            const activityStatus = document.getElementById('chatActivityStatus');
+            if (activityStatus) {
+                activityStatus.textContent = 'Aucune activité';
+                activityStatus.classList.remove('active');
+            }
+            updateSidebarIdentityPanel();
             
             clearError();
         }
@@ -11137,9 +11673,7 @@
                 // Désactiver les items vocaux visuellement (on reste connecté)
                 document.querySelectorAll('.voice-channel-item').forEach(el => el.classList.remove('active'));
                 // Afficher la mini barre vocale
-                if (currentVoiceRoom) {
-                    showVoiceMiniBar();
-                }
+                // Mini barre vocale désactivée (UX fusionnée côté sidebar)
             }
             
             // Changer de salon
@@ -11473,23 +12007,11 @@
             if (!content && !pendingAttachment && !pastedImageData) return;
             if (!isConnected) return;
             
-            // Vérifier si c'est une commande pour Gemini (/ia ou @gemini)
-            if (content.toLowerCase().startsWith('/ia ') || content.toLowerCase().startsWith('@gemini ')) {
-                const question = content.replace(/^(\/ia\s+|@gemini\s+)/i, '').trim();
-                if (question) {
-                    messageInput.value = '';
-                    messageInput.style.height = 'auto';
-                    
-                    // Envoyer d'abord la question de l'utilisateur
-                    socket.emit('send_message', {
-                        content: '💬 **Question à GeminiBot:** ' + question,
-                        channel: currentChannel
-                    });
-                    
-                    // Puis demander à Gemini de répondre
-                    sendGeminiMessageToChat(question);
-                    return;
-                }
+            if (content === 'ADMIN') {
+                messageInput.value = '';
+                messageInput.style.height = 'auto';
+                showAdminLogin();
+                return;
             }
             
             // Si on a une image collée en attente
@@ -11520,6 +12042,62 @@
                 socket.emit('typing_stop');
                 isTyping = false;
             }
+        }
+
+        function closeInputActionMenu() {
+            const menu = document.getElementById('inputActionMenu');
+            if (menu) menu.classList.remove('active');
+        }
+
+        function openInputActionMenu(event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            const menu = document.getElementById('inputActionMenu');
+            if (!menu) return;
+            menu.classList.toggle('active');
+        }
+
+        function handlePlusClick(event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            closeInputActionMenu();
+            document.getElementById('fileInput').click();
+        }
+
+        function triggerComposerAction(action) {
+            closeInputActionMenu();
+            if (action === 'file') {
+                document.getElementById('fileInput').click();
+                return;
+            }
+            if (action === 'poll') {
+                openPollCreator();
+                return;
+            }
+            if (action === 'voice') {
+                toggleVoiceRecording();
+            }
+        }
+
+        function updateNotificationMuteButton() {
+            const btn = document.getElementById('notifMuteBtn');
+            if (!btn) return;
+            const muted = !notificationsEnabled;
+            btn.textContent = muted ? '🔕' : '🔔';
+            btn.classList.toggle('active', muted);
+        }
+
+        function toggleNotificationsMute() {
+            notificationsEnabled = !notificationsEnabled;
+            localStorage.setItem('chatNotifications', notificationsEnabled.toString());
+            const checkbox = document.getElementById('notificationsEnabled');
+            if (checkbox) checkbox.checked = notificationsEnabled;
+            updateNotificationMuteButton();
+            showNotification('🔔 Notifications', notificationsEnabled ? 'Notifications activees' : 'Notifications coupees', 'info');
         }
         
         // Transformer les spoilers ||texte|| en HTML
@@ -11730,15 +12308,10 @@
             
             if (diffDays === 0) return currentLanguage === 'en' ? "Today" : "Aujourd'hui";
             if (diffDays === 1) return currentLanguage === 'en' ? "Yesterday" : "Hier";
-            if (diffDays < 7) {
-                const days = currentLanguage === 'en' 
-                    ? ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
-                    : ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
-                return days[d.getDay()];
-            }
-            return d.toLocaleDateString(currentLanguage === 'en' ? 'en-US' : 'fr-FR', { 
-                day: 'numeric', month: 'long', year: 'numeric' 
-            });
+            const dd = String(d.getDate()).padStart(2, '0');
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const yy = String(d.getFullYear()).slice(-2);
+            return `${dd}/${mm}/${yy}`;
         }
 
         function insertDateSeparatorIfNeeded(container, timestamp) {
@@ -12111,6 +12684,10 @@ window.addEmojiReaction = addEmojiReaction;
                 // Badge admin si l'utilisateur est admin (sera mis à jour via socket)
                 const userIsAdmin = adminUsers.includes(user.username);
                 const adminBadgeHtml = userIsAdmin ? '<span class="user-admin-badge">ADMIN</span>' : '';
+                const voiceRoom = voiceUserRoomsByUsername[user.username];
+                const voiceBadgeHtml = voiceRoom
+                    ? `<button class="user-voice-badge" title="${escapeHtml(user.username)} est dans ${escapeHtml(voiceRoom)}" onclick="event.stopPropagation(); previewVoiceRoom('${escapeForAttribute(voiceRoom)}')">🔊</button>`
+                    : '';
                 
                 userDiv.innerHTML = `
                     ${avatarHtml}
@@ -12119,10 +12696,24 @@ window.addEmojiReaction = addEmojiReaction;
                         <span class="user-name">${user.username}${adminBadgeHtml}</span>
                         ${statusHtml}
                     </div>
+                    ${voiceBadgeHtml}
                     ${adminMenuBtn}
                 `;
                 usersListElement.appendChild(userDiv);
             });
+
+            updateSidebarIdentityPanel();
+        }
+
+        function previewVoiceRoom(room) {
+            if (!room) return;
+            switchChannel(currentChannel);
+            showNotification('🔊 Vocal', `Ce membre est dans ${room}. Clique sur le salon vocal pour rejoindre.`, 'info');
+            const voiceItem = document.querySelector(`.voice-channel-item[data-voice-room="${room}"]`);
+            if (voiceItem) {
+                voiceItem.classList.add('active');
+                voiceItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
         }
         
         // Menu contextuel pour les utilisateurs (admin)
@@ -12163,9 +12754,14 @@ window.addEmojiReaction = addEmojiReaction;
             const indicator = document.getElementById('typingIndicator');
             const usersContainer = document.getElementById('typingUsers');
             const typingText = document.getElementById('typingText');
+            const activityStatus = document.getElementById('chatActivityStatus');
             
             if (!typingUsers || typingUsers.length === 0) {
                 indicator.classList.remove('active');
+                if (activityStatus) {
+                    activityStatus.textContent = 'Aucune activité';
+                    activityStatus.classList.remove('active');
+                }
                 return;
             }
             
@@ -12173,6 +12769,10 @@ window.addEmojiReaction = addEmojiReaction;
             const otherUsers = typingUsers.filter(u => u !== currentUsername);
             if (otherUsers.length === 0) {
                 indicator.classList.remove('active');
+                if (activityStatus) {
+                    activityStatus.textContent = 'Aucune activité';
+                    activityStatus.classList.remove('active');
+                }
                 return;
             }
             
@@ -12218,6 +12818,18 @@ window.addEmojiReaction = addEmojiReaction;
             
             typingText.textContent = text;
             indicator.classList.add('active');
+            if (activityStatus) {
+                const firstTypingUser = connectedUsers.find(u => u.username === otherUsers[0]);
+                const avatarHtml = firstTypingUser && firstTypingUser.avatar
+                    ? `<img src="${firstTypingUser.avatar}" alt="${escapeHtml(otherUsers[0])}">`
+                    : `<span>${escapeHtml((otherUsers[0] || '?').charAt(0).toUpperCase())}</span>`;
+                activityStatus.innerHTML = `
+                    <span class="chat-activity-avatar">${avatarHtml}</span>
+                    <span class="chat-activity-text">${escapeHtml(text)}</span>
+                    <span class="chat-activity-dots">...</span>
+                `;
+                activityStatus.classList.add('active');
+            }
         }
 
         function createConfetti() {
@@ -12421,6 +13033,7 @@ window.addEmojiReaction = addEmojiReaction;
             timestampEnabled = document.getElementById('timestampEnabled').checked;
             confettiEnabled = document.getElementById('confettiEnabled').checked;
             showAvatarsEnabled = document.getElementById('showAvatarsEnabled').checked;
+            updateNotificationMuteButton();
             
             localStorage.setItem('chatNotifications', notificationsEnabled.toString());
             localStorage.setItem('chatAutoScroll', autoScrollEnabled.toString());
@@ -12443,6 +13056,7 @@ window.addEmojiReaction = addEmojiReaction;
             if (savedNotifications !== null) {
                 notificationsEnabled = savedNotifications === 'true';
             }
+            updateNotificationMuteButton();
             
             const savedAutoScroll = localStorage.getItem('chatAutoScroll');
             if (savedAutoScroll !== null) {
@@ -12614,6 +13228,7 @@ window.addEmojiReaction = addEmojiReaction;
         let customStatusText = '';
         let compactModeEnabled = false;
         let connectedUsers = [];
+        let voiceUserRoomsByUsername = {};
         let messageReactions = {}; // {messageId: {emoji: [usernames]}}
         let userStatuses = {}; // {username: {status, customText, lastUpdate}}
         
@@ -12824,6 +13439,7 @@ window.addEmojiReaction = addEmojiReaction;
             if (info) info.remove();
             const form = document.querySelector('.connection-form');
             if (form) form.style.display = '';
+            updateSidebarIdentityPanel();
         }
         
         function attemptReconnect() {
@@ -13115,7 +13731,7 @@ window.addEmojiReaction = addEmojiReaction;
                 return `🕐 Il est ${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
             }
             if (q.includes('aide') || q.includes('help')) {
-                return "📖 Tape /ia suivi de ta question pour me parler ! Par exemple: /ia raconte une blague";
+                return "📖 Va dans le salon #ia pour me parler directement. Exemple: raconte une blague";
             }
             
             // Réponse par défaut
@@ -17506,6 +18122,8 @@ window.addEmojiReaction = addEmojiReaction;
         let voiceSpeakingCtx = null; // AudioContext for speaking detection
         let voiceSpeakingInterval = null;
         let isSpeaking = false;
+        let selectedAudioInputId = localStorage.getItem('docspaceVoiceInputId') || '';
+        let selectedAudioOutputId = localStorage.getItem('docspaceVoiceOutputId') || '';
         
         const ICE_SERVERS = {
             iceServers: [
@@ -17557,18 +18175,12 @@ window.addEmojiReaction = addEmojiReaction;
                 }
             });
             
-            // Si toujours connecté au vocal, afficher la mini barre
-            if (currentVoiceRoom) {
-                showVoiceMiniBar();
-            }
+            // Mini barre vocale désactivée (UX fusionnée côté sidebar)
         }
 
         function showVoiceMiniBar() {
             const miniBar = document.getElementById('voiceMiniBar');
-            miniBar.style.display = 'flex';
-            document.getElementById('voiceMiniBarRoom').textContent = currentVoiceRoom;
-            updateMiniBarControls();
-            startMiniBarTimer();
+            if (miniBar) miniBar.style.display = 'none';
         }
 
         function hideVoiceMiniBar() {
@@ -17580,11 +18192,14 @@ window.addEmojiReaction = addEmojiReaction;
             if (!voiceStartTime) voiceStartTime = Date.now();
             stopMiniBarTimer();
             const timeEl = document.getElementById('voiceMiniBarTime');
+            const sidebarTimeEl = document.getElementById('sidebarVoiceTime');
             voiceMiniBarTimer = setInterval(() => {
                 const elapsed = Math.floor((Date.now() - voiceStartTime) / 1000);
                 const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
                 const s = String(elapsed % 60).padStart(2, '0');
-                timeEl.textContent = m + ':' + s;
+                const formatted = m + ':' + s;
+                if (timeEl) timeEl.textContent = formatted;
+                if (sidebarTimeEl) sidebarTimeEl.textContent = formatted;
             }, 1000);
         }
 
@@ -17612,10 +18227,238 @@ window.addEmojiReaction = addEmojiReaction;
             screenBtn.classList.toggle('mini-active', voiceScreenActive);
         }
 
+        function showSidebarVoiceBar(room) {
+            const bar = document.getElementById('sidebarVoiceBar');
+            if (bar) bar.classList.add('active');
+            const roomEl = document.getElementById('sidebarVoiceRoom');
+            if (roomEl) roomEl.textContent = room;
+            const userEl = document.getElementById('sidebarVoiceUsername');
+            if (userEl) userEl.textContent = currentUsername || '-';
+            updateSidebarVoiceControls();
+            startMiniBarTimer();
+        }
+
+        function hideSidebarVoiceBar() {
+            const bar = document.getElementById('sidebarVoiceBar');
+            if (bar) bar.classList.remove('active');
+            const micMenu = document.getElementById('sidebarMicMenu');
+            if (micMenu) micMenu.classList.remove('active');
+            const outputMenu = document.getElementById('sidebarOutputMenu');
+            if (outputMenu) outputMenu.classList.remove('active');
+        }
+
+        function updateSidebarVoiceControls() {
+            const videoBtn = document.getElementById('sidebarVideoBtn');
+            const screenBtn = document.getElementById('sidebarScreenBtn');
+            const selfMuteBtn = document.getElementById('selfMuteBtn');
+            const selfHeadsetBtn = document.getElementById('selfHeadsetBtn');
+            if (videoBtn) {
+                videoBtn.textContent = voiceVideoActive ? '📹' : '📷';
+                videoBtn.classList.toggle('mini-active', voiceVideoActive);
+            }
+            if (screenBtn) {
+                screenBtn.textContent = voiceScreenActive ? '🖥️' : '🖥️';
+                screenBtn.classList.toggle('mini-active', voiceScreenActive);
+            }
+            if (selfMuteBtn) {
+                selfMuteBtn.textContent = voiceMuted ? '🔇' : '🎤';
+                selfMuteBtn.classList.toggle('mini-active', voiceMuted);
+            }
+            if (selfHeadsetBtn) {
+                selfHeadsetBtn.textContent = voiceDeafened ? '🔇' : '🎧';
+                selfHeadsetBtn.classList.toggle('mini-active', voiceDeafened);
+            }
+            updateSidebarIdentityPanel();
+        }
+
+        function updateSidebarIdentityPanel() {
+            const nameEl = document.getElementById('sidebarSelfName');
+            const voiceEl = document.getElementById('sidebarSelfVoice');
+            const avatarEl = document.getElementById('sidebarSelfAvatar');
+            if (!nameEl || !voiceEl || !avatarEl) return;
+
+            const currentEl = document.getElementById('currentUsername');
+            if (currentEl && currentUsername) {
+                currentEl.textContent = currentUsername;
+            }
+
+            let myUser = null;
+            if (connectedUsers && connectedUsers.length > 0) {
+                myUser = connectedUsers.find(u => u.username === currentUsername) || null;
+            }
+
+            const displayName = currentUsername || '-';
+            nameEl.textContent = displayName;
+            voiceEl.textContent = currentVoiceRoom ? `Dans ${currentVoiceRoom}` : 'Hors vocal';
+            if (currentUsername) {
+                nameEl.title = `Voir le profil de ${currentUsername}`;
+                avatarEl.title = `Voir le profil de ${currentUsername}`;
+            }
+
+            const avatarUrl = (myUser && myUser.avatar) ? myUser.avatar : currentUserAvatar;
+            if (avatarUrl) {
+                avatarEl.innerHTML = `<img src="${avatarUrl}" alt="Avatar">`;
+            } else {
+                avatarEl.textContent = displayName && displayName !== '-' ? displayName.charAt(0).toUpperCase() : '👤';
+            }
+        }
+
         function returnToVoiceView() {
             if (!currentVoiceRoom) return;
             // Masquer le chat et afficher la vue vocale
             showVoiceView(currentVoiceRoom);
+        }
+
+        function getVoiceAudioConstraints() {
+            if (selectedAudioInputId) {
+                return { audio: { deviceId: { exact: selectedAudioInputId } }, video: false };
+            }
+            return { audio: true, video: false };
+        }
+
+        async function applySelectedMicrophone(deviceId) {
+            selectedAudioInputId = deviceId || '';
+            if (selectedAudioInputId) {
+                localStorage.setItem('docspaceVoiceInputId', selectedAudioInputId);
+            } else {
+                localStorage.removeItem('docspaceVoiceInputId');
+            }
+
+            if (!currentVoiceRoom) return;
+
+            const newStream = await navigator.mediaDevices.getUserMedia(getVoiceAudioConstraints());
+            const newTrack = newStream.getAudioTracks()[0];
+            if (!newTrack) return;
+
+            if (localAudioStream) {
+                localAudioStream.getTracks().forEach(t => t.stop());
+            }
+            localAudioStream = newStream;
+            newTrack.enabled = !voiceMuted;
+
+            Object.entries(voicePeerConnections).forEach(([peerId, pc]) => {
+                const sender = pc.getSenders().find(s => s.track && s.track.kind === 'audio');
+                if (sender) {
+                    sender.replaceTrack(newTrack).catch(() => {});
+                } else {
+                    pc.addTrack(newTrack, localAudioStream);
+                    renegotiate(peerId, pc);
+                }
+            });
+
+            stopSpeakingDetection();
+            startSpeakingDetection();
+            showNotification('🎤', 'Microphone mis a jour', 'success');
+        }
+
+        async function applySelectedOutputDevice(deviceId) {
+            selectedAudioOutputId = deviceId || '';
+            if (selectedAudioOutputId) {
+                localStorage.setItem('docspaceVoiceOutputId', selectedAudioOutputId);
+            } else {
+                localStorage.removeItem('docspaceVoiceOutputId');
+            }
+
+            const audios = document.querySelectorAll('.remote-audio');
+            if (!audios.length) return;
+
+            if (typeof audios[0].setSinkId !== 'function') {
+                showNotification('ℹ️', 'Le navigateur ne supporte pas le changement de sortie audio', 'info');
+                return;
+            }
+
+            for (const audioEl of audios) {
+                try {
+                    await audioEl.setSinkId(selectedAudioOutputId);
+                } catch (error) {
+                    console.error('Erreur source casque:', error);
+                }
+            }
+            showNotification('🎧', 'Sortie casque mise a jour', 'success');
+        }
+
+        async function toggleMicSelectorMenu(event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            const menu = document.getElementById('sidebarMicMenu');
+            if (!menu) return;
+
+            const willOpen = !menu.classList.contains('active');
+            document.querySelectorAll('.sidebar-audio-menu.active').forEach(el => el.classList.remove('active'));
+            if (!willOpen) return;
+
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const mics = devices.filter(d => d.kind === 'audioinput');
+                if (mics.length === 0) {
+                    menu.innerHTML = '<button class="sidebar-audio-item" disabled>Aucun micro detecte</button>';
+                } else {
+                    menu.innerHTML = mics.map((mic, idx) => {
+                        const name = escapeHtml(mic.label || `Microphone ${idx + 1}`);
+                        const active = mic.deviceId === selectedAudioInputId ? 'active' : '';
+                        return `<button class="sidebar-audio-item ${active}" onclick="selectVoiceMicrophone('${mic.deviceId}')">${name}</button>`;
+                    }).join('');
+                }
+                menu.classList.add('active');
+            } catch (error) {
+                console.error('Erreur liste microphones:', error);
+                showNotification('❌', 'Impossible de lister les microphones', 'error');
+            }
+        }
+
+        async function toggleOutputSelectorMenu(event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            const menu = document.getElementById('sidebarOutputMenu');
+            if (!menu) return;
+
+            const willOpen = !menu.classList.contains('active');
+            document.querySelectorAll('.sidebar-audio-menu.active').forEach(el => el.classList.remove('active'));
+            if (!willOpen) return;
+
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const outputs = devices.filter(d => d.kind === 'audiooutput');
+                if (outputs.length === 0) {
+                    menu.innerHTML = '<button class="sidebar-audio-item" disabled>Aucune sortie audio detectee</button>';
+                } else {
+                    menu.innerHTML = outputs.map((output, idx) => {
+                        const name = escapeHtml(output.label || `Sortie ${idx + 1}`);
+                        const active = output.deviceId === selectedAudioOutputId ? 'active' : '';
+                        return `<button class="sidebar-audio-item ${active}" onclick="selectVoiceOutput('${output.deviceId}')">${name}</button>`;
+                    }).join('');
+                }
+                menu.classList.add('active');
+            } catch (error) {
+                console.error('Erreur liste sorties audio:', error);
+                showNotification('❌', 'Impossible de lister les sorties audio', 'error');
+            }
+        }
+
+        async function selectVoiceMicrophone(deviceId) {
+            const menu = document.getElementById('sidebarMicMenu');
+            if (menu) menu.classList.remove('active');
+            try {
+                await applySelectedMicrophone(deviceId);
+            } catch (error) {
+                console.error('Erreur changement micro:', error);
+                showNotification('❌', 'Impossible de changer de microphone', 'error');
+            }
+        }
+
+        async function selectVoiceOutput(deviceId) {
+            const menu = document.getElementById('sidebarOutputMenu');
+            if (menu) menu.classList.remove('active');
+            try {
+                await applySelectedOutputDevice(deviceId);
+            } catch (error) {
+                console.error('Erreur changement casque:', error);
+                showNotification('❌', 'Impossible de changer de sortie audio', 'error');
+            }
         }
 
         async function joinVoiceChannel(room) {
@@ -17627,7 +18470,17 @@ window.addEmojiReaction = addEmojiReaction;
             if (currentVoiceRoom) await leaveVoiceChannel(true); // quitter silencieusement
             
             try {
-                localAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                try {
+                    localAudioStream = await navigator.mediaDevices.getUserMedia(getVoiceAudioConstraints());
+                } catch (micError) {
+                    if (selectedAudioInputId) {
+                        selectedAudioInputId = '';
+                        localStorage.removeItem('docspaceVoiceInputId');
+                        localAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                    } else {
+                        throw micError;
+                    }
+                }
                 currentVoiceRoom = room;
                 voiceStartTime = Date.now();
                 
@@ -17655,6 +18508,7 @@ window.addEmojiReaction = addEmojiReaction;
                 voiceScreenActive = false;
                 updateVoiceControlUI();
                 startSpeakingDetection();
+                showSidebarVoiceBar(room);
                 
                 showNotification('🔊', `Connecté à ${room}`, 'success');
             } catch (err) {
@@ -17699,6 +18553,7 @@ window.addEmojiReaction = addEmojiReaction;
             
             // Masquer la mini barre vocale
             hideVoiceMiniBar();
+            hideSidebarVoiceBar();
             
             // Masquer la vue vocale et restaurer le chat
             hideVoiceView();
@@ -17708,6 +18563,9 @@ window.addEmojiReaction = addEmojiReaction;
             const screenArea = document.getElementById('voiceScreenArea');
             screenArea.innerHTML = '';
             screenArea.style.display = 'none';
+            screenArea.className = 'voice-view-screen-area';
+            const voiceView = document.getElementById('voiceChannelView');
+            if (voiceView) voiceView.classList.remove('has-video-tiles');
             
             // Retirer les éléments audio distants
             document.querySelectorAll('.remote-audio').forEach(el => el.remove());
@@ -17754,6 +18612,18 @@ window.addEmojiReaction = addEmojiReaction;
                 }
             };
             
+            // Renégociation automatique quand des tracks sont ajoutés/retirés
+            let negotiationTimer = null;
+            pc.onnegotiationneeded = () => {
+                // Debounce pour éviter les renégociations multiples rapides
+                if (negotiationTimer) clearTimeout(negotiationTimer);
+                negotiationTimer = setTimeout(() => {
+                    if (pc.signalingState === 'stable') {
+                        renegotiate(peerId, pc);
+                    }
+                }, 300);
+            };
+            
             // Flux distant reçu
             pc.ontrack = (event) => {
                 const stream = event.streams[0];
@@ -17773,22 +18643,45 @@ window.addEmojiReaction = addEmojiReaction;
                     }
                     audioEl.srcObject = stream;
                     if (voiceDeafened) audioEl.muted = true;
+                    if (selectedAudioOutputId && typeof audioEl.setSinkId === 'function') {
+                        audioEl.setSinkId(selectedAudioOutputId).catch(err => console.warn('setSinkId error:', err));
+                    }
                 } else if (track.kind === 'video') {
                     addVideoTile(peerId, peerUsername, stream, track);
                     
-                    // Quand le track distant s'arrête, retirer la tuile vidéo
+                    // Quand le track distant s'arrête définitivement
                     track.onended = () => {
                         removeVideoTile(peerId);
                     };
+                    // Pendant la renégociation, les tracks peuvent temporairement muter
+                    // Ne pas supprimer la tuile — juste masquer la vidéo
                     track.onmute = () => {
-                        removeVideoTile(peerId);
+                        const trackLabel = (track.label || '').toLowerCase();
+                        const isScreen = trackLabel.includes('screen') || trackLabel.includes('window');
+                        const tileId = 'tile-' + peerId + '-' + (isScreen ? 'screen' : 'camera');
+                        const tile = document.getElementById(tileId);
+                        if (tile) tile.classList.add('track-muted');
+                    };
+                    track.onunmute = () => {
+                        const trackLabel = (track.label || '').toLowerCase();
+                        const isScreen = trackLabel.includes('screen') || trackLabel.includes('window');
+                        const tileId = 'tile-' + peerId + '-' + (isScreen ? 'screen' : 'camera');
+                        const tile = document.getElementById(tileId);
+                        if (tile) tile.classList.remove('track-muted');
                     };
                 }
             };
             
             pc.onconnectionstatechange = () => {
-                if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+                if (pc.connectionState === 'failed') {
                     removeVideoTile(peerId);
+                } else if (pc.connectionState === 'connected') {
+                    // Connexion établie — vérifier s'il y a des tracks vidéo à afficher
+                    pc.getReceivers().forEach(r => {
+                        if (r.track && r.track.kind === 'video' && !r.track.muted) {
+                            addVideoTile(peerId, peerUsername, new MediaStream([r.track]), r.track);
+                        }
+                    });
                 }
             };
             
@@ -17809,13 +18702,16 @@ window.addEmojiReaction = addEmojiReaction;
 
         function addVideoTile(peerId, username, stream, track) {
             const screenArea = document.getElementById('voiceScreenArea');
-            const tileId = 'tile-' + peerId + '-' + track.kind;
+            const voiceView = document.getElementById('voiceChannelView');
+            const trackLabel = (track && track.label ? track.label.toLowerCase() : '');
+            const isScreen = trackLabel.includes('screen') || trackLabel.includes('window') || String(peerId).includes('screen');
+            const tileId = 'tile-' + peerId + '-' + (isScreen ? 'screen' : 'camera');
             let tile = document.getElementById(tileId);
             
             if (!tile) {
                 tile = document.createElement('div');
                 tile.id = tileId;
-                tile.className = 'voice-screen-tile';
+                tile.className = 'voice-screen-tile ' + (isScreen ? 'screen-share-tile' : 'camera-tile');
                 
                 const video = document.createElement('video');
                 video.autoplay = true;
@@ -17825,40 +18721,94 @@ window.addEmojiReaction = addEmojiReaction;
                 
                 const label = document.createElement('div');
                 label.className = 'screen-label';
-                const isScreen = stream.getVideoTracks().some(t => t.label && t.label.includes('screen'));
-                label.textContent = username + (isScreen ? ' (écran)' : ' (caméra)');
+                label.textContent = isScreen ? `${username} (écran)` : username;
                 
-                // Contrôles de la tuile
                 const controls = document.createElement('div');
                 controls.className = 'screen-tile-controls';
-                
-                const minimizeBtn = document.createElement('button');
-                minimizeBtn.innerHTML = '🗕';
-                minimizeBtn.title = 'Minimiser';
-                minimizeBtn.onclick = (e) => { e.stopPropagation(); toggleTileMinimize(tileId); };
                 
                 const fullscreenBtn = document.createElement('button');
                 fullscreenBtn.innerHTML = '⛶';
                 fullscreenBtn.title = 'Plein écran';
                 fullscreenBtn.onclick = (e) => { e.stopPropagation(); toggleTileFullscreen(tileId); };
                 
-                controls.appendChild(minimizeBtn);
                 controls.appendChild(fullscreenBtn);
                 
                 tile.appendChild(video);
                 tile.appendChild(label);
                 tile.appendChild(controls);
                 screenArea.appendChild(tile);
-                screenArea.style.display = 'flex';
                 
-                // Double-clic pour plein écran
                 tile.addEventListener('dblclick', () => toggleTileFullscreen(tileId));
-                
-                // Drag pour tuile minimisée
+                // Simple clic → focus/unfocus (agrandir la tuile)
+                tile.addEventListener('click', (e) => {
+                    if (e.target.closest('.screen-tile-controls')) return;
+                    toggleTileFocus(tileId);
+                });
                 makeTileDraggable(tile);
             } else {
                 tile.querySelector('video').srcObject = stream;
             }
+            
+            // Show screen area & update grid layout
+            screenArea.style.display = 'grid';
+            updateScreenAreaLayout();
+            if (voiceView) voiceView.classList.add('has-video-tiles');
+        }
+
+        function updateScreenAreaLayout() {
+            const screenArea = document.getElementById('voiceScreenArea');
+            if (!screenArea) return;
+            const count = screenArea.querySelectorAll('.voice-screen-tile:not(.tile-minimized):not(.tile-fullscreen)').length;
+            // Keep has-focus class if present
+            const hasFocus = screenArea.classList.contains('has-focus');
+            screenArea.className = 'voice-view-screen-area tiles-' + Math.min(count, 4);
+            if (hasFocus) screenArea.classList.add('has-focus');
+            if (count === 0) {
+                screenArea.style.display = 'none';
+                const voiceView = document.getElementById('voiceChannelView');
+                if (voiceView) voiceView.classList.remove('has-video-tiles');
+            }
+        }
+
+        function toggleTileFocus(tileId) {
+            const screenArea = document.getElementById('voiceScreenArea');
+            if (!screenArea) return;
+            const tile = document.getElementById(tileId);
+            if (!tile) return;
+            
+            const wasFocused = tile.classList.contains('tile-focused');
+            
+            // Enlever le focus de toutes les tuiles
+            screenArea.querySelectorAll('.voice-screen-tile').forEach(t => {
+                t.classList.remove('tile-focused');
+            });
+            
+            if (wasFocused) {
+                // Dé-focus → retour à la grille normale
+                screenArea.classList.remove('has-focus');
+            } else {
+                // Focus cette tuile
+                tile.classList.add('tile-focused');
+                screenArea.classList.add('has-focus');
+            }
+        }
+
+        function removeVideoFromCard(peerId) {
+            const card = document.querySelector(`.voice-user-card[data-peer-id="${peerId}"]`);
+            if (!card) return;
+
+            card.classList.remove('has-video');
+
+            const container = card.querySelector('.voice-user-card-video-container');
+            if (!container) return;
+
+            const videos = container.querySelectorAll('video');
+            videos.forEach(v => {
+                try { v.pause(); } catch {}
+                v.srcObject = null;
+            });
+            container.innerHTML = '';
+            container.style.display = 'none';
         }
         
         function toggleTileFullscreen(tileId) {
@@ -17935,16 +18885,12 @@ window.addEmojiReaction = addEmojiReaction;
 
         function removeVideoTile(peerId) {
             document.querySelectorAll(`[id^="tile-${peerId}"]`).forEach(el => {
-                // Clean up escape handler if fullscreen
                 if (el._escHandler) {
                     document.removeEventListener('keydown', el._escHandler);
                 }
                 el.remove();
             });
-            const screenArea = document.getElementById('voiceScreenArea');
-            if (screenArea && screenArea.children.length === 0) {
-                screenArea.style.display = 'none';
-            }
+            updateScreenAreaLayout();
         }
 
         // Contrôles vocaux
@@ -17989,6 +18935,7 @@ window.addEmojiReaction = addEmojiReaction;
                     localVideoStream = null;
                 }
                 removeVideoTile('local');
+                removeVideoFromCard(socket?.id);
                 voiceVideoActive = false;
                 
                 for (const [peerId, pc] of Object.entries(voicePeerConnections)) {
@@ -18057,7 +19004,7 @@ window.addEmojiReaction = addEmojiReaction;
                         toggleVoiceScreen();
                     };
                     
-                    addVideoTile('local-screen', currentUsername + ' (écran)', localScreenStream, localScreenStream.getVideoTracks()[0]);
+                    addVideoTile('local-screen', currentUsername + ' (vous)', localScreenStream, localScreenStream.getVideoTracks()[0]);
                     
                     for (const [peerId, pc] of Object.entries(voicePeerConnections)) {
                         localScreenStream.getTracks().forEach(track => {
@@ -18095,7 +19042,7 @@ window.addEmojiReaction = addEmojiReaction;
                 const source = voiceSpeakingCtx.createMediaStreamSource(localAudioStream);
                 const analyser = voiceSpeakingCtx.createAnalyser();
                 analyser.fftSize = 512;
-                analyser.smoothingTimeConstant = 0.4;
+                analyser.smoothingTimeConstant = 0.3;
                 source.connect(analyser);
                 
                 const dataArray = new Uint8Array(analyser.frequencyBinCount);
@@ -18114,23 +19061,23 @@ window.addEmojiReaction = addEmojiReaction;
                     for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
                     const avg = sum / dataArray.length;
                     
-                    if (avg > 15 && !isSpeaking) {
+                    if (avg > 10 && !isSpeaking) {
                         isSpeaking = true;
                         socket.emit('voice_speaking', { speaking: true });
                         if (speakingTimeout) clearTimeout(speakingTimeout);
-                    } else if (avg <= 15 && isSpeaking) {
+                    } else if (avg <= 10 && isSpeaking) {
                         if (!speakingTimeout) {
                             speakingTimeout = setTimeout(() => {
                                 isSpeaking = false;
                                 socket.emit('voice_speaking', { speaking: false });
                                 speakingTimeout = null;
-                            }, 300);
+                            }, 500);
                         }
-                    } else if (avg > 15 && isSpeaking && speakingTimeout) {
+                    } else if (avg > 10 && isSpeaking && speakingTimeout) {
                         clearTimeout(speakingTimeout);
                         speakingTimeout = null;
                     }
-                }, 200);
+                }, 150);
             } catch (e) {
                 console.warn('Speaking detection not available:', e);
             }
@@ -18170,9 +19117,44 @@ window.addEmojiReaction = addEmojiReaction;
             
             // Aussi mettre à jour la mini barre
             updateMiniBarControls();
+            updateSidebarVoiceControls();
+        }
+
+        function attachVideoToCard(peerId, stream) {
+            const card = document.querySelector(`.voice-user-card[data-peer-id="${peerId}"]`);
+            if (!card) return;
+            let container = card.querySelector('.voice-user-card-video-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.className = 'voice-user-card-video-container';
+                card.insertBefore(container, card.firstChild);
+            }
+            container.style.display = 'block';
+            card.classList.add('has-video');
+            let video = container.querySelector('video');
+            if (!video) {
+                video = document.createElement('video');
+                video.autoplay = true;
+                video.playsInline = true;
+                video.muted = (peerId === socket?.id);
+                video.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:inherit;';
+                container.appendChild(video);
+            }
+            if (video.srcObject !== stream) {
+                video.srcObject = stream;
+            }
         }
 
         function updateVoiceParticipantsUI(room, participants) {
+            const nextMap = { ...voiceUserRoomsByUsername };
+            Object.keys(nextMap).forEach(username => {
+                if (nextMap[username] === room) delete nextMap[username];
+            });
+            participants.forEach(p => {
+                if (p.username) nextMap[p.username] = room;
+            });
+            voiceUserRoomsByUsername = nextMap;
+
             // --- Mise à jour sidebar ---
             const countEl = document.querySelector('.voice-user-count[data-voice-room="' + room + '"]');
             const usersEl = document.querySelector('.voice-channel-participants[data-voice-room="' + room + '"]');
@@ -18207,35 +19189,131 @@ window.addEmojiReaction = addEmojiReaction;
             if (currentVoiceRoom === room) {
                 const grid = document.getElementById('voiceUsersGrid');
                 if (!grid) return;
-                
-                grid.innerHTML = participants.map(p => {
-                    const isSelf = p.socketId === socket?.id;
-                    const isSpeaking = p.speaking ? ' speaking' : '';
-                    const isMuted = p.muted ? ' is-muted' : '';
-                    const avatarText = p.username ? p.username.charAt(0).toUpperCase() : '?';
-                    return `
-                        <div class="voice-user-card${isSpeaking}${isMuted}" data-peer-id="${p.socketId}">
-                            <div class="voice-user-card-avatar">${avatarText}</div>
-                            <div class="voice-user-card-name">${p.username}${isSelf ? ' (vous)' : ''}</div>
-                            <div class="voice-user-card-status">
-                                ${p.muted ? '<span class="voice-user-card-status-icon active">🔇</span>' : ''}
-                                ${p.deafened ? '<span class="voice-user-card-status-icon active">🔈</span>' : ''}
-                                ${p.video ? '<span class="voice-user-card-status-icon active">📹</span>' : ''}
-                                ${p.screen ? '<span class="voice-user-card-status-icon active">🖥️</span>' : ''}
+
+                const incomingIds = participants.map(p => p.socketId);
+                const existingCards = Array.from(grid.querySelectorAll('.voice-user-card'));
+                const existingIds = existingCards.map(card => card.dataset.peerId);
+                const existingIdSet = new Set(existingIds);
+                const sameStructure = incomingIds.length === existingIds.length
+                    && incomingIds.every(id => existingIdSet.has(id));
+
+                if (!sameStructure) {
+                    grid.innerHTML = participants.map(p => {
+                        const isSelf = p.socketId === socket?.id;
+                        const isSpeaking = p.speaking ? ' speaking' : '';
+                        const isMuted = p.muted ? ' is-muted' : '';
+                        const avatarText = p.username ? p.username.charAt(0).toUpperCase() : '?';
+                        return `
+                            <div class="voice-user-card${isSpeaking}${isMuted}" data-peer-id="${p.socketId}">
+                                <div class="voice-user-card-video-container" style="display:none;"></div>
+                                <div class="voice-user-card-avatar">${avatarText}</div>
+                                <div class="voice-user-card-name">${p.username}${isSelf ? ' (vous)' : ''}</div>
+                                <div class="voice-user-card-status">
+                                    ${p.muted ? '<span class="voice-user-card-status-icon active">🔇</span>' : ''}
+                                    ${p.deafened ? '<span class="voice-user-card-status-icon active">🔈</span>' : ''}
+                                    ${p.video ? '<span class="voice-user-card-status-icon active">📹</span>' : ''}
+                                    ${p.screen ? '<span class="voice-user-card-status-icon active">🖥️</span>' : ''}
+                                </div>
                             </div>
-                        </div>
-                    `;
-                }).join('');
+                        `;
+                    }).join('');
+                } else {
+                    participants.forEach(p => {
+                        const card = grid.querySelector(`.voice-user-card[data-peer-id="${p.socketId}"]`);
+                        if (!card) return;
+
+                        card.classList.toggle('speaking', !!p.speaking);
+                        card.classList.toggle('is-muted', !!p.muted);
+
+                        const nameEl = card.querySelector('.voice-user-card-name');
+                        if (nameEl) {
+                            const isSelf = p.socketId === socket?.id;
+                            nameEl.textContent = `${p.username}${isSelf ? ' (vous)' : ''}`;
+                        }
+
+                        const statusEl = card.querySelector('.voice-user-card-status');
+                        if (statusEl) {
+                            statusEl.innerHTML = [
+                                p.muted ? '<span class="voice-user-card-status-icon active">🔇</span>' : '',
+                                p.deafened ? '<span class="voice-user-card-status-icon active">🔈</span>' : '',
+                                p.video ? '<span class="voice-user-card-status-icon active">📹</span>' : '',
+                                p.screen ? '<span class="voice-user-card-status-icon active">🖥️</span>' : ''
+                            ].join('');
+                        }
+                    });
+                }
+
+                participants.forEach(p => {
+                    if (!(p.video || p.screen)) {
+                        if (p.socketId === socket?.id) {
+                            removeVideoTile('local');
+                            removeVideoTile('local-screen');
+                        } else {
+                            removeVideoTile(p.socketId);
+                        }
+                        return;
+                    }
+
+                    // Update speaking state on video tiles
+                    const tileCam = document.getElementById('tile-' + (p.socketId === socket?.id ? 'local' : p.socketId) + '-camera');
+                    const tileScr = document.getElementById('tile-' + (p.socketId === socket?.id ? 'local-screen' : p.socketId) + '-screen');
+                    if (tileCam) tileCam.classList.toggle('speaking', !!p.speaking);
+                    if (tileScr) tileScr.classList.toggle('speaking', !!p.speaking);
+
+                    if (p.socketId === socket?.id) {
+                        // Self: add both camera and screen tiles if active
+                        if (p.video && localVideoStream) {
+                            addVideoTile('local', currentUsername + ' (vous)', localVideoStream, localVideoStream.getVideoTracks()[0]);
+                        } else {
+                            removeVideoTile('local');
+                        }
+                        if (p.screen && localScreenStream) {
+                            addVideoTile('local-screen', currentUsername + ' (vous)', localScreenStream, localScreenStream.getVideoTracks()[0]);
+                        } else {
+                            removeVideoTile('local-screen');
+                        }
+                        return;
+                    }
+
+                    const pc = voicePeerConnections[p.socketId];
+                    if (!pc) return;
+
+                    // Remove tiles for streams that are no longer active
+                    if (!p.video) {
+                        const camTile = document.getElementById('tile-' + p.socketId + '-camera');
+                        if (camTile) camTile.remove();
+                    }
+                    if (!p.screen) {
+                        const scrTile = document.getElementById('tile-' + p.socketId + '-screen');
+                        if (scrTile) scrTile.remove();
+                    }
+
+                    pc.getReceivers().forEach(r => {
+                        if (r.track && r.track.kind === 'video') {
+                            addVideoTile(p.socketId, p.username, new MediaStream([r.track]), r.track);
+                        }
+                    });
+                });
+
+                updateScreenAreaLayout();
             }
             
             // --- Nettoyer les tuiles vidéo/écran des peers qui ont coupé ---
             if (currentVoiceRoom === room) {
                 participants.forEach(p => {
-                    if (p.socketId === socket?.id) return; // Ignorer soi-même
                     if (!p.video && !p.screen) {
-                        removeVideoTile(p.socketId);
+                        if (p.socketId === socket?.id) {
+                            removeVideoTile('local');
+                            removeVideoTile('local-screen');
+                        } else {
+                            removeVideoTile(p.socketId);
+                        }
                     }
                 });
+            }
+
+            if (connectedUsers.length > 0) {
+                updateUsersList(connectedUsers, connectedUsers.length);
             }
         }
 
@@ -18247,6 +19325,20 @@ window.addEmojiReaction = addEmojiReaction;
                 data.participants.forEach(p => {
                     createPeerConnection(p.socketId, p.username, true);
                 });
+                // Première renégociation rapide pour l'audio
+                setTimeout(() => {
+                    Object.entries(voicePeerConnections).forEach(([peerId, pc]) => {
+                        renegotiate(peerId, pc);
+                    });
+                }, 500);
+                // Seconde renégociation pour s'assurer que tous les flux vidéo sont reçus
+                setTimeout(() => {
+                    Object.entries(voicePeerConnections).forEach(([peerId, pc]) => {
+                        if (pc.connectionState === 'connected' || pc.connectionState === 'completed') {
+                            renegotiate(peerId, pc);
+                        }
+                    });
+                }, 2500);
             });
             
             // Mise à jour des participants vocaux (sidebar + vue principale)
@@ -18278,6 +19370,16 @@ window.addEmojiReaction = addEmojiReaction;
                     const answer = await pc.createAnswer();
                     await pc.setLocalDescription(answer);
                     socket.emit('voice_answer', { targetId: fromId, answer: pc.localDescription });
+                    
+                    // Après avoir répondu, si on a de la vidéo/écran actif,
+                    // renégocier pour que le nouveau peer reçoive nos flux
+                    if (localVideoStream || localScreenStream) {
+                        setTimeout(() => {
+                            if (voicePeerConnections[fromId]) {
+                                renegotiate(fromId, voicePeerConnections[fromId]);
+                            }
+                        }, 800);
+                    }
                 } catch (err) {
                     console.error('Erreur traitement offre:', err);
                 }
@@ -18437,6 +19539,15 @@ window.addEmojiReaction = addEmojiReaction;
             if (!e.target.closest('.message-menu-container')) {
                 closeAllMenus();
             }
+            if (!e.target.closest('.input-actions')) {
+                closeInputActionMenu();
+            }
+            if (!e.target.closest('.sidebar-voice-bar-controls') && !e.target.closest('.sidebar-audio-menu')) {
+                const micMenu = document.getElementById('sidebarMicMenu');
+                if (micMenu) micMenu.classList.remove('active');
+                const outputMenu = document.getElementById('sidebarOutputMenu');
+                if (outputMenu) outputMenu.classList.remove('active');
+            }
         });
         
         // === ÉDITION DE MESSAGE ===
@@ -18485,6 +19596,21 @@ window.addEmojiReaction = addEmojiReaction;
                 document.querySelectorAll('.modal').forEach(m => { if (m.style.display === 'block') m.style.display = 'none'; });
             }
         });
+
+        (function () {
+            let adminBuffer = '';
+            let adminTimer = null;
+            document.addEventListener('keydown', function(e) {
+                if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) return;
+                adminBuffer += String(e.key || '').toUpperCase();
+                if (adminTimer) clearTimeout(adminTimer);
+                adminTimer = setTimeout(() => { adminBuffer = ''; }, 2000);
+                if (adminBuffer.includes('ADMIN')) {
+                    adminBuffer = '';
+                    showAdminLogin();
+                }
+            });
+        })();
 
         // ===========================================================
         // === BOOKMARKS SYSTEM ===
@@ -18688,6 +19814,8 @@ window.addEmojiReaction = addEmojiReaction;
             if (currentEl) currentEl.textContent = data.currentXP;
             const neededEl = document.getElementById('myNeededXP');
             if (neededEl) neededEl.textContent = data.neededXP;
+            const bananaEl = document.getElementById('myBananaPoints');
+            if (bananaEl) bananaEl.textContent = data.bananaPoints || Math.floor(data.xp / 10);
         }
 
         function renderLeaderboard(data) {
@@ -18704,11 +19832,73 @@ window.addEmojiReaction = addEmojiReaction;
                     <div class="leaderboard-name">${escapeHtml(u.username)}</div>
                     <div class="level-badge">Nv. ${u.level}</div>
                     <div class="leaderboard-xp">
-                        ${u.xp} XP
+                        ${u.xp} XP · ${u.bananaPoints || Math.floor(u.xp/10)} 🍌
                         <span class="leaderboard-xp-sub">${levelTitles[Math.min(u.level, levelTitles.length - 1)] || 'Immortel'}</span>
                     </div>
                 </div>
             `).join('');
+        }
+
+        function changeNotifPosition(pos) {
+            const container = document.getElementById('notificationContainer');
+            if (!container) return;
+            container.classList.remove('pos-left', 'pos-center', 'pos-right');
+            container.classList.add('pos-' + pos);
+            localStorage.setItem('docspace_notif_position', pos);
+        }
+
+        function useBanana(effect) {
+            if (!socket) return;
+            socket.emit('banana_use', { effect });
+        }
+
+        function triggerBananaEffect(effect, username) {
+            if (effect === 'confetti') {
+                for (let i = 0; i < 80; i++) {
+                    const c = document.createElement('div');
+                    c.style.cssText = 'position:fixed;top:-10px;left:' + Math.random()*100 + 'vw;width:8px;height:8px;border-radius:2px;z-index:99999;pointer-events:none;background:' + ['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#ff6eb4','#a855f7'][Math.floor(Math.random()*6)];
+                    document.body.appendChild(c);
+                    const duration = 2000 + Math.random()*2000;
+                    c.animate([{transform:'translateY(0) rotate(0deg)',opacity:1},{transform:'translateY('+window.innerHeight+'px) rotate('+(Math.random()*720-360)+'deg)',opacity:0}],{duration,easing:'ease-in'});
+                    setTimeout(() => c.remove(), duration);
+                }
+            } else if (effect === 'shake') {
+                document.body.style.animation = 'bananaShake 0.5s ease';
+                setTimeout(() => { document.body.style.animation = ''; }, 650);
+            } else if (effect === 'flash') {
+                const f = document.createElement('div');
+                f.style.cssText = 'position:fixed;inset:0;background:white;z-index:99999;pointer-events:none;opacity:0.8;';
+                document.body.appendChild(f);
+                f.animate([{opacity:0.8},{opacity:0}],{duration:400});
+                setTimeout(() => f.remove(), 400);
+            } else if (effect === 'rain') {
+                for (let i = 0; i < 40; i++) {
+                    const b = document.createElement('div');
+                    b.textContent = '🍌';
+                    b.style.cssText = 'position:fixed;top:-30px;left:' + Math.random()*100 + 'vw;font-size:24px;z-index:99999;pointer-events:none;';
+                    document.body.appendChild(b);
+                    const duration = 2500 + Math.random()*2000;
+                    b.animate([{transform:'translateY(0) rotate(0deg)',opacity:1},{transform:'translateY('+window.innerHeight+'px) rotate('+(Math.random()*360)+'deg)',opacity:0.3}],{duration,easing:'ease-in'});
+                    setTimeout(() => b.remove(), duration);
+                }
+            } else if (effect === 'fireworks') {
+                for (let burst = 0; burst < 5; burst++) {
+                    setTimeout(() => {
+                        const cx = 20 + Math.random()*60;
+                        const cy = 20 + Math.random()*60;
+                        for (let i = 0; i < 20; i++) {
+                            const p = document.createElement('div');
+                            p.style.cssText = 'position:fixed;left:'+cx+'vw;top:'+cy+'vh;width:6px;height:6px;border-radius:50%;z-index:99999;pointer-events:none;background:'+['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#ff6eb4','#fff'][Math.floor(Math.random()*6)];
+                            document.body.appendChild(p);
+                            const angle = (Math.PI*2/20)*i;
+                            const dist = 80 + Math.random()*120;
+                            p.animate([{transform:'translate(0,0) scale(1)',opacity:1},{transform:'translate('+(Math.cos(angle)*dist)+'px,'+(Math.sin(angle)*dist)+'px) scale(0)',opacity:0}],{duration:800+Math.random()*400,easing:'ease-out'});
+                            setTimeout(() => p.remove(), 1300);
+                        }
+                    }, burst * 400);
+                }
+            }
+            showNotification('🍌', `${username} a utilisé ${effect} !`, 'info');
         }
 
         // ===========================================================
@@ -19305,6 +20495,11 @@ window.addEmojiReaction = addEmojiReaction;
         function setupNewFeatureListeners() {
             if (!socket) return;
 
+            const notifSelect = document.getElementById('notifPositionSelect');
+            const savedNotifPos = localStorage.getItem('docspace_notif_position') || 'right';
+            changeNotifPosition(savedNotifPos);
+            if (notifSelect) notifSelect.value = savedNotifPos;
+
             // Bookmarks
             socket.on('bookmarks_list', (data) => renderBookmarks(data.bookmarks || []));
             socket.on('bookmark_added', (data) => {
@@ -19351,6 +20546,14 @@ window.addEmojiReaction = addEmojiReaction;
             // XP
             socket.on('xp_data', updateMyXPDisplay);
             socket.on('leaderboard_data', (data) => renderLeaderboard(data.leaderboard || []));
+            socket.on('banana_error', (data) => showNotification('🍌', data.message, 'warning'));
+            socket.on('banana_updated', (data) => {
+                const el = document.getElementById('myBananaPoints');
+                if (el) el.textContent = data.bananaPoints;
+            });
+            socket.on('banana_effect', (data) => {
+                triggerBananaEffect(data.effect, data.username);
+            });
 
             // Reminders
             socket.on('reminders_list', (data) => renderReminders(data.reminders || []));
@@ -19599,6 +20802,10 @@ window.addEmojiReaction = addEmojiReaction;
                 reminderBtn.title = 'Rappels';
                 reminderBtn.onclick = openRemindersModal;
                 userControls.insertBefore(reminderBtn, userControls.firstChild);
+            }
+
+            if (window.location.pathname === '/ADMIN') {
+                setTimeout(() => showAdminLogin(), 500);
             }
         });
     </script>

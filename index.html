@@ -20,59 +20,59 @@
     <style>
         :root {
             /* Thème Discord × iOS × WiiU - Défaut */
-            --primary-gradient: linear-gradient(135deg, #5865F2 0%, #4752C4 100%);
-            --secondary-gradient: linear-gradient(135deg, #5865F2 0%, #7289DA 100%);
-            --chat-bg: #36393F;
-            --message-own-bg: linear-gradient(135deg, #5865F2 0%, #7289DA 100%);
-            --message-other-bg: #2F3136;
-            --text-primary: #DCDDDE;
-            --text-secondary: #72767D;
-            --border-color: #202225;
-            --sidebar-bg: #2F3136;
-            --input-bg: #40444B;
+            --primary-gradient: linear-gradient(135deg, #6676ff 0%, #4b5ce2 52%, #3a49c5 100%);
+            --secondary-gradient: linear-gradient(135deg, #6a7aff 0%, #8ea0ff 100%);
+            --chat-bg: linear-gradient(160deg, #2f3343 0%, #292d3d 52%, #242838 100%);
+            --message-own-bg: linear-gradient(135deg, #6b7aff 0%, #5a68ee 50%, #4857dc 100%);
+            --message-other-bg: linear-gradient(145deg, #323746 0%, #2a2f3d 100%);
+            --text-primary: #eef2ff;
+            --text-secondary: #a8b0c7;
+            --border-color: #242a3a;
+            --sidebar-bg: #2a2f3e;
+            --input-bg: #394055;
             --accent-color: #5865F2;
             --accent-rgb: 88, 101, 242;
             --typing-bg: rgba(88, 101, 242, 0.15);
-            --hover-bg: #32353B;
+            --hover-bg: #3a4158;
             --success-color: #43B581;
             --danger-color: #F04747;
         }
 
         /* Thème Discord AMOLED */
         .theme-dark {
-            --primary-gradient: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
-            --secondary-gradient: linear-gradient(135deg, #5865F2 0%, #7289DA 100%);
-            --chat-bg: #000000;
+            --primary-gradient: linear-gradient(135deg, #06080e 0%, #12161f 100%);
+            --secondary-gradient: linear-gradient(135deg, #5f70ff 0%, #7d90ff 100%);
+            --chat-bg: linear-gradient(160deg, #04060b 0%, #0e121a 55%, #141a25 100%);
             --message-own-bg: linear-gradient(135deg, #5865F2 0%, #7289DA 100%);
-            --message-other-bg: #1a1a1a;
+            --message-other-bg: linear-gradient(145deg, #141821 0%, #10141c 100%);
             --text-primary: #FFFFFF;
-            --text-secondary: #8e9297;
-            --border-color: #2f2f2f;
-            --sidebar-bg: #0d0d0d;
-            --input-bg: #1a1a1a;
+            --text-secondary: #b0b7c9;
+            --border-color: #252b38;
+            --sidebar-bg: #10141d;
+            --input-bg: #1b2130;
             --accent-color: #5865F2;
             --accent-rgb: 88, 101, 242;
             --typing-bg: rgba(88, 101, 242, 0.2);
-            --hover-bg: #1f1f1f;
+            --hover-bg: #212838;
             --success-color: #43B581;
             --danger-color: #F04747;
         }
         /* Thème iOS iMessage */
         .theme-bluenight {
-            --primary-gradient: linear-gradient(135deg, #007AFF 0%, #5AC8FA 100%);
-            --secondary-gradient: linear-gradient(135deg, #007AFF 0%, #34AADC 100%);
-            --chat-bg: linear-gradient(180deg, #E3F2FD 0%, #BBDEFB 50%, #E1F5FE 100%);
+            --primary-gradient: linear-gradient(135deg, #0094ff 0%, #53b8ff 52%, #7d6dff 100%);
+            --secondary-gradient: linear-gradient(135deg, #008dff 0%, #40b2ff 100%);
+            --chat-bg: linear-gradient(180deg, #e7f4ff 0%, #d5ebff 48%, #eaf7ff 100%);
             --message-own-bg: linear-gradient(135deg, #007AFF 0%, #5AC8FA 100%);
-            --message-other-bg: #E5E5EA;
-            --text-primary: #1C1C1E;
-            --text-secondary: #8E8E93;
-            --border-color: #B0D4F1;
-            --sidebar-bg: rgba(255, 255, 255, 0.85);
-            --input-bg: rgba(255, 255, 255, 0.9);
+            --message-other-bg: linear-gradient(145deg, #f2f7ff 0%, #e7efff 100%);
+            --text-primary: #10263f;
+            --text-secondary: #3a5a7f;
+            --border-color: #9ec7ea;
+            --sidebar-bg: rgba(247, 252, 255, 0.9);
+            --input-bg: rgba(255, 255, 255, 0.96);
             --accent-color: #007AFF;
             --accent-rgb: 0, 122, 255;
             --typing-bg: rgba(0, 122, 255, 0.15);
-            --hover-bg: #D6EAFF;
+            --hover-bg: #cde7ff;
             --success-color: #34C759;
             --danger-color: #FF3B30;
         }
@@ -2416,24 +2416,40 @@
             transition: all 0.2s ease;
             font-size: 12px;
             font-weight: 600;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(0, 0, 0, 0.18) 100%);
+            color: var(--text-primary);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
         }
 
         .theme-option:hover {
             border-color: var(--accent-color);
             transform: translateY(-2px);
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.08);
         }
 
         .theme-option.active {
             border-color: var(--accent-color);
-            background: var(--accent-color);
-            color: white;
+            background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.36) 0%, rgba(var(--accent-rgb), 0.2) 100%);
+            color: #ffffff;
+            box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.35), 0 10px 22px rgba(var(--accent-rgb), 0.28);
         }
 
         .theme-preview {
             width: 100%;
-            height: 20px;
-            border-radius: 4px;
-            margin-bottom: 4px;
+            height: 24px;
+            border-radius: 8px;
+            margin-bottom: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24), 0 2px 8px rgba(0, 0, 0, 0.22);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .theme-preview::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 45%);
         }
 
         .file-upload-area {
@@ -4329,6 +4345,56 @@
             color: #43B581;
             font-weight: 600;
         }
+        .voice-view-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .voice-header-btn {
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            background: rgba(255, 255, 255, 0.07);
+            color: var(--text-primary);
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.16s ease, border-color 0.16s ease;
+        }
+        .voice-header-btn:hover {
+            background: rgba(255, 255, 255, 0.14);
+        }
+        .voice-header-btn.active {
+            border-color: rgba(67, 181, 129, 0.7);
+            background: rgba(67, 181, 129, 0.2);
+            color: #b9ffd9;
+        }
+        .voice-rtc-panel {
+            display: none;
+            margin: 8px 12px 0;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(10, 14, 20, 0.55);
+            color: #d4dbe8;
+        }
+        .voice-rtc-panel.active {
+            display: block;
+        }
+        .voice-rtc-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(140px, 1fr));
+            gap: 8px;
+            font-size: 12px;
+        }
+        .voice-rtc-item {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 6px 8px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.04);
+        }
         .voice-connected-dot {
             width: 10px;
             height: 10px;
@@ -4532,6 +4598,9 @@
             gap: 8px;
             padding: 8px;
             min-height: 0;
+            overflow: hidden;
+            grid-auto-flow: row dense;
+            grid-auto-rows: minmax(0, 1fr);
             animation: fadeSlideUp 0.3s ease;
         }
         /* 1 seule tuile → plein écran */
@@ -4599,6 +4668,7 @@
             position: relative;
             width: 100%;
             height: 100%;
+            min-height: 0;
             background: #1e1f22;
             border-radius: 8px;
             overflow: hidden;
@@ -4643,19 +4713,28 @@
 
         /* Tuile focus (clic pour agrandir — style Discord) */
         .voice-view-screen-area.has-focus {
-            grid-template-columns: 1fr 200px;
-            grid-template-rows: 1fr;
+            grid-template-columns: minmax(0, 1fr) 180px;
+            grid-auto-rows: minmax(92px, 1fr);
             gap: 4px;
         }
         .voice-view-screen-area.has-focus.tiles-1 {
             grid-template-columns: 1fr;
         }
+        .voice-view-screen-area.has-focus .voice-screen-tile {
+            grid-column: 2;
+        }
         .voice-screen-tile.tile-focused {
             grid-column: 1;
             grid-row: 1 / -1;
+            z-index: 2;
+        }
+        .voice-view-screen-area.has-focus.tiles-1 .voice-screen-tile,
+        .voice-view-screen-area.has-focus .voice-screen-tile.tile-focused {
+            grid-column: 1;
         }
         .voice-view-screen-area.has-focus .voice-screen-tile:not(.tile-focused) {
-            max-height: 120px;
+            height: 100%;
+            min-height: 92px;
             border-radius: 6px;
             cursor: pointer;
         }
@@ -4840,15 +4919,103 @@
             justify-content: space-between;
             gap: 8px;
         }
-        .sidebar-voice-user {
-            font-size: 13px;
-            font-weight: 700;
+        .sidebar-voice-connection {
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 8px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.06);
             color: #d7ffe8;
-            max-width: 135px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            flex-shrink: 0;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.16s ease;
+        }
+        .sidebar-voice-connection:hover {
+            background: rgba(255, 255, 255, 0.13);
+        }
+        .sidebar-voice-connection.ping-good {
+            color: #7ff7bb;
+        }
+        .sidebar-voice-connection.ping-mid {
+            color: #ffd66b;
+        }
+        .sidebar-voice-connection.ping-bad {
+            color: #ff8f8f;
+        }
+        .sidebar-voice-net-stats {
+            display: none;
+            background: rgba(0, 0, 0, 0.26);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            padding: 8px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        .sidebar-voice-net-stats.active {
+            display: block;
+        }
+        .sidebar-voice-net-title {
+            font-size: 12px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+        .sidebar-voice-net-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 11px;
+            line-height: 1.5;
+        }
+        .voice-context-menu {
+            position: fixed;
+            z-index: 12000;
+            min-width: 220px;
+            max-width: 280px;
+            padding: 8px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(23, 26, 33, 0.96);
+            box-shadow: 0 16px 34px rgba(0, 0, 0, 0.42);
+            backdrop-filter: blur(10px);
+        }
+        .voice-context-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: #d8dde8;
+            margin-bottom: 8px;
+        }
+        .voice-context-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            font-size: 11px;
+            color: #b9c2d2;
+            margin: 6px 0;
+        }
+        .voice-context-row input[type="range"] {
+            width: 118px;
+        }
+        .voice-context-choice {
+            width: 100%;
+            border: none;
+            text-align: left;
+            border-radius: 7px;
+            padding: 6px 8px;
+            background: rgba(255, 255, 255, 0.06);
+            color: #d8dde8;
+            cursor: pointer;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+        .voice-context-choice:hover {
+            background: rgba(255, 255, 255, 0.13);
+        }
+        .voice-context-choice.active {
+            background: rgba(67, 181, 129, 0.24);
+            color: #b4ffd8;
         }
         .sidebar-voice-bar-info {
             display: flex;
@@ -8399,19 +8566,28 @@
                 </div>
                 <div class="sidebar-voice-bar" id="sidebarVoiceBar">
                     <div class="sidebar-voice-bar-top">
-                        <div class="sidebar-voice-user" id="sidebarVoiceUsername">-</div>
+                        <button class="sidebar-voice-connection ping-mid" id="sidebarVoiceConnection" onclick="toggleSidebarVoiceNetStats(event)" title="Ping: -- ms">
+                            <span>🛜</span>
+                            <span id="sidebarVoicePingValue">-- ms</span>
+                        </button>
                         <div class="sidebar-voice-bar-time" id="sidebarVoiceTime">00:00</div>
+                    </div>
+                    <div class="sidebar-voice-net-stats" id="sidebarVoiceNetStats">
+                        <div class="sidebar-voice-net-title">Qualite connexion vocale</div>
+                        <div class="sidebar-voice-net-row"><span>Ping</span><strong id="sidebarVoicePingStats">-- ms</strong></div>
+                        <div class="sidebar-voice-net-row"><span>Jitter</span><strong id="sidebarVoiceJitterStats">-- ms</strong></div>
+                        <div class="sidebar-voice-net-row"><span>Stabilite</span><strong id="sidebarVoiceQualityStats">En mesure...</strong></div>
                     </div>
                     <div class="sidebar-voice-bar-info" onclick="returnToVoiceView()" title="Afficher le salon vocal">
                         <div class="sidebar-voice-bar-dot"></div>
                         <div style="display:flex;flex-direction:column;gap:1px;min-width:0;">
-                            <span class="sidebar-voice-bar-text">Voix connectée</span>
+                            <span class="sidebar-voice-bar-text" id="sidebarVoiceConnectedText">Voix connectée</span>
                             <span class="sidebar-voice-bar-room" id="sidebarVoiceRoom">—</span>
                         </div>
                     </div>
                     <div class="sidebar-voice-bar-controls">
                         <button onclick="toggleVoiceVideo()" id="sidebarVideoBtn" title="Caméra">📷</button>
-                        <button onclick="toggleVoiceScreen()" id="sidebarScreenBtn" title="Partage d'écran">🖥️</button>
+                        <button onclick="toggleVoiceScreen()" oncontextmenu="openScreenShareSettingsMenu(event); return false;" id="sidebarScreenBtn" title="Partage d'écran">🖥️</button>
                         <button onclick="leaveVoiceChannel()" class="sidebar-voice-bar-disconnect" title="Quitter">📞</button>
                     </div>
                     <div class="sidebar-audio-menu" id="sidebarMicMenu"></div>
@@ -8444,9 +8620,25 @@
                             <span class="voice-view-icon">🔊</span>
                             <span id="voiceViewRoomName">Vocal Général</span>
                         </div>
-                        <div class="voice-view-status" id="voiceViewStatus">
-                            <div class="voice-connected-dot"></div>
-                            <span>Voix connectée</span>
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <div class="voice-view-status" id="voiceViewStatus">
+                                <div class="voice-connected-dot"></div>
+                                <span id="voiceViewConnectedText">Voix connectée</span>
+                            </div>
+                            <div class="voice-view-header-actions">
+                                <button class="voice-header-btn" id="voiceAutoFocusBtn" onclick="toggleVoiceAutoFocus()" title="Auto-focus sur la personne qui parle">🎯 <span id="voiceAutoFocusLabel">Auto</span></button>
+                                <button class="voice-header-btn" id="voiceRtcStatsBtn" onclick="toggleVoiceRtcPanel()" title="Stats reseau vocal">📶 <span id="voiceStatsLabel">Stats</span></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="voice-rtc-panel" id="voiceRtcPanel">
+                        <div class="voice-rtc-grid">
+                            <div class="voice-rtc-item"><span id="voiceRtcPingLabel">Ping</span><strong id="voiceRtcPing">-- ms</strong></div>
+                            <div class="voice-rtc-item"><span id="voiceRtcJitterLabel">Jitter</span><strong id="voiceRtcJitter">-- ms</strong></div>
+                            <div class="voice-rtc-item"><span id="voiceRtcBitrateLabel">Bitrate entrant</span><strong id="voiceRtcBitrate">-- kbps</strong></div>
+                            <div class="voice-rtc-item"><span id="voiceRtcLossLabel">Perte paquets</span><strong id="voiceRtcLoss">-- %</strong></div>
+                            <div class="voice-rtc-item"><span id="voiceRtcRttLabel">RTT RTC</span><strong id="voiceRtcRtt">-- ms</strong></div>
+                            <div class="voice-rtc-item"><span id="voiceRtcPeersLabel">Peers connectes</span><strong id="voiceRtcPeers">0</strong></div>
                         </div>
                     </div>
                     <div class="voice-view-screen-area" id="voiceScreenArea" style="display: none;">
@@ -8473,7 +8665,7 @@
                             <span class="vc-btn-icon" id="vcVideoIcon">📷</span>
                             <span class="vc-btn-label">Caméra</span>
                         </button>
-                        <button class="vc-btn" id="vcScreenBtn" onclick="toggleVoiceScreen()" title="Écran">
+                        <button class="vc-btn" id="vcScreenBtn" onclick="toggleVoiceScreen()" oncontextmenu="openScreenShareSettingsMenu(event); return false;" title="Écran">
                             <span class="vc-btn-icon" id="vcScreenIcon">🖥️</span>
                             <span class="vc-btn-label">Écran</span>
                         </button>
@@ -8860,39 +9052,39 @@
                 <label id="themeLabel">Thème</label>
                 <div class="theme-selector">
                     <div class="theme-option" data-theme="default" onclick="changeTheme('default')">
-                        <div class="theme-preview" style="background: linear-gradient(135deg, #36393F 0%, #2F3136 100%);"></div>
+                        <div class="theme-preview" style="background: linear-gradient(135deg, #5865F2 0%, #4752C4 36%, #2F3136 100%);"></div>
                         <span id="themeDefault">Discord</span>
                     </div>
                     <div class="theme-option" data-theme="dark" onclick="changeTheme('dark')">
-                        <div class="theme-preview" style="background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);"></div>
+                        <div class="theme-preview" style="background: linear-gradient(135deg, #0a0b0f 0%, #14161b 52%, #1f2530 100%);"></div>
                         <span id="themeDark">AMOLED</span>
                     </div>
                     <div class="theme-option" data-theme="bluenight" onclick="changeTheme('bluenight')">
-                        <div class="theme-preview" style="background: linear-gradient(135deg, #007AFF 0%, #5856D6 100%);"></div>
+                        <div class="theme-preview" style="background: linear-gradient(135deg, #00a3ff 0%, #3f7bff 48%, #6f4cff 100%);"></div>
                         <span id="themeBluenight">iOS</span>
                     </div>
                     <div class="theme-option" data-theme="red" onclick="changeTheme('red')">
-                        <div class="theme-preview" style="background: linear-gradient(135deg, #00D4AA 0%, #00B4D8 100%);"></div>
+                        <div class="theme-preview" style="background: linear-gradient(135deg, #00ffc6 0%, #00b8d9 42%, #6a5cff 100%);"></div>
                         <span id="themeRed">WiiU Neon</span>
                     </div>
                     <div class="theme-option" data-theme="yellow" onclick="changeTheme('yellow')">
-                        <div class="theme-preview" style="background: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%);"></div>
+                        <div class="theme-preview" style="background: linear-gradient(135deg, #ff6b35 0%, #f9a825 46%, #ffd166 100%);"></div>
                         <span id="themeYellow">WiiU Orange</span>
                     </div>
                     <div class="theme-option" data-theme="purple" onclick="changeTheme('purple')">
-                        <div class="theme-preview" style="background: linear-gradient(135deg, #9D4EDD 0%, #7209B7 100%);"></div>
+                        <div class="theme-preview" style="background: linear-gradient(135deg, #b980ff 0%, #8b43ef 45%, #5a0dbb 100%);"></div>
                         <span id="themePurple">Deep Purple</span>
                     </div>
                     <div class="theme-option" data-theme="pink" onclick="changeTheme('pink')">
-                        <div class="theme-preview" style="background: linear-gradient(135deg, #FF2D92 0%, #FF6B9D 100%);"></div>
+                        <div class="theme-preview" style="background: linear-gradient(135deg, #ff2d92 0%, #ff5fa8 46%, #ff94bd 100%);"></div>
                         <span id="themePink">Sakura</span>
                     </div>
                     <div class="theme-option" data-theme="orange" onclick="changeTheme('orange')">
-                        <div class="theme-preview" style="background: linear-gradient(135deg, #00C9A7 0%, #00D4AA 100%);"></div>
+                        <div class="theme-preview" style="background: linear-gradient(135deg, #00c9a7 0%, #00e0b8 45%, #7fffd0 100%);"></div>
                         <span id="themeOrange">Mint</span>
                     </div>
                     <div class="theme-option" data-theme="green" onclick="changeTheme('green')">
-                        <div class="theme-preview" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);"></div>
+                        <div class="theme-preview" style="background: linear-gradient(135deg, #0b8f7c 0%, #25c96a 45%, #8cf58f 100%);"></div>
                         <span id="themeGreen">Forest</span>
                     </div>
                 </div>
@@ -8943,6 +9135,22 @@
                 </label>
                 <label>
                     <input type="checkbox" id="liquidGlassEnabled" onchange="toggleLiquidGlass(this.checked)"> <span id="liquidGlassText">Liquid Glass (iOS)</span>
+                </label>
+            </div>
+
+            <div class="settings-section">
+                <label id="voiceSettingsLabel">Parametres vocaux</label>
+                <label id="voiceDefaultQualityLabel" style="margin-top: 8px; display: block;">Qualite de partage d'ecran par defaut</label>
+                <select id="voiceDefaultQualitySelect" onchange="setVoiceDefaultQuality(this.value)">
+                    <option value="low">Basse</option>
+                    <option value="medium">Moyenne</option>
+                    <option value="high">Haute</option>
+                </select>
+                <label style="margin-top: 10px;">
+                    <input type="checkbox" id="voiceAskEveryTimeToggle" onchange="setVoiceAskEveryTime(this.checked)"> <span id="voiceSharePromptLabel">Demander a chaque partage</span>
+                </label>
+                <label>
+                    <input type="checkbox" id="voiceAutoFocusDefaultToggle" onchange="setVoiceAutoFocusDefault(this.checked)"> <span id="voiceAutoFocusSettingText">Auto-focus vocal actif par defaut</span>
                 </label>
             </div>
             
@@ -9082,6 +9290,13 @@
                         <div class="game-desc">Rapide • VS Bot</div>
                         <div class="game-tags"><span class="game-tag">Rapide</span><span class="game-tag">Chance</span></div>
                     </div>
+                    <div class="game-card game-card-multi" onclick="showArena2DModeSelector()">
+                        <div class="game-card-badge">NEW</div>
+                        <div class="game-icon-wrap"><div class="game-icon">🕹️</div></div>
+                        <div class="game-name">Arena 2D</div>
+                        <div class="game-desc">Collecte • Duel en direct</div>
+                        <div class="game-tags"><span class="game-tag">Arcade</span><span class="game-tag">Multi</span></div>
+                    </div>
                 </div>
                 
                 <div class="games-category-label">🧠 Culture & Quiz</div>
@@ -9188,6 +9403,7 @@
                     <div class="xp-bar-fill" id="myXPBar" style="width: 0%"></div>
                     <div class="xp-bar-text" id="myXPBarText">0 / 100 XP</div>
                 </div>
+                <div id="myXPMeta" style="font-size:11px;color:var(--text-secondary);margin-top:6px;">Série: 0 jour · Boost: inactif</div>
                 <div class="xp-stats-row">
                     <div class="xp-stat-chip">
                         <div class="xp-stat-val" id="myTotalXP">0</div>
@@ -9216,11 +9432,27 @@
                     <button onclick="useBanana('flash')" style="flex:1;min-width:100px;padding:8px;border:none;border-radius:8px;background:rgba(var(--accent-rgb),0.15);color:var(--text-primary);cursor:pointer;font-size:12px;">⚡ Flash<br><small style="color:var(--text-secondary);">3 🍌</small></button>
                     <button onclick="useBanana('rain')" style="flex:1;min-width:100px;padding:8px;border:none;border-radius:8px;background:rgba(var(--accent-rgb),0.15);color:var(--text-primary);cursor:pointer;font-size:12px;">🍌 Pluie<br><small style="color:var(--text-secondary);">8 🍌</small></button>
                     <button onclick="useBanana('fireworks')" style="flex:1;min-width:100px;padding:8px;border:none;border-radius:8px;background:rgba(var(--accent-rgb),0.15);color:var(--text-primary);cursor:pointer;font-size:12px;">🎆 Feux<br><small style="color:var(--text-secondary);">10 🍌</small></button>
+                    <button onclick="useBanana('xp_boost')" style="flex:1;min-width:100px;padding:8px;border:none;border-radius:8px;background:rgba(67,181,129,0.22);color:var(--text-primary);cursor:pointer;font-size:12px;">🚀 Boost XP x2<br><small style="color:var(--text-secondary);">20 min · 12 🍌</small></button>
+                    <button onclick="useBanana('streak_shield')" style="flex:1;min-width:100px;padding:8px;border:none;border-radius:8px;background:rgba(88,101,242,0.22);color:var(--text-primary);cursor:pointer;font-size:12px;">🛡️ Protège série<br><small style="color:var(--text-secondary);">1 charge · 15 🍌</small></button>
+                    <button onclick="useBanana('reaction_boost')" style="flex:1;min-width:100px;padding:8px;border:none;border-radius:8px;background:rgba(255,193,7,0.22);color:var(--text-primary);cursor:pointer;font-size:12px;">✨ Boost réactions<br><small style="color:var(--text-secondary);">x2 · 15 min · 10 🍌</small></button>
+                    <button onclick="useBanana('cooldown_reducer')" style="flex:1;min-width:100px;padding:8px;border:none;border-radius:8px;background:rgba(0,200,255,0.22);color:var(--text-primary);cursor:pointer;font-size:12px;">⚡ Cadence XP<br><small style="color:var(--text-secondary);">cooldown 20s · 15 min · 9 🍌</small></button>
+                </div>
+            </div>
+            <div style="padding: 8px 15px 2px;">
+                <div style="font-weight:700;font-size:14px;margin-bottom:8px;">🎯 Missions quotidiennes</div>
+                <div id="dailyMissionsBox" style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--text-primary);">
+                    <div id="missionMessagesRow">Messages: 0/10</div>
+                    <div id="missionReactionsRow">Réactions: 0/5</div>
+                    <div id="missionVoiceRow">Vocal: 0/10 min</div>
                 </div>
             </div>
             <div class="leaderboard-title">🏆 Classement</div>
             <div class="leaderboard-list" id="leaderboardList">
                 <div style="text-align: center; padding: 30px; color: var(--text-secondary);">Chargement...</div>
+            </div>
+            <div class="leaderboard-title" style="margin-top:10px;">🎮 Classement Mini-Jeux</div>
+            <div class="leaderboard-list" id="miniGamesLeaderboardList">
+                <div style="text-align: center; padding: 20px; color: var(--text-secondary);">Chargement...</div>
             </div>
         </div>
     </div>
@@ -9584,6 +9816,30 @@
                         </div>
                     </div>
                     <div class="admin-card">
+                        <div class="admin-card-title">🎙️ Modération vocale & XP</div>
+                        <input type="text" id="adminTargetUserInput" placeholder="Pseudo cible" class="admin-input">
+                        <div class="admin-grid" style="margin-top: 8px;">
+                            <button class="admin-btn warning" onclick="adminVoiceKickFromInput()">🔊 Expulser du vocal</button>
+                            <button class="admin-btn" onclick="adminVoiceForceMuteFromInput(true)">🎤 Forcer mute</button>
+                            <button class="admin-btn success" onclick="adminVoiceForceMuteFromInput(false)">🎙️ Retirer mute</button>
+                            <button class="admin-btn" onclick="adminVoiceForceDeafenFromInput(true)">🎧 Forcer sourdine</button>
+                            <button class="admin-btn success" onclick="adminVoiceForceDeafenFromInput(false)">🔈 Retirer sourdine</button>
+                        </div>
+                        <div class="admin-grid" style="margin-top: 8px;">
+                            <select id="adminVoiceMoveSelect" class="admin-select">
+                                <option value="Vocal Général">Vocal Général</option>
+                                <option value="Vocal Gaming">Vocal Gaming</option>
+                                <option value="Vocal Musique">Vocal Musique</option>
+                            </select>
+                            <button class="admin-btn" onclick="adminVoiceMoveFromInput()">➡️ Déplacer</button>
+                        </div>
+                        <div class="admin-grid" style="margin-top: 8px;">
+                            <input type="number" id="adminXpAmountInput" class="admin-input" min="1" step="1" value="250" placeholder="XP">
+                            <button class="admin-btn" onclick="adminGrantXPFromInput()">⭐ Ajouter XP</button>
+                            <button class="admin-btn" onclick="adminSetXPFromInput()">🎯 Définir XP</button>
+                        </div>
+                    </div>
+                    <div class="admin-card">
                         <div class="admin-card-title">🎮 Mini-jeux</div>
                         <div class="admin-setting-row">
                             <label>
@@ -9771,7 +10027,28 @@
                 voice_screen: "Partager l'écran",
                 voice_disconnect: "Déconnexion vocale",
                 voice_no_mic: "Impossible d'accéder au microphone",
-                voice_no_cam: "Impossible d'accéder à la caméra"
+                voice_no_cam: "Impossible d'accéder à la caméra",
+                voice_connected_label: "Voix connectée",
+                voice_auto_focus_label: "Auto",
+                voice_stats_label: "Stats",
+                voice_ping_label: "Ping",
+                voice_jitter_label: "Jitter",
+                voice_bitrate_in_label: "Bitrate entrant",
+                voice_packet_loss_label: "Perte paquets",
+                voice_rtt_label: "RTT RTC",
+                voice_peers_label: "Peers connectés",
+                voice_quality_low: "Qualité basse (plus stable)",
+                voice_quality_medium: "Qualité moyenne",
+                voice_quality_high: "Qualité haute",
+                voice_prompt_each_share: "Demander à chaque partage",
+                voice_share_title: "Partage d'écran",
+                voice_audio_title: "Audio",
+                voice_volume_label: "Volume",
+                voice_measuring: "En mesure...",
+                voice_settings_label: "Parametres vocaux",
+                voice_default_quality_label: "Qualite de partage d'ecran par defaut",
+                voice_share_prompt_label: "Demander a chaque partage",
+                voice_auto_focus_default: "Auto-focus vocal actif par defaut"
             },
             en: {
                 theme_bluenight: "Midnight Blue",
@@ -9842,7 +10119,28 @@
                 voice_screen: "Share screen",
                 voice_disconnect: "Disconnect from voice",
                 voice_no_mic: "Cannot access microphone",
-                voice_no_cam: "Cannot access camera"
+                voice_no_cam: "Cannot access camera",
+                voice_connected_label: "Voice connected",
+                voice_auto_focus_label: "Auto",
+                voice_stats_label: "Stats",
+                voice_ping_label: "Ping",
+                voice_jitter_label: "Jitter",
+                voice_bitrate_in_label: "Incoming bitrate",
+                voice_packet_loss_label: "Packet loss",
+                voice_rtt_label: "RTC RTT",
+                voice_peers_label: "Connected peers",
+                voice_quality_low: "Low quality (more stable)",
+                voice_quality_medium: "Medium quality",
+                voice_quality_high: "High quality",
+                voice_prompt_each_share: "Ask each time I share",
+                voice_share_title: "Screen share",
+                voice_audio_title: "Audio",
+                voice_volume_label: "Volume",
+                voice_measuring: "Measuring...",
+                voice_settings_label: "Voice settings",
+                voice_default_quality_label: "Default screen-share quality",
+                voice_share_prompt_label: "Ask every time I share",
+                voice_auto_focus_default: "Enable voice auto-focus by default"
             },
             es: {
                 theme_bluenight: "Azul noche",
@@ -10297,6 +10595,7 @@
 
         // === SALONS MULTIPLES (BETA) ===
         let currentChannel = 'général'; // Salon actuel
+        let forceBottomOnChannelLoad = false;
         let channelMessages = {}; // Messages par salon: { channelName: [messages] }
         let channelUnread = {}; // Compteur non-lus par salon: { channelName: number }
         let channelTypingUsers = {}; // Utilisateurs qui écrivent par salon: { channelName: [usernames] }
@@ -10438,6 +10737,10 @@
             document.getElementById('bubbleSquare').textContent = translateText('bubble_square');
             document.getElementById('bubbleMinimal').textContent = translateText('bubble_minimal');
             document.getElementById('liquidGlassText').textContent = translateText('liquid_glass');
+            document.getElementById('voiceSettingsLabel').textContent = translateText('voice_settings_label');
+            document.getElementById('voiceDefaultQualityLabel').textContent = translateText('voice_default_quality_label');
+            document.getElementById('voiceSharePromptLabel').textContent = translateText('voice_share_prompt_label');
+            document.getElementById('voiceAutoFocusSettingText').textContent = translateText('voice_auto_focus_default');
 
             // Zones de collage
             document.getElementById('pastedImageText').textContent = translateText('pasted_image');
@@ -11186,8 +11489,16 @@
                 }
                 
                 // Scroll vers le bas
-                chatContainer.scrollTop = chatContainer.scrollHeight;
-                setTimeout(() => { chatContainer.scrollTop = chatContainer.scrollHeight; }, 150);
+                if (data.channel === currentChannel && forceBottomOnChannelLoad) {
+                    jumpMessagesToBottom();
+                    setTimeout(() => { jumpMessagesToBottom(); }, 120);
+                    forceBottomOnChannelLoad = false;
+                } else {
+                    jumpMessagesToBottom();
+                }
+
+                // Rendre visible une fois positionne
+                chatContainer.style.visibility = '';
                 
                 console.log(`✅ Salon #${data.channel} chargé:`, chatContainer.children.length, 'messages affichés');
             });
@@ -11679,6 +11990,7 @@
             // Changer de salon
             const oldChannel = currentChannel;
             currentChannel = channelName;
+            forceBottomOnChannelLoad = true;
             
             // Mettre à jour l'UI
             document.querySelectorAll('.channel-item').forEach(item => {
@@ -11702,6 +12014,7 @@
             
             // Vider les messages et charger ceux du salon
             const messagesContainer = document.getElementById('chatMessages');
+            messagesContainer.style.visibility = 'hidden';
             messagesContainer.innerHTML = '';
             
             // Si on a des messages en cache, les afficher
@@ -11710,15 +12023,21 @@
                     if (msg.type === 'system') {
                         addSystemMessage(msg.message, msg.id, msg.timestamp);
                     } else {
-                        addMessage(msg);
+                        const isOwnMessage = msg.username && currentUsername && msg.username.toLowerCase() === currentUsername.toLowerCase();
+                        addMessage(msg.username, msg.content, msg.timestamp, isOwnMessage, msg.avatar, msg.replyTo, msg.attachment, msg.id);
                     }
                 });
             }
             
             // Scroll automatique tout en bas après chargement
             setTimeout(() => {
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            }, 50);
+                jumpMessagesToBottom();
+            }, 20);
+
+            // Fallback: ne jamais rester masque si la reponse serveur tarde
+            setTimeout(() => {
+                messagesContainer.style.visibility = '';
+            }, 500);
             
             // Fermer la sidebar sur mobile
             if (window.innerWidth <= 768) {
@@ -12203,9 +12522,23 @@
             }
         }
 
-        function scrollToBottom() {
+        function scrollMessagesToBottom(behavior = 'auto') {
             const chatMessages = document.getElementById('chatMessages');
-            chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
+            if (!chatMessages) return;
+            chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior });
+        }
+
+        function jumpMessagesToBottom() {
+            const chatMessages = document.getElementById('chatMessages');
+            if (!chatMessages) return;
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            requestAnimationFrame(() => {
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            });
+        }
+
+        function scrollToBottom() {
+            scrollMessagesToBottom('smooth');
             scrollUnreadCount = 0;
             isUserScrolledUp = false;
             updateScrollBadge();
@@ -12728,6 +13061,9 @@ window.addEmojiReaction = addEmojiReaction;
                 <button onclick="mentionUser('${username}'); closeUserContextMenu();">💬 Mentionner</button>
                 <div class="menu-divider"></div>
                 <button onclick="adminRenameUser('${username}'); closeUserContextMenu();">✏️ Renommer</button>
+                <button onclick="adminVoiceKickUser('${username}'); closeUserContextMenu();">🔊 Expulser du vocal</button>
+                <button onclick="adminVoiceForceMuteUser('${username}', true); closeUserContextMenu();">🎤 Forcer mute</button>
+                <button onclick="adminGrantXPUser('${username}'); closeUserContextMenu();">⭐ Ajouter XP</button>
                 <button class="danger" onclick="adminKickUser('${username}'); closeUserContextMenu();">👢 Kick</button>
                 <button class="danger" onclick="adminBanUser('${username}'); closeUserContextMenu();">🚫 Ban</button>
             `;
@@ -12917,6 +13253,12 @@ window.addEmojiReaction = addEmojiReaction;
             document.getElementById('notificationsEnabled').checked = notificationsEnabled;
             document.getElementById('autoScrollEnabled').checked = autoScrollEnabled;
             document.getElementById('timestampEnabled').checked = timestampEnabled;
+            const qualitySelect = document.getElementById('voiceDefaultQualitySelect');
+            if (qualitySelect) qualitySelect.value = voiceScreenQuality;
+            const askToggle = document.getElementById('voiceAskEveryTimeToggle');
+            if (askToggle) askToggle.checked = voiceScreenAskEveryTime;
+            const focusToggle = document.getElementById('voiceAutoFocusDefaultToggle');
+            if (focusToggle) focusToggle.checked = voiceAutoFocusEnabled;
         }
 
         function closeSettings() {
@@ -13045,6 +13387,9 @@ window.addEmojiReaction = addEmojiReaction;
             localStorage.setItem('chatTextStyle', currentTextStyle);
             localStorage.setItem('chatFontSize', currentFontSize.toString());
             localStorage.setItem('chatBubbleStyle', currentBubbleStyle);
+            localStorage.setItem('docspaceVoiceScreenQuality', voiceScreenQuality);
+            localStorage.setItem('docspaceVoiceScreenAskEveryTime', voiceScreenAskEveryTime ? '1' : '0');
+            localStorage.setItem('docspaceVoiceAutoFocus', voiceAutoFocusEnabled ? '1' : '0');
             
             // Appliquer le masquage des avatars
             document.body.classList.toggle('hide-avatars', !showAvatarsEnabled);
@@ -13206,6 +13551,33 @@ window.addEmojiReaction = addEmojiReaction;
                     cancelPastedImage();
                 }
                 closeMentionAutocomplete();
+            }
+
+            // Raccourcis vocaux (Alt + touche)
+            if (currentVoiceRoom && e.altKey && !e.ctrlKey && !e.shiftKey && !e.metaKey) {
+                const tag = document.activeElement ? document.activeElement.tagName : '';
+                if (tag !== 'INPUT' && tag !== 'TEXTAREA') {
+                    const k = String(e.key || '').toLowerCase();
+                    if (k === 'm') {
+                        e.preventDefault();
+                        toggleVoiceMute();
+                    } else if (k === 'd') {
+                        e.preventDefault();
+                        toggleVoiceDeafen();
+                    } else if (k === 'v') {
+                        e.preventDefault();
+                        toggleVoiceVideo();
+                    } else if (k === 's') {
+                        e.preventDefault();
+                        toggleVoiceScreen();
+                    } else if (k === 'f') {
+                        e.preventDefault();
+                        toggleVoiceAutoFocus();
+                    } else if (k === 'r') {
+                        e.preventDefault();
+                        toggleVoiceRtcPanel();
+                    }
+                }
             }
             
             // Ctrl+F pour recherche
@@ -14493,6 +14865,8 @@ window.addEmojiReaction = addEmojiReaction;
                 socket.emit('game_quit', { gameId: multiplayerGameId });
                 resetMultiplayerState();
             }
+            setupArena2DKeyboard(false);
+            setupArena2DSoloKeyboard(false);
             currentGame = null;
             gameState = {};
         }
@@ -14513,6 +14887,8 @@ window.addEmojiReaction = addEmojiReaction;
             if (multiplayerGameId) {
                 socket.emit('game_quit', { gameId: multiplayerGameId });
             }
+            setupArena2DKeyboard(false);
+            setupArena2DSoloKeyboard(false);
             currentGame = null;
             gameState = {};
             resetMultiplayerState();
@@ -14547,6 +14923,9 @@ window.addEmojiReaction = addEmojiReaction;
                     break;
                 case 'memory':
                     initMemory(gameBoard, gameControls, gameTitle, gameStatus);
+                    break;
+                case 'arena2d':
+                    initArena2DSolo(gameBoard, gameControls, gameTitle, gameStatus);
                     break;
             }
         }
@@ -14588,6 +14967,9 @@ window.addEmojiReaction = addEmojiReaction;
         
         // Afficher la sélection de joueurs pour inviter
         function showPlayerSelection(gameType) {
+            document.getElementById('gamesMenu').style.display = 'none';
+            document.getElementById('gameArea').style.display = 'block';
+
             const board = document.getElementById('gameBoard');
             const controls = document.getElementById('gameControls');
             const status = document.getElementById('gameStatus');
@@ -14595,7 +14977,11 @@ window.addEmojiReaction = addEmojiReaction;
             
             const gameNames = {
                 'tictactoe': '⭕ Morpion',
-                'connect4': '🔴 Puissance 4'
+                'connect4': '🔴 Puissance 4',
+                'quiz': '❓ Quiz',
+                'trivia': '🧠 Trivia',
+                'hangman': '🪢 Pendu',
+                'arena2d': '🕹️ Arena 2D'
             };
             
             title.textContent = gameNames[gameType] || gameType;
@@ -14733,6 +15119,31 @@ window.addEmojiReaction = addEmojiReaction;
         function startMultiplayerQuiz() {
             showPlayerSelection('quiz');
         }
+
+        function showArena2DModeSelector() {
+            document.getElementById('gamesMenu').style.display = 'none';
+            document.getElementById('gameArea').style.display = 'block';
+            document.getElementById('gameTitle').textContent = '🕹️ Arena 2D';
+            document.getElementById('gameStatus').textContent = 'Choisir un mode';
+            document.getElementById('gameBoard').innerHTML = `
+                <div class="game-mode-selector-panel">
+                    <h3>Comment veux-tu jouer ?</h3>
+                    <div class="game-mode-cards">
+                        <div class="game-mode-card" onclick="startGame('arena2d')">
+                            <div class="game-mode-card-icon">🤖</div>
+                            <div class="game-mode-card-title">Solo Bot</div>
+                            <div class="game-mode-card-desc">Collecte de pieces contre l'IA</div>
+                        </div>
+                        <div class="game-mode-card" onclick="showPlayerSelection('arena2d')">
+                            <div class="game-mode-card-icon">👥</div>
+                            <div class="game-mode-card-title">Multijoueur</div>
+                            <div class="game-mode-card-desc">Defiez un joueur en direct</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('gameControls').innerHTML = '';
+        }
         
         function startHangmanMulti() {
             showPlayerSelection('hangman');
@@ -14754,7 +15165,8 @@ window.addEmojiReaction = addEmojiReaction;
                 'rps': '✊ Pierre-Papier-Ciseaux',
                 'quiz': '❓ Quiz',
                 'hangman': '🔤 Pendu',
-                'trivia': '🧠 Trivia'
+                'trivia': '🧠 Trivia',
+                'arena2d': '🕹️ Arena 2D'
             };
             document.getElementById('gameTitle').textContent = gameNames[gameType] || gameType;
             
@@ -14788,7 +15200,11 @@ window.addEmojiReaction = addEmojiReaction;
             container.style.display = 'block';
             const gameNames = {
                 'tictactoe': 'Morpion',
-                'connect4': 'Puissance 4'
+                'connect4': 'Puissance 4',
+                'quiz': 'Quiz',
+                'trivia': 'Trivia',
+                'hangman': 'Pendu',
+                'arena2d': 'Arena 2D'
             };
             
             list.innerHTML = pendingGameInvites.map(invite => `
@@ -14871,6 +15287,8 @@ window.addEmojiReaction = addEmojiReaction;
                     initMultiplayerTrivia(data);
                 } else if (data.gameType === 'hangman') {
                     initMultiplayerHangman(data);
+                } else if (data.gameType === 'arena2d') {
+                    initMultiplayerArena2D(data);
                 }
                 
                 showToast(`🎮 Partie contre ${data.opponent} commencée !`);
@@ -14892,6 +15310,8 @@ window.addEmojiReaction = addEmojiReaction;
                     updateMultiplayerTrivia(data);
                 } else if (currentGame === 'hangman') {
                     updateMultiplayerHangman(data);
+                } else if (currentGame === 'arena2d') {
+                    updateMultiplayerArena2D(data);
                 }
             });
             
@@ -14911,7 +15331,8 @@ window.addEmojiReaction = addEmojiReaction;
                 'rps': '✊ Pierre-Papier-Ciseaux',
                 'quiz': '❓ Quiz',
                 'trivia': '🧠 Trivia',
-                'hangman': '🪢 Pendu'
+                'hangman': '🪢 Pendu',
+                'arena2d': '🕹️ Arena 2D'
             };
             
             const toast = document.createElement('div');
@@ -15556,6 +15977,9 @@ window.addEmojiReaction = addEmojiReaction;
                 wrong: init.wrong || [],
                 remaining: init.remaining,
                 wordLength: init.wordLength,
+                maxErrors: init.maxErrors || 8,
+                hintVisible: !!init.hintVisible,
+                hintText: init.hintText || '',
                 myTurn: data.yourTurn,
                 myIndex: data.playerIndex,
                 multiplayer: true
@@ -15592,6 +16016,7 @@ window.addEmojiReaction = addEmojiReaction;
                             <div style="font-size:36px; letter-spacing:8px; font-weight:bold; margin:15px 0; font-family:monospace;">${gameState.display}</div>
                             <div style="font-size:14px; color:var(--text-muted);">Erreurs restantes: ${gameState.remaining}</div>
                             ${gameState.wrong.length > 0 ? `<div style="font-size:14px; color:#F44336; margin-top:5px;">Lettres fausses: ${gameState.wrong.join(', ')}</div>` : ''}
+                            ${gameState.hintVisible && gameState.hintText ? `<div style="font-size:13px; color:var(--text-muted); margin-top:6px;">💡 Indice: ${escapeHtml(gameState.hintText)}</div>` : ''}
                         </div>
                     </div>
                     <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:6px; margin-top:20px; max-width:480px; margin-left:auto; margin-right:auto;">
@@ -15627,6 +16052,9 @@ window.addEmojiReaction = addEmojiReaction;
                 gameState.display = h.display;
                 gameState.wrong = h.wrong;
                 gameState.remaining = h.remaining;
+                gameState.maxErrors = h.maxErrors || gameState.maxErrors || 8;
+                gameState.hintVisible = !!h.hintVisible;
+                gameState.hintText = h.hintText || '';
                 gameState.myTurn = data.yourTurn;
                 
                 renderMultiplayerHangman();
@@ -15644,6 +16072,114 @@ window.addEmojiReaction = addEmojiReaction;
                         : `⏳ ${multiplayerOpponent} devine...`;
                 }
             }
+        }
+
+        // ============================================
+        // === ARENA 2D MULTIJOUEUR ===
+        // ============================================
+        function initMultiplayerArena2D(data) {
+            currentGame = 'arena2d';
+            const title = document.getElementById('gameTitle');
+            const status = document.getElementById('gameStatus');
+            const controls = document.getElementById('gameControls');
+
+            title.textContent = `🕹️ Arena 2D vs ${data.opponent}`;
+            gameState = {
+                arena: data.initialData?.arenaState || null,
+                myIndex: data.playerIndex,
+                multiplayer: true
+            };
+
+            status.textContent = 'Collectez les pieces avant votre adversaire !';
+            renderMultiplayerArena2D();
+            setupArena2DKeyboard(true);
+
+            controls.innerHTML = `
+                <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;">
+                    <button class="game-btn" onclick="sendArenaMove('up')">⬆️</button>
+                    <button class="game-btn" onclick="sendArenaMove('left')">⬅️</button>
+                    <button class="game-btn" onclick="sendArenaMove('down')">⬇️</button>
+                    <button class="game-btn" onclick="sendArenaMove('right')">➡️</button>
+                    <button class="game-btn secondary" onclick="backToGamesMenu()">Abandonner</button>
+                </div>
+                <div style="margin-top:8px;font-size:12px;color:var(--text-secondary);text-align:center;">Clavier: fleches ou ZQSD</div>
+            `;
+        }
+
+        function renderMultiplayerArena2D() {
+            const board = document.getElementById('gameBoard');
+            const arena = gameState.arena;
+            if (!arena) return;
+
+            const me = arena.players[gameState.myIndex];
+            const opp = arena.players[1 - gameState.myIndex];
+            const scoreTarget = arena.targetScore || 12;
+            const cellW = 100 / arena.width;
+            const cellH = 100 / arena.height;
+
+            board.innerHTML = `
+                <div style="max-width:640px;margin:0 auto;">
+                    <div style="display:flex;justify-content:center;gap:14px;margin-bottom:10px;font-size:14px;">
+                        <div style="padding:8px 12px;border-radius:10px;background:rgba(88,101,242,0.18);">Vous: <strong>${me?.score || 0}</strong> / ${scoreTarget}</div>
+                        <div style="padding:8px 12px;border-radius:10px;background:rgba(240,71,71,0.18);">${escapeHtml(multiplayerOpponent)}: <strong>${opp?.score || 0}</strong> / ${scoreTarget}</div>
+                    </div>
+                    <div style="position:relative;height:360px;border:2px solid var(--border-color);border-radius:14px;background:radial-gradient(circle at 20% 20%, rgba(88,101,242,0.15), transparent 40%), radial-gradient(circle at 80% 70%, rgba(67,181,129,0.14), transparent 45%), rgba(0,0,0,0.2);overflow:hidden;">
+                        ${(arena.coins || []).map(c => `<div style="position:absolute;left:${(c.x + 0.2) * cellW}%;top:${(c.y + 0.2) * cellH}%;width:${cellW * 0.6}%;height:${cellH * 0.6}%;min-width:8px;min-height:8px;border-radius:999px;background:#f7b500;box-shadow:0 0 10px rgba(247,181,0,0.6);"></div>`).join('')}
+                        <div style="position:absolute;left:${((me?.x || 0) + 0.08) * cellW}%;top:${((me?.y || 0) + 0.08) * cellH}%;width:${cellW * 0.84}%;height:${cellH * 0.84}%;min-width:14px;min-height:14px;border-radius:8px;background:#5865f2;border:2px solid rgba(255,255,255,0.5);"></div>
+                        <div style="position:absolute;left:${((opp?.x || 0) + 0.08) * cellW}%;top:${((opp?.y || 0) + 0.08) * cellH}%;width:${cellW * 0.84}%;height:${cellH * 0.84}%;min-width:14px;min-height:14px;border-radius:8px;background:#f04747;border:2px solid rgba(255,255,255,0.5);"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function sendArenaMove(dir) {
+            if (currentGame !== 'arena2d' || !multiplayerGameId) return;
+            socket.emit('game_move', { gameId: multiplayerGameId, move: { dir } });
+        }
+
+        function updateMultiplayerArena2D(data) {
+            if (!data.state) return;
+            gameState.arena = data.state;
+            renderMultiplayerArena2D();
+
+            if (data.winner) {
+                const isMe = data.winner === currentUsername;
+                document.getElementById('gameStatus').textContent = isMe ? '🏆 Victoire en Arena 2D !' : `😢 ${data.winner} gagne la partie`;
+                setupArena2DKeyboard(false);
+                resetMultiplayerState();
+            } else {
+                document.getElementById('gameStatus').textContent = 'Collectez les pieces et atteignez le score cible !';
+            }
+        }
+
+        function setupArena2DKeyboard(enabled) {
+            if (window.__arena2dKeyHandler) {
+                window.removeEventListener('keydown', window.__arena2dKeyHandler);
+                window.__arena2dKeyHandler = null;
+            }
+            if (!enabled) return;
+
+            window.__arena2dKeyHandler = (event) => {
+                if (currentGame !== 'arena2d' || !multiplayerGameId) return;
+                const key = (event.key || '').toLowerCase();
+                const map = {
+                    arrowup: 'up',
+                    z: 'up',
+                    w: 'up',
+                    arrowdown: 'down',
+                    s: 'down',
+                    arrowleft: 'left',
+                    q: 'left',
+                    a: 'left',
+                    arrowright: 'right',
+                    d: 'right'
+                };
+                const dir = map[key];
+                if (!dir) return;
+                event.preventDefault();
+                sendArenaMove(dir);
+            };
+            window.addEventListener('keydown', window.__arena2dKeyHandler);
         }
         
         // Simple toast notification
@@ -16005,6 +16541,15 @@ window.addEmojiReaction = addEmojiReaction;
             const board = document.getElementById('gameBoard');
             const percentage = Math.round((gameState.score / gameState.questions.length) * 100);
             let emoji = percentage >= 80 ? '🏆' : percentage >= 60 ? '🎉' : percentage >= 40 ? '👍' : '😅';
+            const outcome = percentage >= 70 ? 'win' : (percentage >= 45 ? 'draw' : 'loss');
+            if (socket) {
+                socket.emit('minigame_result', {
+                    gameType: 'quiz',
+                    outcome,
+                    points: Math.max(5, Math.floor(gameState.score * 2.2)),
+                    xp: Math.max(10, Math.floor(gameState.score * 5))
+                });
+            }
             
             board.innerHTML = `
                 <div class="game-end-overlay">
@@ -16070,6 +16615,15 @@ window.addEmojiReaction = addEmojiReaction;
                 className = 'correct';
                 document.getElementById('gameStatus').textContent = 'Gagné!';
                 input.disabled = true;
+                if (socket) {
+                    const qualityBonus = Math.max(0, gameState.maxAttempts - gameState.attempts);
+                    socket.emit('minigame_result', {
+                        gameType: 'guess',
+                        outcome: 'win',
+                        points: 10 + qualityBonus,
+                        xp: 18 + qualityBonus * 2
+                    });
+                }
             } else if (guess < gameState.target) {
                 hint = `⬆️ ${guess} - C'est plus!`;
                 className = 'higher';
@@ -16085,6 +16639,14 @@ window.addEmojiReaction = addEmojiReaction;
                 hintsDiv.innerHTML = `<div class="guess-hint wrong">😢 Perdu! C'était ${gameState.target}</div>` + hintsDiv.innerHTML;
                 document.getElementById('gameStatus').textContent = 'Perdu!';
                 input.disabled = true;
+                if (socket) {
+                    socket.emit('minigame_result', {
+                        gameType: 'guess',
+                        outcome: 'loss',
+                        points: 4,
+                        xp: 8
+                    });
+                }
             } else {
                 document.getElementById('gameStatus').textContent = `Essais: ${gameState.attempts}/${gameState.maxAttempts}`;
             }
@@ -16158,6 +16720,15 @@ window.addEmojiReaction = addEmojiReaction;
                     
                     if (gameState.matches === 8) {
                         document.getElementById('gameStatus').textContent = `🎉 Gagné en ${gameState.moves} coups!`;
+                        if (socket) {
+                            const moveEfficiency = Math.max(0, 20 - gameState.moves);
+                            socket.emit('minigame_result', {
+                                gameType: 'memory',
+                                outcome: 'win',
+                                points: 10 + Math.floor(moveEfficiency / 2),
+                                xp: 20 + moveEfficiency
+                            });
+                        }
                         document.getElementById('gameControls').innerHTML += `
                             <button class="game-btn" onclick="startGame('memory')" style="margin-top: 10px;">🔄 Rejouer</button>
                         `;
@@ -16172,6 +16743,199 @@ window.addEmojiReaction = addEmojiReaction;
                     }, 1000);
                 }
             }
+        }
+
+        // ===== ARENA 2D SOLO (BOT) =====
+        function initArena2DSolo(board, controls, title, status) {
+            title.textContent = '🕹️ Arena 2D (Solo Bot)';
+            gameState = {
+                soloArena: {
+                    width: 20,
+                    height: 12,
+                    targetScore: 10,
+                    coins: [],
+                    you: { x: 1, y: 6, score: 0 },
+                    bot: { x: 18, y: 6, score: 0 },
+                    finished: false,
+                    moveCooldownMs: 80,
+                    lastMoveAt: 0,
+                    botTimer: null,
+                    botThinkMs: 260
+                }
+            };
+
+            const arena = gameState.soloArena;
+            for (let i = 0; i < 7; i++) {
+                arena.coins.push(spawnSoloArenaCoin(arena));
+            }
+
+            status.textContent = 'Collectez les pieces avant le bot !';
+            renderArena2DSolo();
+            setupArena2DSoloKeyboard(true);
+            startArena2DBotLoop();
+
+            controls.innerHTML = `
+                <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;">
+                    <button class="game-btn" onclick="moveArena2DSolo('up')">⬆️</button>
+                    <button class="game-btn" onclick="moveArena2DSolo('left')">⬅️</button>
+                    <button class="game-btn" onclick="moveArena2DSolo('down')">⬇️</button>
+                    <button class="game-btn" onclick="moveArena2DSolo('right')">➡️</button>
+                    <button class="game-btn secondary" onclick="startGame('arena2d')">🔄 Rejouer</button>
+                </div>
+                <div style="margin-top:8px;font-size:12px;color:var(--text-secondary);text-align:center;">Clavier: fleches ou ZQSD</div>
+            `;
+        }
+
+        function spawnSoloArenaCoin(arena) {
+            const occupied = new Set();
+            occupied.add(`${arena.you.x},${arena.you.y}`);
+            occupied.add(`${arena.bot.x},${arena.bot.y}`);
+            arena.coins.forEach(c => occupied.add(`${c.x},${c.y}`));
+            for (let tries = 0; tries < 200; tries++) {
+                const x = Math.floor(Math.random() * arena.width);
+                const y = Math.floor(Math.random() * arena.height);
+                const key = `${x},${y}`;
+                if (!occupied.has(key)) return { x, y };
+            }
+            return { x: Math.floor(arena.width / 2), y: Math.floor(arena.height / 2) };
+        }
+
+        function renderArena2DSolo() {
+            const board = document.getElementById('gameBoard');
+            const arena = gameState.soloArena;
+            if (!arena) return;
+
+            const cellW = 100 / arena.width;
+            const cellH = 100 / arena.height;
+            board.innerHTML = `
+                <div style="max-width:620px;margin:0 auto;">
+                    <div style="display:flex;justify-content:center;gap:14px;margin-bottom:10px;font-size:14px;">
+                        <div style="padding:8px 12px;border-radius:10px;background:rgba(88,101,242,0.18);">Vous: <strong>${arena.you.score}</strong> / ${arena.targetScore}</div>
+                        <div style="padding:8px 12px;border-radius:10px;background:rgba(240,71,71,0.18);">Bot: <strong>${arena.bot.score}</strong> / ${arena.targetScore}</div>
+                    </div>
+                    <div style="position:relative;height:340px;border:2px solid var(--border-color);border-radius:14px;background:radial-gradient(circle at 20% 20%, rgba(88,101,242,0.15), transparent 40%), radial-gradient(circle at 80% 70%, rgba(67,181,129,0.14), transparent 45%), rgba(0,0,0,0.2);overflow:hidden;">
+                        ${arena.coins.map(c => `<div style="position:absolute;left:${(c.x + 0.2) * cellW}%;top:${(c.y + 0.2) * cellH}%;width:${cellW * 0.6}%;height:${cellH * 0.6}%;min-width:8px;min-height:8px;border-radius:999px;background:#f7b500;box-shadow:0 0 10px rgba(247,181,0,0.6);"></div>`).join('')}
+                        <div style="position:absolute;left:${(arena.you.x + 0.08) * cellW}%;top:${(arena.you.y + 0.08) * cellH}%;width:${cellW * 0.84}%;height:${cellH * 0.84}%;min-width:14px;min-height:14px;border-radius:8px;background:#5865f2;border:2px solid rgba(255,255,255,0.5);"></div>
+                        <div style="position:absolute;left:${(arena.bot.x + 0.08) * cellW}%;top:${(arena.bot.y + 0.08) * cellH}%;width:${cellW * 0.84}%;height:${cellH * 0.84}%;min-width:14px;min-height:14px;border-radius:8px;background:#f04747;border:2px solid rgba(255,255,255,0.5);"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function moveArena2DSolo(dir) {
+            const arena = gameState.soloArena;
+            if (!arena || arena.finished) return;
+            const now = Date.now();
+            if (now - arena.lastMoveAt < arena.moveCooldownMs) return;
+            arena.lastMoveAt = now;
+
+            if (dir === 'up') arena.you.y = Math.max(0, arena.you.y - 1);
+            if (dir === 'down') arena.you.y = Math.min(arena.height - 1, arena.you.y + 1);
+            if (dir === 'left') arena.you.x = Math.max(0, arena.you.x - 1);
+            if (dir === 'right') arena.you.x = Math.min(arena.width - 1, arena.you.x + 1);
+
+            collectSoloArenaCoin('you');
+            renderArena2DSolo();
+            evaluateArena2DSoloEnd();
+        }
+
+        function collectSoloArenaCoin(who) {
+            const arena = gameState.soloArena;
+            if (!arena) return;
+            const p = who === 'you' ? arena.you : arena.bot;
+            const idx = arena.coins.findIndex(c => c.x === p.x && c.y === p.y);
+            if (idx >= 0) {
+                arena.coins.splice(idx, 1);
+                p.score += 1;
+                arena.coins.push(spawnSoloArenaCoin(arena));
+            }
+        }
+
+        function startArena2DBotLoop() {
+            const arena = gameState.soloArena;
+            if (!arena) return;
+            if (arena.botTimer) clearInterval(arena.botTimer);
+            arena.botTimer = setInterval(() => {
+                if (!gameState.soloArena || gameState.soloArena.finished || currentGame !== 'arena2d') return;
+                tickArena2DBot();
+            }, arena.botThinkMs);
+        }
+
+        function tickArena2DBot() {
+            const arena = gameState.soloArena;
+            if (!arena || arena.finished) return;
+            const target = arena.coins[0];
+            if (!target) return;
+
+            if (arena.bot.x < target.x) arena.bot.x += 1;
+            else if (arena.bot.x > target.x) arena.bot.x -= 1;
+            else if (arena.bot.y < target.y) arena.bot.y += 1;
+            else if (arena.bot.y > target.y) arena.bot.y -= 1;
+
+            collectSoloArenaCoin('bot');
+            renderArena2DSolo();
+            evaluateArena2DSoloEnd();
+        }
+
+        function evaluateArena2DSoloEnd() {
+            const arena = gameState.soloArena;
+            if (!arena || arena.finished) return;
+            if (arena.you.score < arena.targetScore && arena.bot.score < arena.targetScore) return;
+
+            arena.finished = true;
+            if (arena.botTimer) {
+                clearInterval(arena.botTimer);
+                arena.botTimer = null;
+            }
+            setupArena2DSoloKeyboard(false);
+
+            const isWin = arena.you.score >= arena.targetScore && arena.you.score >= arena.bot.score;
+            const isDraw = arena.you.score === arena.bot.score;
+            const outcome = isDraw ? 'draw' : (isWin ? 'win' : 'loss');
+            const points = isDraw ? 9 : (isWin ? 16 : 6);
+            const xp = isDraw ? 18 : (isWin ? 36 : 12);
+            if (socket) {
+                socket.emit('minigame_result', {
+                    gameType: 'arena2d',
+                    outcome,
+                    points,
+                    xp
+                });
+            }
+
+            document.getElementById('gameStatus').textContent = isDraw
+                ? '🤝 Egalite contre le bot'
+                : (isWin ? '🏆 Victoire contre le bot !' : '😢 Defaite contre le bot');
+        }
+
+        function setupArena2DSoloKeyboard(enabled) {
+            if (window.__arena2dSoloKeyHandler) {
+                window.removeEventListener('keydown', window.__arena2dSoloKeyHandler);
+                window.__arena2dSoloKeyHandler = null;
+            }
+            if (!enabled) return;
+
+            window.__arena2dSoloKeyHandler = (event) => {
+                if (currentGame !== 'arena2d' || !gameState.soloArena || gameState.soloArena.finished) return;
+                const key = (event.key || '').toLowerCase();
+                const map = {
+                    arrowup: 'up',
+                    z: 'up',
+                    w: 'up',
+                    arrowdown: 'down',
+                    s: 'down',
+                    arrowleft: 'left',
+                    q: 'left',
+                    a: 'left',
+                    arrowright: 'right',
+                    d: 'right'
+                };
+                const dir = map[key];
+                if (!dir) return;
+                event.preventDefault();
+                moveArena2DSolo(dir);
+            };
+            window.addEventListener('keydown', window.__arena2dSoloKeyHandler);
         }
 
         // ============== PATCH NOTES ==============
@@ -17616,14 +18380,140 @@ window.addEmojiReaction = addEmojiReaction;
             
             list.innerHTML = connectedUsers.map(user => `
                 <div class="admin-user-item">
-                    <span class="username">${user.username}</span>
+                    <span class="username">${user.username} ${voiceUserRoomsByUsername[user.username] ? `· 🔊 ${escapeHtml(voiceUserRoomsByUsername[user.username])}` : ''}</span>
                     <div class="admin-user-actions">
                         <button class="rename" onclick="adminRenameUser('${user.username}')">✏️ Renommer</button>
+                        <button class="rename" onclick="adminVoiceKickUser('${user.username}')">🔊 Kick vocal</button>
+                        <button class="rename" onclick="adminGrantXPUser('${user.username}')">⭐ XP +</button>
                         <button class="kick" onclick="adminKickUser('${user.username}')">👢 Kick</button>
                         <button class="ban" onclick="adminBanUser('${user.username}')">🚫 Ban</button>
                     </div>
                 </div>
             `).join('');
+        }
+
+        function getAdminTargetUsername() {
+            const el = document.getElementById('adminTargetUserInput');
+            const username = (el && el.value ? el.value : '').trim();
+            if (!username) {
+                showNotification('❌ Erreur', 'Entrez un pseudo cible', 'error');
+                return null;
+            }
+            return username;
+        }
+
+        function adminVoiceKickUser(username) {
+            if (!isAdmin || !socket || !username) return;
+            if (confirm(`Expulser ${username} du vocal ?`)) {
+                socket.emit('admin_action', { password: ADMIN_PASSWORD, action: 'voice_kick', target: username });
+            }
+        }
+
+        function adminVoiceForceMuteUser(username, enabled) {
+            if (!isAdmin || !socket || !username) return;
+            socket.emit('admin_action', {
+                password: ADMIN_PASSWORD,
+                action: 'voice_force_status',
+                target: username,
+                mode: 'mute',
+                enabled: !!enabled
+            });
+        }
+
+        function adminVoiceForceDeafenUser(username, enabled) {
+            if (!isAdmin || !socket || !username) return;
+            socket.emit('admin_action', {
+                password: ADMIN_PASSWORD,
+                action: 'voice_force_status',
+                target: username,
+                mode: 'deafen',
+                enabled: !!enabled
+            });
+        }
+
+        function adminVoiceMoveUser(username, room) {
+            if (!isAdmin || !socket || !username || !room) return;
+            socket.emit('admin_action', {
+                password: ADMIN_PASSWORD,
+                action: 'voice_move',
+                target: username,
+                room: room
+            });
+        }
+
+        function adminGrantXPUser(username) {
+            if (!isAdmin || !socket || !username) return;
+            const amount = prompt(`Ajouter combien d'XP a ${username} ?`, '250');
+            if (amount === null) return;
+            const parsed = parseInt(amount, 10);
+            if (!Number.isFinite(parsed) || parsed <= 0) {
+                showNotification('❌ Erreur', 'Montant XP invalide', 'error');
+                return;
+            }
+            socket.emit('admin_action', { password: ADMIN_PASSWORD, action: 'xp_add', target: username, amount: parsed });
+        }
+
+        function adminSetXPUser(username) {
+            if (!isAdmin || !socket || !username) return;
+            const amount = prompt(`Definir l'XP totale de ${username} a:`, '1000');
+            if (amount === null) return;
+            const parsed = parseInt(amount, 10);
+            if (!Number.isFinite(parsed) || parsed < 0) {
+                showNotification('❌ Erreur', 'Montant XP invalide', 'error');
+                return;
+            }
+            socket.emit('admin_action', { password: ADMIN_PASSWORD, action: 'xp_set', target: username, amount: parsed });
+        }
+
+        function adminVoiceKickFromInput() {
+            const username = getAdminTargetUsername();
+            if (!username) return;
+            adminVoiceKickUser(username);
+        }
+
+        function adminVoiceForceMuteFromInput(enabled) {
+            const username = getAdminTargetUsername();
+            if (!username) return;
+            adminVoiceForceMuteUser(username, enabled);
+        }
+
+        function adminVoiceForceDeafenFromInput(enabled) {
+            const username = getAdminTargetUsername();
+            if (!username) return;
+            adminVoiceForceDeafenUser(username, enabled);
+        }
+
+        function adminVoiceMoveFromInput() {
+            const username = getAdminTargetUsername();
+            if (!username) return;
+            const room = document.getElementById('adminVoiceMoveSelect')?.value;
+            if (!room) {
+                showNotification('❌ Erreur', 'Selectionnez un salon vocal', 'error');
+                return;
+            }
+            adminVoiceMoveUser(username, room);
+        }
+
+        function adminGrantXPFromInput() {
+            const username = getAdminTargetUsername();
+            if (!username) return;
+            const amount = parseInt(document.getElementById('adminXpAmountInput')?.value || '0', 10);
+            if (!Number.isFinite(amount) || amount <= 0) {
+                showNotification('❌ Erreur', 'Montant XP invalide', 'error');
+                return;
+            }
+            socket.emit('admin_action', { password: ADMIN_PASSWORD, action: 'xp_add', target: username, amount });
+        }
+
+        function adminSetXPFromInput() {
+            const username = getAdminTargetUsername();
+            if (!username) return;
+            const amount = parseInt(document.getElementById('adminXpAmountInput')?.value || '-1', 10);
+            if (!Number.isFinite(amount) || amount < 0) {
+                showNotification('❌ Erreur', 'Montant XP invalide', 'error');
+                return;
+            }
+            socket.emit('admin_action', { password: ADMIN_PASSWORD, action: 'xp_set', target: username, amount });
         }
         
         function adminKickUser(username) {
@@ -18135,6 +19025,18 @@ window.addEmojiReaction = addEmojiReaction;
 
         let voiceStartTime = null;
         let voiceMiniBarTimer = null;
+        let voicePingInterval = null;
+        let voicePingMs = null;
+        let voicePingJitter = null;
+        let voicePingSamples = [];
+        let voicePeerVolumeMap = JSON.parse(localStorage.getItem('docspaceVoicePeerVolume') || '{}');
+        let voiceScreenQuality = localStorage.getItem('docspaceVoiceScreenQuality') || 'high';
+        let voiceScreenAskEveryTime = localStorage.getItem('docspaceVoiceScreenAskEveryTime') === '1';
+        let voiceStreamStateCache = {};
+        let voiceAutoFocusEnabled = localStorage.getItem('docspaceVoiceAutoFocus') !== '0';
+        let voiceManualFocusUntil = 0;
+        let voiceRtcStatsInterval = null;
+        let voiceRtcLastInboundBytes = {};
 
         // Affiche la vue vocale et masque le chat
         function showVoiceView(room) {
@@ -18156,6 +19058,9 @@ window.addEmojiReaction = addEmojiReaction;
             
             // Masquer la mini barre quand on est dans la vue vocale
             document.getElementById('voiceMiniBar').style.display = 'none';
+            updateVoiceHeaderTools();
+            refreshScreenQualityIndicators();
+            startVoiceRtcStatsMonitor();
         }
 
         // Masque la vue vocale et restaure le chat
@@ -18176,6 +19081,7 @@ window.addEmojiReaction = addEmojiReaction;
             });
             
             // Mini barre vocale désactivée (UX fusionnée côté sidebar)
+            stopVoiceRtcStatsMonitor();
         }
 
         function showVoiceMiniBar() {
@@ -18232,10 +19138,9 @@ window.addEmojiReaction = addEmojiReaction;
             if (bar) bar.classList.add('active');
             const roomEl = document.getElementById('sidebarVoiceRoom');
             if (roomEl) roomEl.textContent = room;
-            const userEl = document.getElementById('sidebarVoiceUsername');
-            if (userEl) userEl.textContent = currentUsername || '-';
             updateSidebarVoiceControls();
             startMiniBarTimer();
+            startVoicePingMonitor();
         }
 
         function hideSidebarVoiceBar() {
@@ -18245,7 +19150,451 @@ window.addEmojiReaction = addEmojiReaction;
             if (micMenu) micMenu.classList.remove('active');
             const outputMenu = document.getElementById('sidebarOutputMenu');
             if (outputMenu) outputMenu.classList.remove('active');
+            const stats = document.getElementById('sidebarVoiceNetStats');
+            if (stats) stats.classList.remove('active');
+            stopVoicePingMonitor();
         }
+
+        function computeVoicePingQuality(ms) {
+            if (ms == null) return 'En mesure...';
+            if (ms <= 60) return 'Excellente';
+            if (ms <= 120) return 'Bonne';
+            if (ms <= 200) return 'Moyenne';
+            return 'Instable';
+        }
+
+        function updateSidebarVoicePingUI() {
+            const connectionBtn = document.getElementById('sidebarVoiceConnection');
+            const pingValue = document.getElementById('sidebarVoicePingValue');
+            const pingStats = document.getElementById('sidebarVoicePingStats');
+            const jitterStats = document.getElementById('sidebarVoiceJitterStats');
+            const qualityStats = document.getElementById('sidebarVoiceQualityStats');
+            if (!connectionBtn || !pingValue) return;
+
+            const pingText = voicePingMs == null ? '-- ms' : `${Math.round(voicePingMs)} ms`;
+            pingValue.textContent = pingText;
+            connectionBtn.title = `Ping vocal: ${pingText}`;
+            connectionBtn.classList.remove('ping-good', 'ping-mid', 'ping-bad');
+
+            if (voicePingMs == null || voicePingMs <= 120) {
+                connectionBtn.classList.add('ping-good');
+            } else if (voicePingMs <= 200) {
+                connectionBtn.classList.add('ping-mid');
+            } else {
+                connectionBtn.classList.add('ping-bad');
+            }
+
+            if (pingStats) pingStats.textContent = pingText;
+            if (jitterStats) jitterStats.textContent = voicePingJitter == null ? '-- ms' : `${Math.round(voicePingJitter)} ms`;
+            if (qualityStats) qualityStats.textContent = computeVoicePingQuality(voicePingMs);
+        }
+
+        function probeVoicePing() {
+            if (!socket || !socket.connected) {
+                voicePingMs = null;
+                voicePingJitter = null;
+                updateSidebarVoicePingUI();
+                return;
+            }
+
+            const sentAt = Date.now();
+            socket.emit('voice_ping_probe', { sentAt }, (serverAck) => {
+                const now = Date.now();
+                const measured = Math.max(0, now - sentAt);
+                voicePingMs = measured;
+                voicePingSamples.push(measured);
+                if (voicePingSamples.length > 8) voicePingSamples.shift();
+
+                if (voicePingSamples.length >= 2) {
+                    const avg = voicePingSamples.reduce((a, b) => a + b, 0) / voicePingSamples.length;
+                    const variance = voicePingSamples.reduce((a, b) => a + ((b - avg) * (b - avg)), 0) / voicePingSamples.length;
+                    voicePingJitter = Math.sqrt(variance);
+                } else {
+                    voicePingJitter = 0;
+                }
+
+                void serverAck;
+                updateSidebarVoicePingUI();
+            });
+        }
+
+        function startVoicePingMonitor() {
+            stopVoicePingMonitor();
+            probeVoicePing();
+            voicePingInterval = setInterval(probeVoicePing, 4000);
+        }
+
+        function stopVoicePingMonitor() {
+            if (voicePingInterval) {
+                clearInterval(voicePingInterval);
+                voicePingInterval = null;
+            }
+            voicePingSamples = [];
+            voicePingMs = null;
+            voicePingJitter = null;
+            updateSidebarVoicePingUI();
+        }
+
+        function toggleSidebarVoiceNetStats(event) {
+            if (event) event.stopPropagation();
+            const panel = document.getElementById('sidebarVoiceNetStats');
+            if (!panel) return;
+            panel.classList.toggle('active');
+            updateSidebarVoicePingUI();
+        }
+
+        document.addEventListener('click', (event) => {
+            const panel = document.getElementById('sidebarVoiceNetStats');
+            const trigger = document.getElementById('sidebarVoiceConnection');
+            if (!panel || !trigger) return;
+            if (!panel.classList.contains('active')) return;
+            if (panel.contains(event.target) || trigger.contains(event.target)) return;
+            panel.classList.remove('active');
+        });
+
+        function savePeerVolumes() {
+            localStorage.setItem('docspaceVoicePeerVolume', JSON.stringify(voicePeerVolumeMap));
+        }
+
+        function getPeerVolume(peerId) {
+            const raw = voicePeerVolumeMap[peerId];
+            if (typeof raw !== 'number') return 100;
+            return Math.max(0, Math.min(100, raw));
+        }
+
+        function setPeerVolume(peerId, value) {
+            const clamped = Math.max(0, Math.min(100, Number(value) || 0));
+            voicePeerVolumeMap[peerId] = clamped;
+            savePeerVolumes();
+            const audioEl = document.getElementById('audio-' + peerId);
+            if (audioEl) {
+                audioEl.volume = clamped / 100;
+            }
+        }
+
+        function closeVoiceContextMenu() {
+            const existing = document.getElementById('voiceContextMenu');
+            if (existing) existing.remove();
+        }
+
+        function openVoiceContextMenu(event, title, buildContent) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+
+            closeVoiceContextMenu();
+            const menu = document.createElement('div');
+            menu.id = 'voiceContextMenu';
+            menu.className = 'voice-context-menu';
+
+            const titleEl = document.createElement('div');
+            titleEl.className = 'voice-context-title';
+            titleEl.textContent = title;
+            menu.appendChild(titleEl);
+
+            buildContent(menu);
+            document.body.appendChild(menu);
+
+            const x = event ? event.clientX : window.innerWidth / 2;
+            const y = event ? event.clientY : window.innerHeight / 2;
+            const maxX = window.innerWidth - menu.offsetWidth - 10;
+            const maxY = window.innerHeight - menu.offsetHeight - 10;
+            menu.style.left = `${Math.max(10, Math.min(x, maxX))}px`;
+            menu.style.top = `${Math.max(10, Math.min(y, maxY))}px`;
+        }
+
+        function openVoiceParticipantMenu(event, peerId, username) {
+            if (!peerId || peerId === socket?.id || peerId === 'self' || peerId === 'local') return;
+
+            openVoiceContextMenu(event, `Audio: ${username || peerId}`, (menu) => {
+                const row = document.createElement('div');
+                row.className = 'voice-context-row';
+
+                const label = document.createElement('span');
+                label.textContent = 'Volume';
+
+                const valueEl = document.createElement('strong');
+                valueEl.textContent = `${getPeerVolume(peerId)}%`;
+
+                const slider = document.createElement('input');
+                slider.type = 'range';
+                slider.min = '0';
+                slider.max = '100';
+                slider.step = '1';
+                slider.value = String(getPeerVolume(peerId));
+                slider.addEventListener('input', () => {
+                    setPeerVolume(peerId, Number(slider.value));
+                    valueEl.textContent = `${slider.value}%`;
+                });
+
+                row.appendChild(label);
+                row.appendChild(valueEl);
+                menu.appendChild(row);
+                menu.appendChild(slider);
+
+                const presets = document.createElement('div');
+                presets.className = 'voice-context-row';
+                presets.style.marginTop = '8px';
+                presets.style.justifyContent = 'flex-start';
+                presets.style.gap = '6px';
+                [0, 50, 100].forEach(preset => {
+                    const btn = document.createElement('button');
+                    btn.className = 'voice-context-choice';
+                    btn.style.width = 'auto';
+                    btn.style.marginTop = '0';
+                    btn.textContent = preset === 0 ? 'Mute' : `${preset}%`;
+                    btn.onclick = () => {
+                        setPeerVolume(peerId, preset);
+                        slider.value = String(preset);
+                        valueEl.textContent = `${preset}%`;
+                    };
+                    presets.appendChild(btn);
+                });
+                menu.appendChild(presets);
+            });
+        }
+
+        function saveVoiceScreenSettings() {
+            localStorage.setItem('docspaceVoiceScreenQuality', voiceScreenQuality);
+            localStorage.setItem('docspaceVoiceScreenAskEveryTime', voiceScreenAskEveryTime ? '1' : '0');
+        }
+
+        function openScreenShareSettingsMenu(event) {
+            openVoiceContextMenu(event, 'Partage d\'ecran', (menu) => {
+                ['low', 'medium', 'high'].forEach(q => {
+                    const btn = document.createElement('button');
+                    btn.className = 'voice-context-choice' + (voiceScreenQuality === q ? ' active' : '');
+                    btn.textContent = q === 'low' ? 'Qualite basse (plus stable)' : q === 'medium' ? 'Qualite moyenne' : 'Qualite haute';
+                    btn.onclick = () => {
+                        voiceScreenQuality = q;
+                        saveVoiceScreenSettings();
+                        refreshScreenQualityIndicators();
+                        closeVoiceContextMenu();
+                    };
+                    menu.appendChild(btn);
+                });
+
+                const row = document.createElement('div');
+                row.className = 'voice-context-row';
+                row.style.marginTop = '10px';
+                const label = document.createElement('span');
+                label.textContent = 'Demander a chaque partage';
+                const check = document.createElement('input');
+                check.type = 'checkbox';
+                check.checked = voiceScreenAskEveryTime;
+                check.onchange = () => {
+                    voiceScreenAskEveryTime = !!check.checked;
+                    saveVoiceScreenSettings();
+                    refreshScreenQualityIndicators();
+                };
+                row.appendChild(label);
+                row.appendChild(check);
+                menu.appendChild(row);
+            });
+        }
+
+        async function resolveScreenShareQuality() {
+            if (!voiceScreenAskEveryTime) return voiceScreenQuality;
+
+            const choice = window.prompt('Qualite du partage ecran ? (low / medium / high)', voiceScreenQuality);
+            if (choice === null) return null;
+            const normalized = String(choice).trim().toLowerCase();
+            if (!['low', 'medium', 'high'].includes(normalized)) {
+                return voiceScreenQuality;
+            }
+            voiceScreenQuality = normalized;
+            saveVoiceScreenSettings();
+            refreshScreenQualityIndicators();
+            return voiceScreenQuality;
+        }
+
+        function getVoiceQualityLabel() {
+            if (voiceScreenQuality === 'low') return 'Basse';
+            if (voiceScreenQuality === 'medium') return 'Moyenne';
+            return 'Haute';
+        }
+
+        function refreshScreenQualityIndicators() {
+            const qualityLabel = getVoiceQualityLabel();
+            const askLabel = voiceScreenAskEveryTime ? 'Auto prompt ON' : 'Auto prompt OFF';
+
+            const sidebarBtn = document.getElementById('sidebarScreenBtn');
+            if (sidebarBtn) sidebarBtn.title = `Partage d'ecran (${qualityLabel}) - ${askLabel} | clic droit = options`;
+
+            const mainBtn = document.getElementById('vcScreenBtn');
+            if (mainBtn) mainBtn.title = `Ecran (${qualityLabel}) - ${askLabel} | clic droit = options`;
+        }
+
+        function setVoiceDefaultQuality(quality) {
+            voiceScreenQuality = quality === 'low' || quality === 'medium' ? quality : 'high';
+            localStorage.setItem('docspaceVoiceScreenQuality', voiceScreenQuality);
+            refreshScreenQualityIndicators();
+        }
+
+        function setVoiceAskEveryTime(enabled) {
+            voiceScreenAskEveryTime = !!enabled;
+            localStorage.setItem('docspaceVoiceScreenAskEveryTime', voiceScreenAskEveryTime ? '1' : '0');
+            refreshScreenQualityIndicators();
+        }
+
+        function setVoiceAutoFocusDefault(enabled) {
+            voiceAutoFocusEnabled = !!enabled;
+            localStorage.setItem('docspaceVoiceAutoFocus', voiceAutoFocusEnabled ? '1' : '0');
+            updateVoiceHeaderTools();
+        }
+
+        function updateVoiceHeaderTools() {
+            const autoBtn = document.getElementById('voiceAutoFocusBtn');
+            if (autoBtn) autoBtn.classList.toggle('active', voiceAutoFocusEnabled);
+
+            const statsBtn = document.getElementById('voiceRtcStatsBtn');
+            const panel = document.getElementById('voiceRtcPanel');
+            if (statsBtn && panel) statsBtn.classList.toggle('active', panel.classList.contains('active'));
+        }
+
+        function toggleVoiceAutoFocus() {
+            voiceAutoFocusEnabled = !voiceAutoFocusEnabled;
+            localStorage.setItem('docspaceVoiceAutoFocus', voiceAutoFocusEnabled ? '1' : '0');
+            updateVoiceHeaderTools();
+        }
+
+        function setVoiceRtcPanelValues({ ping, jitter, bitrate, loss, rtt, peers }) {
+            const pingEl = document.getElementById('voiceRtcPing');
+            const jitterEl = document.getElementById('voiceRtcJitter');
+            const bitrateEl = document.getElementById('voiceRtcBitrate');
+            const lossEl = document.getElementById('voiceRtcLoss');
+            const rttEl = document.getElementById('voiceRtcRtt');
+            const peersEl = document.getElementById('voiceRtcPeers');
+
+            if (pingEl) pingEl.textContent = ping == null ? '-- ms' : `${Math.round(ping)} ms`;
+            if (jitterEl) jitterEl.textContent = jitter == null ? '-- ms' : `${Math.round(jitter)} ms`;
+            if (bitrateEl) bitrateEl.textContent = bitrate == null ? '-- kbps' : `${Math.max(0, Math.round(bitrate))} kbps`;
+            if (lossEl) lossEl.textContent = loss == null ? '-- %' : `${Math.max(0, loss).toFixed(1)} %`;
+            if (rttEl) rttEl.textContent = rtt == null ? '-- ms' : `${Math.round(rtt)} ms`;
+            if (peersEl) peersEl.textContent = String(peers || 0);
+        }
+
+        async function collectVoiceRtcStats() {
+            const peers = Object.values(voicePeerConnections).filter(pc => pc && pc.connectionState === 'connected');
+            if (peers.length === 0) {
+                setVoiceRtcPanelValues({ ping: voicePingMs, jitter: voicePingJitter, bitrate: null, loss: null, rtt: null, peers: 0 });
+                return;
+            }
+
+            let totalBitrate = 0;
+            let totalLost = 0;
+            let totalPackets = 0;
+            let rtt = null;
+
+            for (const pc of peers) {
+                const stats = await pc.getStats();
+                stats.forEach(report => {
+                    if (report.type === 'candidate-pair' && (report.nominated || report.state === 'succeeded') && report.currentRoundTripTime != null) {
+                        rtt = report.currentRoundTripTime * 1000;
+                    }
+
+                    if (report.type === 'inbound-rtp' && !report.isRemote && (report.kind === 'audio' || report.kind === 'video')) {
+                        const key = `${pc.__peerId || 'peer'}-${report.id}`;
+                        const now = Date.now();
+                        const prev = voiceRtcLastInboundBytes[key];
+                        if (prev && report.bytesReceived != null) {
+                            const dt = Math.max(1, now - prev.timeMs) / 1000;
+                            const dBytes = Math.max(0, report.bytesReceived - prev.bytes);
+                            totalBitrate += (dBytes * 8) / 1000 / dt;
+                        }
+                        voiceRtcLastInboundBytes[key] = { bytes: report.bytesReceived || 0, timeMs: now };
+
+                        totalLost += report.packetsLost || 0;
+                        totalPackets += report.packetsReceived || 0;
+                    }
+                });
+            }
+
+            const loss = totalPackets > 0 ? (totalLost / (totalLost + totalPackets)) * 100 : 0;
+            setVoiceRtcPanelValues({ ping: voicePingMs, jitter: voicePingJitter, bitrate: totalBitrate, loss, rtt, peers: peers.length });
+        }
+
+        function startVoiceRtcStatsMonitor() {
+            stopVoiceRtcStatsMonitor();
+            collectVoiceRtcStats().catch(() => {});
+            voiceRtcStatsInterval = setInterval(() => {
+                collectVoiceRtcStats().catch(() => {});
+            }, 2000);
+        }
+
+        function stopVoiceRtcStatsMonitor() {
+            if (voiceRtcStatsInterval) {
+                clearInterval(voiceRtcStatsInterval);
+                voiceRtcStatsInterval = null;
+            }
+            voiceRtcLastInboundBytes = {};
+            setVoiceRtcPanelValues({ ping: null, jitter: null, bitrate: null, loss: null, rtt: null, peers: 0 });
+        }
+
+        function toggleVoiceRtcPanel() {
+            const panel = document.getElementById('voiceRtcPanel');
+            if (!panel) return;
+            panel.classList.toggle('active');
+            updateVoiceHeaderTools();
+        }
+
+        function setFocusedTile(tileId, manual) {
+            const screenArea = document.getElementById('voiceScreenArea');
+            if (!screenArea) return;
+            const tile = document.getElementById(tileId);
+            if (!tile) return;
+
+            const wasFocused = tile.classList.contains('tile-focused');
+            screenArea.querySelectorAll('.voice-screen-tile').forEach(t => t.classList.remove('tile-focused'));
+
+            if (wasFocused && manual) {
+                screenArea.classList.remove('has-focus');
+                return;
+            }
+
+            tile.classList.add('tile-focused');
+            screenArea.classList.add('has-focus');
+            if (manual) voiceManualFocusUntil = Date.now() + 7000;
+        }
+
+        function autoFocusSpeakingParticipant(participants) {
+            if (!voiceAutoFocusEnabled) return;
+            if (Date.now() < voiceManualFocusUntil) return;
+
+            const speaking = participants.find(p => p.speaking && (p.video || p.screen));
+            if (!speaking) return;
+            const preferredTileId = speaking.screen
+                ? `tile-${speaking.socketId === socket?.id ? 'local-screen' : speaking.socketId}-screen`
+                : `tile-${speaking.socketId === socket?.id ? 'local' : speaking.socketId}-camera`;
+            setFocusedTile(preferredTileId, false);
+        }
+
+        function buildScreenShareConstraints(quality) {
+            if (quality === 'low') {
+                return {
+                    video: { frameRate: { ideal: 15, max: 20 }, width: { ideal: 1280 }, height: { ideal: 720 }, cursor: 'always' },
+                    audio: true
+                };
+            }
+            if (quality === 'medium') {
+                return {
+                    video: { frameRate: { ideal: 30, max: 30 }, width: { ideal: 1600 }, height: { ideal: 900 }, cursor: 'always' },
+                    audio: true
+                };
+            }
+            return {
+                video: { frameRate: { ideal: 45, max: 60 }, width: { ideal: 1920 }, height: { ideal: 1080 }, cursor: 'always' },
+                audio: true
+            };
+        }
+
+        document.addEventListener('click', (event) => {
+            const menu = document.getElementById('voiceContextMenu');
+            if (!menu) return;
+            if (menu.contains(event.target)) return;
+            closeVoiceContextMenu();
+        });
 
         function updateSidebarVoiceControls() {
             const videoBtn = document.getElementById('sidebarVideoBtn');
@@ -18269,6 +19618,8 @@ window.addEmojiReaction = addEmojiReaction;
                 selfHeadsetBtn.classList.toggle('mini-active', voiceDeafened);
             }
             updateSidebarIdentityPanel();
+            refreshScreenQualityIndicators();
+            updateVoiceHeaderTools();
         }
 
         function updateSidebarIdentityPanel() {
@@ -18554,6 +19905,7 @@ window.addEmojiReaction = addEmojiReaction;
             // Masquer la mini barre vocale
             hideVoiceMiniBar();
             hideSidebarVoiceBar();
+            stopVoiceRtcStatsMonitor();
             
             // Masquer la vue vocale et restaurer le chat
             hideVoiceView();
@@ -18579,6 +19931,7 @@ window.addEmojiReaction = addEmojiReaction;
             }
             
             const pc = new RTCPeerConnection(ICE_SERVERS);
+            pc.__peerId = peerId;
             voicePeerConnections[peerId] = pc;
             
             // Ajouter les pistes audio locales
@@ -18642,6 +19995,7 @@ window.addEmojiReaction = addEmojiReaction;
                         document.body.appendChild(audioEl);
                     }
                     audioEl.srcObject = stream;
+                    audioEl.volume = getPeerVolume(peerId) / 100;
                     if (voiceDeafened) audioEl.muted = true;
                     if (selectedAudioOutputId && typeof audioEl.setSinkId === 'function') {
                         audioEl.setSinkId(selectedAudioOutputId).catch(err => console.warn('setSinkId error:', err));
@@ -18744,9 +20098,22 @@ window.addEmojiReaction = addEmojiReaction;
                     if (e.target.closest('.screen-tile-controls')) return;
                     toggleTileFocus(tileId);
                 });
+                tile.addEventListener('contextmenu', (e) => {
+                    if (isScreen) {
+                        openScreenShareSettingsMenu(e);
+                    } else {
+                        const realPeerId = (peerId === 'local') ? socket?.id : peerId;
+                        openVoiceParticipantMenu(e, realPeerId, username || realPeerId);
+                    }
+                });
                 makeTileDraggable(tile);
             } else {
-                tile.querySelector('video').srcObject = stream;
+                const videoEl = tile.querySelector('video');
+                const incomingTrack = stream && stream.getVideoTracks ? stream.getVideoTracks()[0] : null;
+                const currentTrack = videoEl && videoEl.srcObject && videoEl.srcObject.getVideoTracks ? videoEl.srcObject.getVideoTracks()[0] : null;
+                if (!videoEl || !incomingTrack || !currentTrack || incomingTrack.id !== currentTrack.id) {
+                    tile.querySelector('video').srcObject = stream;
+                }
             }
             
             // Show screen area & update grid layout
@@ -18759,8 +20126,8 @@ window.addEmojiReaction = addEmojiReaction;
             const screenArea = document.getElementById('voiceScreenArea');
             if (!screenArea) return;
             const count = screenArea.querySelectorAll('.voice-screen-tile:not(.tile-minimized):not(.tile-fullscreen)').length;
-            // Keep has-focus class if present
-            const hasFocus = screenArea.classList.contains('has-focus');
+            const hasFocusedTile = !!screenArea.querySelector('.voice-screen-tile.tile-focused');
+            const hasFocus = screenArea.classList.contains('has-focus') && hasFocusedTile;
             screenArea.className = 'voice-view-screen-area tiles-' + Math.min(count, 4);
             if (hasFocus) screenArea.classList.add('has-focus');
             if (count === 0) {
@@ -18771,26 +20138,7 @@ window.addEmojiReaction = addEmojiReaction;
         }
 
         function toggleTileFocus(tileId) {
-            const screenArea = document.getElementById('voiceScreenArea');
-            if (!screenArea) return;
-            const tile = document.getElementById(tileId);
-            if (!tile) return;
-            
-            const wasFocused = tile.classList.contains('tile-focused');
-            
-            // Enlever le focus de toutes les tuiles
-            screenArea.querySelectorAll('.voice-screen-tile').forEach(t => {
-                t.classList.remove('tile-focused');
-            });
-            
-            if (wasFocused) {
-                // Dé-focus → retour à la grille normale
-                screenArea.classList.remove('has-focus');
-            } else {
-                // Focus cette tuile
-                tile.classList.add('tile-focused');
-                screenArea.classList.add('has-focus');
-            }
+            setFocusedTile(tileId, true);
         }
 
         function removeVideoFromCard(peerId) {
@@ -18992,10 +20340,10 @@ window.addEmojiReaction = addEmojiReaction;
                 }
             } else {
                 try {
-                    localScreenStream = await navigator.mediaDevices.getDisplayMedia({ 
-                        video: { cursor: 'always' }, 
-                        audio: true 
-                    });
+                    const quality = await resolveScreenShareQuality();
+                    if (!quality) return;
+
+                    localScreenStream = await navigator.mediaDevices.getDisplayMedia(buildScreenShareConstraints(quality));
                     voiceScreenActive = true;
                     
                     localScreenStream.getVideoTracks()[0].onended = () => {
@@ -19118,6 +20466,8 @@ window.addEmojiReaction = addEmojiReaction;
             // Aussi mettre à jour la mini barre
             updateMiniBarControls();
             updateSidebarVoiceControls();
+            refreshScreenQualityIndicators();
+            updateVoiceHeaderTools();
         }
 
         function attachVideoToCard(peerId, stream) {
@@ -19170,7 +20520,7 @@ window.addEmojiReaction = addEmojiReaction;
                         const isSelf = p.socketId === socket?.id;
                         const avatarLetter = p.username ? p.username.charAt(0).toUpperCase() : '?';
                         return `
-                            <div class="voice-participant ${isSelf ? 'self' : ''}">
+                            <div class="voice-participant ${isSelf ? 'self' : ''}" data-peer-id="${p.socketId}" oncontextmenu="openVoiceParticipantMenu(event, '${p.socketId}', '${(p.username || '').replace(/'/g, "&#39;")}'); return false;">
                                 <div class="voice-participant-avatar">${avatarLetter}</div>
                                 <span class="voice-participant-name">${p.username}</span>
                                 <span class="voice-participant-icons">
@@ -19190,6 +20540,11 @@ window.addEmojiReaction = addEmojiReaction;
                 const grid = document.getElementById('voiceUsersGrid');
                 if (!grid) return;
 
+                const participantIdSet = new Set(participants.map(p => p.socketId));
+                Object.keys(voiceStreamStateCache).forEach(pid => {
+                    if (!participantIdSet.has(pid)) delete voiceStreamStateCache[pid];
+                });
+
                 const incomingIds = participants.map(p => p.socketId);
                 const existingCards = Array.from(grid.querySelectorAll('.voice-user-card'));
                 const existingIds = existingCards.map(card => card.dataset.peerId);
@@ -19204,7 +20559,7 @@ window.addEmojiReaction = addEmojiReaction;
                         const isMuted = p.muted ? ' is-muted' : '';
                         const avatarText = p.username ? p.username.charAt(0).toUpperCase() : '?';
                         return `
-                            <div class="voice-user-card${isSpeaking}${isMuted}" data-peer-id="${p.socketId}">
+                            <div class="voice-user-card${isSpeaking}${isMuted}" data-peer-id="${p.socketId}" oncontextmenu="openVoiceParticipantMenu(event, '${p.socketId}', '${(p.username || '').replace(/'/g, "&#39;")}'); return false;">
                                 <div class="voice-user-card-video-container" style="display:none;"></div>
                                 <div class="voice-user-card-avatar">${avatarText}</div>
                                 <div class="voice-user-card-name">${p.username}${isSelf ? ' (vous)' : ''}</div>
@@ -19245,6 +20600,7 @@ window.addEmojiReaction = addEmojiReaction;
 
                 participants.forEach(p => {
                     if (!(p.video || p.screen)) {
+                        delete voiceStreamStateCache[p.socketId];
                         if (p.socketId === socket?.id) {
                             removeVideoTile('local');
                             removeVideoTile('local-screen');
@@ -19261,6 +20617,7 @@ window.addEmojiReaction = addEmojiReaction;
                     if (tileScr) tileScr.classList.toggle('speaking', !!p.speaking);
 
                     if (p.socketId === socket?.id) {
+                        voiceStreamStateCache[p.socketId] = `${!!p.video}-${!!p.screen}`;
                         // Self: add both camera and screen tiles if active
                         if (p.video && localVideoStream) {
                             addVideoTile('local', currentUsername + ' (vous)', localVideoStream, localVideoStream.getVideoTracks()[0]);
@@ -19278,6 +20635,13 @@ window.addEmojiReaction = addEmojiReaction;
                     const pc = voicePeerConnections[p.socketId];
                     if (!pc) return;
 
+                    const stateKey = `${!!p.video}-${!!p.screen}`;
+                    const prevState = voiceStreamStateCache[p.socketId];
+                    const hasCamTile = !!document.getElementById('tile-' + p.socketId + '-camera');
+                    const hasScreenTile = !!document.getElementById('tile-' + p.socketId + '-screen');
+                    const needsSync = (prevState !== stateKey) || (p.video && !hasCamTile) || (p.screen && !hasScreenTile);
+                    voiceStreamStateCache[p.socketId] = stateKey;
+
                     // Remove tiles for streams that are no longer active
                     if (!p.video) {
                         const camTile = document.getElementById('tile-' + p.socketId + '-camera');
@@ -19288,6 +20652,8 @@ window.addEmojiReaction = addEmojiReaction;
                         if (scrTile) scrTile.remove();
                     }
 
+                    if (!needsSync) return;
+
                     pc.getReceivers().forEach(r => {
                         if (r.track && r.track.kind === 'video') {
                             addVideoTile(p.socketId, p.username, new MediaStream([r.track]), r.track);
@@ -19296,6 +20662,7 @@ window.addEmojiReaction = addEmojiReaction;
                 });
 
                 updateScreenAreaLayout();
+                autoFocusSpeakingParticipant(participants);
             }
             
             // --- Nettoyer les tuiles vidéo/écran des peers qui ont coupé ---
@@ -19409,6 +20776,37 @@ window.addEmojiReaction = addEmojiReaction;
                         console.error('Erreur ICE candidate:', err);
                     }
                 }
+            });
+
+            socket.on('voice_forced_disconnect', async (data) => {
+                if (currentVoiceRoom) {
+                    await leaveVoiceChannel(true);
+                }
+                showNotification('🔇 Vocal', data.message || 'Vous avez ete expulse du vocal', 'warning');
+            });
+
+            socket.on('voice_force_move', async (data) => {
+                if (!data || !data.room) return;
+                await joinVoiceChannel(data.room);
+                showNotification('➡️ Vocal', data.message || `Vous avez ete deplace vers ${data.room}`, 'info');
+            });
+
+            socket.on('voice_force_status', (data) => {
+                if (!data) return;
+                if (typeof data.muted === 'boolean') {
+                    voiceMuted = data.muted;
+                    if (localAudioStream) {
+                        localAudioStream.getAudioTracks().forEach(t => { t.enabled = !voiceMuted; });
+                    }
+                }
+                if (typeof data.deafened === 'boolean') {
+                    voiceDeafened = data.deafened;
+                    document.querySelectorAll('.remote-audio').forEach(a => {
+                        a.muted = voiceDeafened;
+                    });
+                }
+                updateVoiceControlUI();
+                if (data.message) showNotification('🎛️ Vocal', data.message, 'info');
             });
         }
 
@@ -19790,6 +21188,7 @@ window.addEmojiReaction = addEmojiReaction;
             if (socket) {
                 socket.emit('get_xp');
                 socket.emit('get_leaderboard');
+                socket.emit('get_minigames_leaderboard');
             }
         }
 
@@ -19816,6 +21215,42 @@ window.addEmojiReaction = addEmojiReaction;
             if (neededEl) neededEl.textContent = data.neededXP;
             const bananaEl = document.getElementById('myBananaPoints');
             if (bananaEl) bananaEl.textContent = data.bananaPoints || Math.floor(data.xp / 10);
+            const metaEl = document.getElementById('myXPMeta');
+            if (metaEl) {
+                const streak = Number(data.streakDays || 0);
+                const now = Date.now();
+                const boostMins = (data.xpBoostUntil && data.xpBoostUntil > now) ? Math.max(1, Math.ceil((data.xpBoostUntil - now) / 60000)) : 0;
+                const reactionMins = (data.reactionBoostUntil && data.reactionBoostUntil > now) ? Math.max(1, Math.ceil((data.reactionBoostUntil - now) / 60000)) : 0;
+                const cadenceMins = (data.cooldownReducerUntil && data.cooldownReducerUntil > now) ? Math.max(1, Math.ceil((data.cooldownReducerUntil - now) / 60000)) : 0;
+                const shield = Number(data.streakShieldCharges || 0);
+                metaEl.textContent = `Série: ${streak} jour${streak > 1 ? 's' : ''} · 🚀 ${boostMins || 0}m · ✨ ${reactionMins || 0}m · ⚡ ${cadenceMins || 0}m · 🛡️ ${shield}`;
+            }
+
+            const missions = data.dailyMissions || {};
+            const progress = missions.progress || {};
+            const targets = missions.targets || {};
+            const completed = missions.completed || {};
+
+            const msgRow = document.getElementById('missionMessagesRow');
+            if (msgRow) {
+                const cur = Number(progress.messages || 0);
+                const target = Number(targets.messages || 10);
+                msgRow.textContent = `${completed.messages ? '✅' : '🟨'} Messages: ${Math.min(cur, target)}/${target}`;
+            }
+
+            const reactRow = document.getElementById('missionReactionsRow');
+            if (reactRow) {
+                const cur = Number(progress.reactions || 0);
+                const target = Number(targets.reactions || 5);
+                reactRow.textContent = `${completed.reactions ? '✅' : '🟨'} Réactions: ${Math.min(cur, target)}/${target}`;
+            }
+
+            const voiceRow = document.getElementById('missionVoiceRow');
+            if (voiceRow) {
+                const cur = Number(progress.voiceMinutes || 0);
+                const target = Number(targets.voiceMinutes || 10);
+                voiceRow.textContent = `${completed.voiceMinutes ? '✅' : '🟨'} Vocal: ${Math.min(cur, target)}/${target} min`;
+            }
         }
 
         function renderLeaderboard(data) {
@@ -19837,6 +21272,30 @@ window.addEmojiReaction = addEmojiReaction;
                     </div>
                 </div>
             `).join('');
+        }
+
+        function renderMiniGamesLeaderboard(data) {
+            const container = document.getElementById('miniGamesLeaderboardList');
+            if (!container) return;
+            if (!data || !data.length) {
+                container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-secondary);">Pas encore de parties mini-jeux</div>';
+                return;
+            }
+            const medals = ['🥇', '🥈', '🥉'];
+            container.innerHTML = data.map((u, i) => {
+                const wr = u.played > 0 ? Math.round((u.wins / u.played) * 100) : 0;
+                return `
+                    <div class="leaderboard-item">
+                        <div class="leaderboard-rank">${medals[i] || '#' + (i + 1)}</div>
+                        <div class="leaderboard-name">${escapeHtml(u.username)}</div>
+                        <div class="level-badge">${u.points} pts</div>
+                        <div class="leaderboard-xp">
+                            ${u.wins}V ${u.draws}N ${u.losses}D · ${u.played} parties
+                            <span class="leaderboard-xp-sub">Winrate ${wr}%</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
 
         function changeNotifPosition(pos) {
@@ -20352,8 +21811,9 @@ window.addEmojiReaction = addEmojiReaction;
             const board = document.getElementById('gameBoard');
             const controls = document.getElementById('gameControls');
             const status = document.getElementById('gameStatus');
+            const maxErrors = Number(state.maxErrors || 8);
 
-            const lives = '❤️'.repeat(state.remaining) + '🖤'.repeat(6 - state.remaining);
+            const lives = '❤️'.repeat(Math.max(0, state.remaining)) + '🖤'.repeat(Math.max(0, maxErrors - state.remaining));
 
             board.innerHTML = `
                 <div class="hangman-container">
@@ -20361,6 +21821,7 @@ window.addEmojiReaction = addEmojiReaction;
                     <div class="hangman-word">${state.display}</div>
                     <div class="hangman-lives">${lives}</div>
                     ${state.wrong.length ? `<div class="hangman-wrong">Erreurs: ${state.wrong.join(' ')}</div>` : ''}
+                    ${state.hintVisible && state.hintText ? `<div style="margin-top:10px;font-size:13px;color:var(--text-secondary);">💡 Indice: ${escapeHtml(state.hintText)}</div>` : ''}
                 </div>
             `;
 
@@ -20546,13 +22007,39 @@ window.addEmojiReaction = addEmojiReaction;
             // XP
             socket.on('xp_data', updateMyXPDisplay);
             socket.on('leaderboard_data', (data) => renderLeaderboard(data.leaderboard || []));
+            socket.on('minigames_leaderboard_data', (data) => renderMiniGamesLeaderboard(data.leaderboard || []));
             socket.on('banana_error', (data) => showNotification('🍌', data.message, 'warning'));
             socket.on('banana_updated', (data) => {
                 const el = document.getElementById('myBananaPoints');
                 if (el) el.textContent = data.bananaPoints;
             });
+            socket.on('banana_reward', (data) => {
+                const title = data?.title || '🍌 Récompense';
+                const message = data?.message || 'Achat banane validé';
+                showNotification(title, message, 'success');
+            });
             socket.on('banana_effect', (data) => {
                 triggerBananaEffect(data.effect, data.username);
+            });
+            socket.on('xp_daily_bonus', (data) => {
+                if (!data) return;
+                const streak = Number(data.streakDays || 1);
+                const bonus = Number(data.bonusXP || 0);
+                showNotification('🎁 Bonus quotidien', `+${bonus} XP · Série ${streak} jour${streak > 1 ? 's' : ''}`, 'success');
+            });
+            socket.on('daily_mission_reward', (data) => {
+                if (!data) return;
+                const label = data.missionLabel || 'Mission';
+                const reward = Number(data.rewardXP || 0);
+                showNotification('🎯 Mission validée', `${label} terminée: +${reward} XP`, 'success');
+            });
+            socket.on('minigame_reward', (data) => {
+                if (!data) return;
+                const game = data.gameType || 'mini-jeu';
+                const points = Number(data.points || 0);
+                const xp = Number(data.xp || 0);
+                showNotification('🎮 Récompense Mini-Jeu', `${game}: +${points} pts · +${xp} XP`, 'success');
+                socket.emit('get_minigames_leaderboard');
             });
 
             // Reminders

@@ -129,9 +129,23 @@ let friendships = {}; // username -> { friends: [username], pending: [username],
 
 // === LEVELING / XP SYSTEM ===
 let userXP = {}; // username -> { xp, level, totalMessages, lastXpGain }
+let miniGameStats = {}; // username -> { points, played, wins, losses, draws, byGame }
 const XP_PER_MESSAGE = 15;
 const XP_PER_REACTION = 5;
 const XP_LEVEL_BASE = 100; // XP for level 1, doubles each level
+const DAILY_LOGIN_XP_BONUS = 50;
+const DAILY_LOGIN_STREAK_STEP = 10;
+const DAILY_LOGIN_STREAK_MAX_BONUS = 60;
+const XP_MESSAGE_COOLDOWN_MS = 30000;
+const XP_MESSAGE_COOLDOWN_REDUCED_MS = 20000;
+const XP_UTILITY_DURATION_MS = 15 * 60 * 1000;
+const VOICE_PASSIVE_XP_PER_MINUTE = 3;
+const UTILITY_PURCHASES_LIMIT_PER_HOUR = 8;
+const DAILY_MISSIONS = {
+    messages: { target: 10, rewardXP: 60, label: 'Messages du jour' },
+    reactions: { target: 5, rewardXP: 40, label: 'Reactions du jour' },
+    voiceMinutes: { target: 10, rewardXP: 70, label: 'Minutes en vocal' }
+};
 function getXPForLevel(level) { return Math.floor(XP_LEVEL_BASE * Math.pow(1.5, level - 1)); }
 function getLevelFromXP(xp) {
     let level = 0;
@@ -147,6 +161,159 @@ function getBananaPoints(username) {
     const data = userXP[username];
     if (!data) return 0;
     return Math.floor(data.xp / 10);
+}
+
+function ensureXPEntry(username) {
+    if (!userXP[username]) {
+        userXP[username] = {
+            xp: 0,
+            level: 0,
+            totalMessages: 0,
+            lastXpGain: 0,
+            streakDays: 0,
+            lastLoginDay: null,
+            xpBoostUntil: 0,
+            reactionBoostUntil: 0,
+            cooldownReducerUntil: 0,
+            streakShieldCharges: 0,
+            lastReactionXpAt: 0,
+            shopWindowStart: 0,
+            shopWindowCount: 0,
+            dailyMissionDay: null,
+            dailyMissionProgress: { messages: 0, reactions: 0, voiceMinutes: 0 },
+            dailyMissionCompleted: { messages: false, reactions: false, voiceMinutes: false }
+        };
+    }
+
+    if (typeof userXP[username].streakDays !== 'number') userXP[username].streakDays = 0;
+    if (typeof userXP[username].lastLoginDay !== 'string') userXP[username].lastLoginDay = null;
+    if (typeof userXP[username].xpBoostUntil !== 'number') userXP[username].xpBoostUntil = 0;
+    if (typeof userXP[username].reactionBoostUntil !== 'number') userXP[username].reactionBoostUntil = 0;
+    if (typeof userXP[username].cooldownReducerUntil !== 'number') userXP[username].cooldownReducerUntil = 0;
+    if (typeof userXP[username].streakShieldCharges !== 'number') userXP[username].streakShieldCharges = 0;
+    if (typeof userXP[username].lastReactionXpAt !== 'number') userXP[username].lastReactionXpAt = 0;
+    if (typeof userXP[username].shopWindowStart !== 'number') userXP[username].shopWindowStart = 0;
+    if (typeof userXP[username].shopWindowCount !== 'number') userXP[username].shopWindowCount = 0;
+    if (typeof userXP[username].dailyMissionDay !== 'string') userXP[username].dailyMissionDay = null;
+    if (!userXP[username].dailyMissionProgress || typeof userXP[username].dailyMissionProgress !== 'object') {
+        userXP[username].dailyMissionProgress = { messages: 0, reactions: 0, voiceMinutes: 0 };
+    }
+    if (!userXP[username].dailyMissionCompleted || typeof userXP[username].dailyMissionCompleted !== 'object') {
+        userXP[username].dailyMissionCompleted = { messages: false, reactions: false, voiceMinutes: false };
+    }
+    return userXP[username];
+}
+
+function getDayKey(ts = Date.now()) {
+    const d = new Date(ts);
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(d.getUTCDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+
+function getPreviousDayKey(ts = Date.now()) {
+    return getDayKey(ts - 24 * 60 * 60 * 1000);
+}
+
+function buildXPDataPayload(username) {
+    const data = ensureXPEntry(username);
+    ensureDailyMissionsForEntry(data);
+    const levelData = getLevelFromXP(data.xp || 0);
+    const boostUntil = data.xpBoostUntil || 0;
+    const reactionBoostUntil = data.reactionBoostUntil || 0;
+    const cooldownReducerUntil = data.cooldownReducerUntil || 0;
+    return {
+        xp: data.xp || 0,
+        ...levelData,
+        totalMessages: data.totalMessages || 0,
+        bananaPoints: getBananaPoints(username),
+        streakDays: data.streakDays || 0,
+        xpBoostUntil: boostUntil,
+        xpBoostActive: boostUntil > Date.now(),
+        reactionBoostUntil,
+        reactionBoostActive: reactionBoostUntil > Date.now(),
+        cooldownReducerUntil,
+        cooldownReducerActive: cooldownReducerUntil > Date.now(),
+        streakShieldCharges: data.streakShieldCharges || 0,
+        dailyMissions: {
+            dayKey: data.dailyMissionDay || getDayKey(),
+            targets: {
+                messages: DAILY_MISSIONS.messages.target,
+                reactions: DAILY_MISSIONS.reactions.target,
+                voiceMinutes: DAILY_MISSIONS.voiceMinutes.target
+            },
+            progress: {
+                messages: data.dailyMissionProgress?.messages || 0,
+                reactions: data.dailyMissionProgress?.reactions || 0,
+                voiceMinutes: data.dailyMissionProgress?.voiceMinutes || 0
+            },
+            completed: {
+                messages: !!data.dailyMissionCompleted?.messages,
+                reactions: !!data.dailyMissionCompleted?.reactions,
+                voiceMinutes: !!data.dailyMissionCompleted?.voiceMinutes
+            }
+        }
+    };
+}
+
+function getMessageCooldownMs(entry) {
+    return entry.cooldownReducerUntil && entry.cooldownReducerUntil > Date.now()
+        ? XP_MESSAGE_COOLDOWN_REDUCED_MS
+        : XP_MESSAGE_COOLDOWN_MS;
+}
+
+function ensureDailyMissionsForEntry(entry) {
+    const todayKey = getDayKey();
+    if (entry.dailyMissionDay !== todayKey) {
+        entry.dailyMissionDay = todayKey;
+        entry.dailyMissionProgress = { messages: 0, reactions: 0, voiceMinutes: 0 };
+        entry.dailyMissionCompleted = { messages: false, reactions: false, voiceMinutes: false };
+    }
+}
+
+function addRawXP(username, amount) {
+    const entry = ensureXPEntry(username);
+    const safeAmount = Math.max(0, Math.floor(amount || 0));
+    if (safeAmount <= 0) return { gainedXP: 0, levelUp: false, newLevel: getLevelFromXP(entry.xp).level };
+    const oldLevel = getLevelFromXP(entry.xp).level;
+    entry.xp += safeAmount;
+    const newLevelData = getLevelFromXP(entry.xp);
+    entry.level = newLevelData.level;
+    return {
+        gainedXP: safeAmount,
+        levelUp: newLevelData.level > oldLevel,
+        newLevel: newLevelData.level
+    };
+}
+
+function applyMissionProgress(username, deltas = {}) {
+    const entry = ensureXPEntry(username);
+    ensureDailyMissionsForEntry(entry);
+
+    entry.dailyMissionProgress.messages = Math.max(0, (entry.dailyMissionProgress.messages || 0) + (deltas.messages || 0));
+    entry.dailyMissionProgress.reactions = Math.max(0, (entry.dailyMissionProgress.reactions || 0) + (deltas.reactions || 0));
+    entry.dailyMissionProgress.voiceMinutes = Math.max(0, (entry.dailyMissionProgress.voiceMinutes || 0) + (deltas.voiceMinutes || 0));
+
+    const rewards = [];
+    const keys = ['messages', 'reactions', 'voiceMinutes'];
+    for (const key of keys) {
+        if (entry.dailyMissionCompleted[key]) continue;
+        if ((entry.dailyMissionProgress[key] || 0) >= DAILY_MISSIONS[key].target) {
+            entry.dailyMissionCompleted[key] = true;
+            const rewardXP = DAILY_MISSIONS[key].rewardXP;
+            const xpResult = addRawXP(username, rewardXP);
+            rewards.push({
+                key,
+                label: DAILY_MISSIONS[key].label,
+                rewardXP,
+                levelUp: xpResult.levelUp,
+                newLevel: xpResult.newLevel
+            });
+        }
+    }
+
+    return rewards;
 }
 
 // === REMINDERS ===
@@ -199,6 +366,7 @@ const BOOKMARKS_FILE = path.join(DATA_DIR, 'bookmarks.json');
 const REMINDERS_FILE = path.join(DATA_DIR, 'reminders.json');
 const AUTOMOD_FILE = path.join(DATA_DIR, 'automod.json');
 const ACCOUNTS_FILE = path.join(DATA_DIR, 'accounts.json');
+const MINIGAMES_FILE = path.join(DATA_DIR, 'mini_games_stats.json');
 
 console.log(`📂 Dossier de données: ${DATA_DIR}`);
 
@@ -465,12 +633,33 @@ function saveAccounts() {
     try { fs.writeFileSync(ACCOUNTS_FILE, JSON.stringify(accounts, null, 2)); } catch (e) { console.error('❌ Erreur sauvegarde comptes:', e.message); }
 }
 
+function loadMiniGameStats() {
+    try {
+        if (fs.existsSync(MINIGAMES_FILE)) {
+            miniGameStats = JSON.parse(fs.readFileSync(MINIGAMES_FILE, 'utf8')) || {};
+            console.log(`✅ Stats mini-jeux chargées: ${Object.keys(miniGameStats).length} utilisateurs`);
+        }
+    } catch (e) {
+        console.error('❌ Erreur chargement stats mini-jeux:', e.message);
+        miniGameStats = {};
+    }
+}
+
+function saveMiniGameStats() {
+    try {
+        fs.writeFileSync(MINIGAMES_FILE, JSON.stringify(miniGameStats, null, 2));
+    } catch (e) {
+        console.error('❌ Erreur sauvegarde stats mini-jeux:', e.message);
+    }
+}
+
 loadXPData();
 loadFriendships();
 loadBookmarks();
 loadReminders();
 loadAutoMod();
 loadAccounts();
+loadMiniGameStats();
 
 // === REMINDER CHECKER (every 10 seconds) ===
 setInterval(() => {
@@ -547,26 +736,128 @@ function addWarning(username) {
 }
 
 // === XP HELPER ===
-function grantXP(username, amount) {
-    if (!userXP[username]) userXP[username] = { xp: 0, level: 0, totalMessages: 0, lastXpGain: 0 };
+function grantXP(username, amount, options = {}) {
+    const entry = ensureXPEntry(username);
+    const source = options.source || 'message';
+    const ignoreCooldown = !!options.ignoreCooldown;
     
     const now = Date.now();
-    // Cooldown: only gain XP once per 30 seconds per message
-    if (now - userXP[username].lastXpGain < 30000) return null;
+    const cooldownMs = getMessageCooldownMs(entry);
+    if (!ignoreCooldown && source === 'message' && (now - entry.lastXpGain < cooldownMs)) return null;
+
+    const xpBoostMultiplier = entry.xpBoostUntil && now < entry.xpBoostUntil ? 2 : 1;
+    const customMultiplier = Math.max(1, Number(options.multiplier || 1));
+    const multiplier = xpBoostMultiplier * customMultiplier;
+    const gainedXP = Math.max(1, Math.floor(amount * multiplier));
     
-    const oldLevel = getLevelFromXP(userXP[username].xp).level;
-    userXP[username].xp += amount;
-    userXP[username].lastXpGain = now;
-    const newLevelData = getLevelFromXP(userXP[username].xp);
+    const oldLevel = getLevelFromXP(entry.xp).level;
+    entry.xp += gainedXP;
+    entry.lastXpGain = now;
+    const newLevelData = getLevelFromXP(entry.xp);
+    entry.level = newLevelData.level;
     
     if (newLevelData.level > oldLevel) {
         saveXPData();
-        return { levelUp: true, newLevel: newLevelData.level, username };
+        return { levelUp: true, newLevel: newLevelData.level, username, gainedXP };
     }
     
     // Save periodically (every 5 XP gains)
-    if (userXP[username].xp % (amount * 5) < amount) saveXPData();
-    return null;
+    if (entry.xp % (gainedXP * 5) < gainedXP) saveXPData();
+    return { levelUp: false, username, gainedXP };
+}
+
+function ensureMiniGameStatsEntry(username) {
+    if (!miniGameStats[username]) {
+        miniGameStats[username] = {
+            points: 0,
+            played: 0,
+            wins: 0,
+            losses: 0,
+            draws: 0,
+            byGame: {},
+            lastPlayedAt: null
+        };
+    }
+    if (!miniGameStats[username].byGame || typeof miniGameStats[username].byGame !== 'object') {
+        miniGameStats[username].byGame = {};
+    }
+    return miniGameStats[username];
+}
+
+function getMiniGameReward(gameType, outcome) {
+    const gameBonus = {
+        tictactoe: 2,
+        connect4: 3,
+        rps: 1,
+        quiz: 3,
+        trivia: 4,
+        hangman: 3,
+        arena2d: 5,
+        memory: 2,
+        guess: 2
+    };
+
+    const baseByOutcome = {
+        win: { points: 12, xp: 35 },
+        draw: { points: 7, xp: 20 },
+        loss: { points: 4, xp: 12 },
+        played: { points: 3, xp: 10 }
+    };
+
+    const safeOutcome = baseByOutcome[outcome] ? outcome : 'played';
+    const base = baseByOutcome[safeOutcome];
+    const bonus = gameBonus[gameType] || 1;
+    return {
+        points: base.points + bonus,
+        xp: base.xp + bonus * 2
+    };
+}
+
+function recordMiniGameResult(username, gameType, outcome = 'played', extra = {}) {
+    const stats = ensureMiniGameStatsEntry(username);
+    const gameKey = gameType || 'unknown';
+    if (!stats.byGame[gameKey]) {
+        stats.byGame[gameKey] = { points: 0, played: 0, wins: 0, losses: 0, draws: 0 };
+    }
+
+    const reward = getMiniGameReward(gameKey, outcome);
+    const points = Math.max(0, Math.floor((extra.points ?? reward.points) || 0));
+    const xp = Math.max(0, Math.floor((extra.xp ?? reward.xp) || 0));
+
+    stats.played += 1;
+    stats.points += points;
+    if (outcome === 'win') stats.wins += 1;
+    else if (outcome === 'draw') stats.draws += 1;
+    else if (outcome === 'loss') stats.losses += 1;
+
+    const byGame = stats.byGame[gameKey];
+    byGame.played += 1;
+    byGame.points += points;
+    if (outcome === 'win') byGame.wins += 1;
+    else if (outcome === 'draw') byGame.draws += 1;
+    else if (outcome === 'loss') byGame.losses += 1;
+
+    stats.lastPlayedAt = new Date().toISOString();
+    saveMiniGameStats();
+
+    let xpResult = null;
+    if (xp > 0) {
+        xpResult = grantXP(username, xp, { ignoreCooldown: true, source: 'minigame' });
+        saveXPData();
+    }
+
+    return {
+        points,
+        xp,
+        xpResult,
+        totals: {
+            points: stats.points,
+            played: stats.played,
+            wins: stats.wins,
+            losses: stats.losses,
+            draws: stats.draws
+        }
+    };
 }
 
 // Fonction de logging améliorée
@@ -942,9 +1233,11 @@ io.on('connection', (socket) => {
         }
         
         const userIndex = messageReactions[messageId][emoji].indexOf(username);
+        let addedReaction = false;
         
         if (action === 'add' && userIndex === -1) {
             messageReactions[messageId][emoji].push(username);
+            addedReaction = true;
             logActivity('MESSAGE', `Réaction ajoutée`, { messageId, emoji, username });
         } else if (action === 'remove' && userIndex > -1) {
             messageReactions[messageId][emoji].splice(userIndex, 1);
@@ -963,6 +1256,49 @@ io.on('connection', (socket) => {
             messageId, 
             reactions: messageReactions[messageId] || {} 
         });
+
+        if (addedReaction) {
+            const xpEntry = ensureXPEntry(username);
+            const now = Date.now();
+            if (!xpEntry.lastReactionXpAt || now - xpEntry.lastReactionXpAt >= 5000) {
+                const reactionMultiplier = xpEntry.reactionBoostUntil && xpEntry.reactionBoostUntil > now ? 2 : 1;
+                const xpResult = grantXP(username, XP_PER_REACTION, {
+                    source: 'reaction',
+                    ignoreCooldown: true,
+                    multiplier: reactionMultiplier
+                });
+                xpEntry.lastReactionXpAt = now;
+
+                if (xpResult && xpResult.levelUp) {
+                    io.emit('system_message', {
+                        type: 'system',
+                        message: `🎉 ${username} a atteint le niveau ${xpResult.newLevel} !`,
+                        timestamp: new Date(),
+                        id: messageId++
+                    });
+                }
+            }
+
+            const missionRewards = applyMissionProgress(username, { reactions: 1 });
+            for (const reward of missionRewards) {
+                socket.emit('daily_mission_reward', {
+                    missionKey: reward.key,
+                    missionLabel: reward.label,
+                    rewardXP: reward.rewardXP
+                });
+                if (reward.levelUp) {
+                    io.emit('system_message', {
+                        type: 'system',
+                        message: `🎉 ${username} a atteint le niveau ${reward.newLevel} !`,
+                        timestamp: new Date(),
+                        id: messageId++
+                    });
+                }
+            }
+
+            socket.emit('xp_data', buildXPDataPayload(username));
+            saveXPData();
+        }
         
         // Sauvegarder les réactions
         saveReactions();
@@ -1098,6 +1434,37 @@ io.on('connection', (socket) => {
         
         const adminUser = connectedUsers.get(socket.id);
         const adminName = adminUser ? adminUser.username : 'Admin';
+        const findSocketIdByUsername = (username) => {
+            if (!username) return null;
+            const targetLower = username.toLowerCase();
+            for (const [sid, user] of connectedUsers.entries()) {
+                if ((user.username || '').toLowerCase() === targetLower) return sid;
+            }
+            return null;
+        };
+        const findVoiceParticipantByUsername = (username) => {
+            if (!username) return null;
+            const targetLower = username.toLowerCase();
+            for (const [roomName, roomData] of Object.entries(voiceRooms)) {
+                for (const [sid, participant] of roomData.participants.entries()) {
+                    if ((participant.username || '').toLowerCase() === targetLower) {
+                        return { roomName, socketId: sid, participant };
+                    }
+                }
+            }
+            return null;
+        };
+        const resolveXPUsername = (username) => {
+            if (!username) return null;
+            const targetLower = username.toLowerCase();
+            for (const [, user] of connectedUsers.entries()) {
+                if ((user.username || '').toLowerCase() === targetLower) return user.username;
+            }
+            for (const key of Object.keys(userXP)) {
+                if ((key || '').toLowerCase() === targetLower) return key;
+            }
+            return username;
+        };
         
         logActivity('ADMIN', `Action admin: ${action}`, { admin: adminName, target, value });
         
@@ -1272,6 +1639,170 @@ io.on('connection', (socket) => {
                     socket.emit('admin_response', { success: true, message: 'Message désépinglé' });
                 }
                 break;
+
+            case 'voice_kick': {
+                const voiceTarget = findVoiceParticipantByUsername(target);
+                if (!voiceTarget) {
+                    socket.emit('admin_response', { success: false, message: 'Utilisateur non trouvé en vocal' });
+                    break;
+                }
+
+                const { roomName, socketId: targetSid } = voiceTarget;
+                const targetSocket = io.sockets.sockets.get(targetSid);
+                voiceRooms[roomName].participants.delete(targetSid);
+
+                if (targetSocket) {
+                    targetSocket.leave('voice_' + roomName);
+                    targetSocket.emit('voice_forced_disconnect', {
+                        room: roomName,
+                        message: 'Vous avez été expulsé du vocal par un administrateur'
+                    });
+                }
+
+                io.to('voice_' + roomName).emit('voice_peer_left', { socketId: targetSid });
+                io.emit('voice_participants_update', { room: roomName, participants: getVoiceParticipants(roomName) });
+
+                socket.emit('admin_response', { success: true, message: `${target} a été expulsé du vocal ${roomName}` });
+                logActivity('ADMIN', `Expulsion vocale: ${target}`, { admin: adminName, room: roomName });
+                break;
+            }
+
+            case 'voice_force_status': {
+                const voiceTarget = findVoiceParticipantByUsername(target);
+                if (!voiceTarget) {
+                    socket.emit('admin_response', { success: false, message: 'Utilisateur non trouvé en vocal' });
+                    break;
+                }
+
+                const { roomName, socketId: targetSid, participant } = voiceTarget;
+                const mode = data.mode === 'deafen' ? 'deafen' : 'mute';
+                const enabled = !!data.enabled;
+
+                if (mode === 'mute') {
+                    participant.muted = enabled;
+                    if (!enabled && participant.deafened) participant.deafened = false;
+                } else {
+                    participant.deafened = enabled;
+                    if (enabled) participant.muted = true;
+                }
+
+                const targetSocket = io.sockets.sockets.get(targetSid);
+                if (targetSocket) {
+                    targetSocket.emit('voice_force_status', {
+                        muted: !!participant.muted,
+                        deafened: !!participant.deafened,
+                        message: mode === 'mute'
+                            ? (enabled ? 'Un administrateur a coupé votre micro' : 'Un administrateur a réactivé votre micro')
+                            : (enabled ? 'Un administrateur vous a passé en sourdine' : 'Un administrateur a retiré votre sourdine')
+                    });
+                }
+
+                io.emit('voice_participants_update', { room: roomName, participants: getVoiceParticipants(roomName) });
+                socket.emit('admin_response', {
+                    success: true,
+                    message: `${target}: ${mode === 'mute' ? 'micro' : 'sourdine'} ${enabled ? 'activé(e)' : 'désactivé(e)'}`
+                });
+                logActivity('ADMIN', `Voice status forcé`, {
+                    admin: adminName,
+                    target,
+                    mode,
+                    enabled,
+                    room: roomName
+                });
+                break;
+            }
+
+            case 'voice_move': {
+                const targetRoom = (data.room || value || '').toString().trim();
+                if (!targetRoom || !voiceRooms[targetRoom]) {
+                    socket.emit('admin_response', { success: false, message: 'Salon vocal cible invalide' });
+                    break;
+                }
+
+                const voiceTarget = findVoiceParticipantByUsername(target);
+                if (!voiceTarget) {
+                    socket.emit('admin_response', { success: false, message: 'Utilisateur non trouvé en vocal' });
+                    break;
+                }
+
+                if (voiceTarget.roomName === targetRoom) {
+                    socket.emit('admin_response', { success: true, message: `${target} est déjà dans ${targetRoom}` });
+                    break;
+                }
+
+                const targetSocket = io.sockets.sockets.get(voiceTarget.socketId);
+                if (!targetSocket) {
+                    socket.emit('admin_response', { success: false, message: 'Socket utilisateur introuvable' });
+                    break;
+                }
+
+                targetSocket.emit('voice_force_move', {
+                    room: targetRoom,
+                    message: `Un administrateur vous a déplacé vers ${targetRoom}`
+                });
+
+                socket.emit('admin_response', { success: true, message: `${target} déplacé vers ${targetRoom}` });
+                logActivity('ADMIN', `Déplacement vocal`, { admin: adminName, target, from: voiceTarget.roomName, to: targetRoom });
+                break;
+            }
+
+            case 'xp_add': {
+                const xpName = resolveXPUsername(target);
+                const amount = parseInt(data.amount, 10);
+                if (!xpName || !Number.isFinite(amount) || amount <= 0 || amount > 1000000) {
+                    socket.emit('admin_response', { success: false, message: 'Paramètres XP invalides' });
+                    break;
+                }
+
+                if (!userXP[xpName]) userXP[xpName] = { xp: 0, level: 0, totalMessages: 0, lastXpGain: 0 };
+                userXP[xpName].xp = Math.max(0, (userXP[xpName].xp || 0) + amount);
+                const levelData = getLevelFromXP(userXP[xpName].xp);
+                userXP[xpName].level = levelData.level;
+                saveXPData();
+
+                const targetSid = findSocketIdByUsername(xpName);
+                if (targetSid) {
+                    io.to(targetSid).emit('xp_data', {
+                        xp: userXP[xpName].xp,
+                        ...levelData,
+                        totalMessages: userXP[xpName].totalMessages || 0,
+                        bananaPoints: getBananaPoints(xpName)
+                    });
+                }
+
+                socket.emit('admin_response', { success: true, message: `${xpName}: +${amount} XP (total ${userXP[xpName].xp})` });
+                logActivity('ADMIN', 'XP ajouté', { admin: adminName, target: xpName, amount, totalXP: userXP[xpName].xp });
+                break;
+            }
+
+            case 'xp_set': {
+                const xpName = resolveXPUsername(target);
+                const amount = parseInt(data.amount, 10);
+                if (!xpName || !Number.isFinite(amount) || amount < 0 || amount > 100000000) {
+                    socket.emit('admin_response', { success: false, message: 'Paramètres XP invalides' });
+                    break;
+                }
+
+                if (!userXP[xpName]) userXP[xpName] = { xp: 0, level: 0, totalMessages: 0, lastXpGain: 0 };
+                userXP[xpName].xp = amount;
+                const levelData = getLevelFromXP(userXP[xpName].xp);
+                userXP[xpName].level = levelData.level;
+                saveXPData();
+
+                const targetSid = findSocketIdByUsername(xpName);
+                if (targetSid) {
+                    io.to(targetSid).emit('xp_data', {
+                        xp: userXP[xpName].xp,
+                        ...levelData,
+                        totalMessages: userXP[xpName].totalMessages || 0,
+                        bananaPoints: getBananaPoints(xpName)
+                    });
+                }
+
+                socket.emit('admin_response', { success: true, message: `${xpName}: XP défini à ${amount}` });
+                logActivity('ADMIN', 'XP défini', { admin: adminName, target: xpName, totalXP: amount });
+                break;
+            }
             
             // === NOUVELLES ACTIONS ADMIN ===
             case 'set_private':
@@ -1695,6 +2226,41 @@ io.on('connection', (socket) => {
             
             connectedUsers.set(socket.id, userInfo);
 
+            // === DAILY XP BONUS + STREAK (simple progression) ===
+            const xpEntry = ensureXPEntry(cleanUsername);
+            const todayKey = getDayKey();
+            const yesterdayKey = getPreviousDayKey();
+            let loginBonusAwarded = null;
+
+            if (xpEntry.lastLoginDay !== todayKey) {
+                if (xpEntry.lastLoginDay === yesterdayKey) {
+                    xpEntry.streakDays = (xpEntry.streakDays || 0) + 1;
+                } else if (xpEntry.streakShieldCharges > 0 && xpEntry.lastLoginDay) {
+                    xpEntry.streakShieldCharges -= 1;
+                    xpEntry.streakDays = Math.max(1, xpEntry.streakDays || 1);
+                    socket.emit('banana_reward', {
+                        type: 'streak_shield',
+                        title: '🛡️ Protection de série',
+                        message: 'Une charge de protection a sauvé votre série quotidienne.'
+                    });
+                } else {
+                    xpEntry.streakDays = 1;
+                }
+                xpEntry.lastLoginDay = todayKey;
+                ensureDailyMissionsForEntry(xpEntry);
+
+                const streakBonus = Math.min((xpEntry.streakDays - 1) * DAILY_LOGIN_STREAK_STEP, DAILY_LOGIN_STREAK_MAX_BONUS);
+                const bonusXP = DAILY_LOGIN_XP_BONUS + streakBonus;
+                xpEntry.xp = Math.max(0, (xpEntry.xp || 0) + bonusXP);
+                xpEntry.level = getLevelFromXP(xpEntry.xp).level;
+
+                loginBonusAwarded = {
+                    bonusXP,
+                    streakDays: xpEntry.streakDays
+                };
+                saveXPData();
+            }
+
             // Sauvegarder le profil
             const existingProfile = userProfiles.get(cleanUsername) || {};
             userProfiles.set(cleanUsername, {
@@ -1715,11 +2281,14 @@ io.on('connection', (socket) => {
             socket.emit('pinned_update', { pinnedMessages });
             
             // Send new feature data
-            const xpData = userXP[cleanUsername] || { xp: 0, level: 0, totalMessages: 0 };
-            socket.emit('xp_data', { xp: xpData.xp, ...getLevelFromXP(xpData.xp), totalMessages: xpData.totalMessages });
+            socket.emit('xp_data', buildXPDataPayload(cleanUsername));
             socket.emit('friends_list', friendships[cleanUsername] || { friends: [], pending: [], requests: [] });
             socket.emit('bookmarks_list', { bookmarks: userBookmarks[cleanUsername] || [] });
             socket.emit('reminders_list', { reminders: (reminders[cleanUsername] || []).filter(r => r.triggerAt > Date.now()) });
+
+            if (loginBonusAwarded) {
+                socket.emit('xp_daily_bonus', loginBonusAwarded);
+            }
             
             // Envoyer l'état des salons vocaux
             for (const [room, data] of Object.entries(voiceRooms)) {
@@ -2000,8 +2569,8 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
             serverStats.totalMessages++;
             
             // === XP SYSTEM ===
-            if (!userXP[user.username]) userXP[user.username] = { xp: 0, level: 0, totalMessages: 0, lastXpGain: 0 };
-            userXP[user.username].totalMessages++;
+            const xpEntry = ensureXPEntry(user.username);
+            xpEntry.totalMessages++;
             const xpResult = grantXP(user.username, XP_PER_MESSAGE);
             if (xpResult && xpResult.levelUp) {
                 io.emit('system_message', {
@@ -2011,6 +2580,25 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
                     id: messageId++
                 });
             }
+
+            const missionRewards = applyMissionProgress(user.username, { messages: 1 });
+            for (const reward of missionRewards) {
+                socket.emit('daily_mission_reward', {
+                    missionKey: reward.key,
+                    missionLabel: reward.label,
+                    rewardXP: reward.rewardXP
+                });
+                if (reward.levelUp) {
+                    io.emit('system_message', {
+                        type: 'system',
+                        message: `🎉 ${user.username} a atteint le niveau ${reward.newLevel} !`,
+                        timestamp: new Date(),
+                        id: messageId++
+                    });
+                }
+            }
+            socket.emit('xp_data', buildXPDataPayload(user.username));
+            saveXPData();
             
             // Sauvegarder l'historique après chaque message
             saveHistory();
@@ -2237,6 +2825,16 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
     socket.on('voice_ice_candidate', (data) => {
         const { targetId, candidate } = data;
         io.to(targetId).emit('voice_ice_candidate', { fromId: socket.id, candidate });
+    });
+
+    // Sonde de latence (ping UI côté client)
+    socket.on('voice_ping_probe', (data, ack) => {
+        if (typeof ack === 'function') {
+            ack({
+                serverTime: Date.now(),
+                clientSentAt: data && data.sentAt ? data.sentAt : null
+            });
+        }
     });
     
     // Détection de parole
@@ -2727,7 +3325,21 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
             initialData = { round: 1, maxRounds: game.state.maxRounds, scores: [0, 0] };
         } else if (invite.gameType === 'hangman') {
             const display = game.state.word.split('').map(() => '_').join(' ');
-            initialData = { display, wrong: [], remaining: game.state.maxErrors, wordLength: game.state.word.length };
+            const hintState = getHangmanHintState(game.state);
+            initialData = {
+                display,
+                wrong: [],
+                remaining: game.state.maxErrors,
+                maxErrors: game.state.maxErrors,
+                wordLength: game.state.word.length,
+                hintVisible: hintState.visible,
+                hintText: hintState.text
+            };
+        } else if (invite.gameType === 'arena2d') {
+            initialData = {
+                arenaState: game.state,
+                targetScore: game.state.targetScore
+            };
         }
         
         // Notifier les deux joueurs avec les sockets actuels
@@ -2820,6 +3432,47 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
             
             // Fin de partie
             if ((result.winner || result.draw) && !result.waiting) {
+                const playerNames = game.players.map(p => p.username);
+                const rewardsByUser = {};
+
+                if (result.draw) {
+                    playerNames.forEach((name) => {
+                        rewardsByUser[name] = recordMiniGameResult(name, game.type, 'draw');
+                    });
+                } else if (result.winner === 'COOP_WIN') {
+                    playerNames.forEach((name) => {
+                        rewardsByUser[name] = recordMiniGameResult(name, game.type, 'win');
+                    });
+                } else if (result.winner === 'COOP_LOSE') {
+                    playerNames.forEach((name) => {
+                        rewardsByUser[name] = recordMiniGameResult(name, game.type, 'loss');
+                    });
+                } else {
+                    playerNames.forEach((name) => {
+                        const outcome = name === result.winner ? 'win' : 'loss';
+                        rewardsByUser[name] = recordMiniGameResult(name, game.type, outcome);
+                    });
+                }
+
+                game.players.forEach((p) => {
+                    const currentSid = findCurrentSocket(p.username);
+                    if (!currentSid) return;
+                    const outcome = result.draw
+                        ? 'draw'
+                        : (result.winner === 'COOP_WIN' ? 'win' : (result.winner === 'COOP_LOSE' ? 'loss' : (p.username === result.winner ? 'win' : 'loss')));
+                    const reward = rewardsByUser[p.username];
+                    if (reward) {
+                        io.to(currentSid).emit('minigame_reward', {
+                            gameType: game.type,
+                            outcome,
+                            points: reward.points,
+                            xp: reward.xp,
+                            totalMiniGamePoints: reward.totals.points
+                        });
+                    }
+                    io.to(currentSid).emit('xp_data', buildXPDataPayload(p.username));
+                });
+
                 global.activeGames.delete(gameId);
                 logActivity('GAME', `Partie terminée`, {
                     game: game.type,
@@ -3113,9 +3766,7 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
     socket.on('get_xp', () => {
         const user = connectedUsers.get(socket.id);
         if (!user) return;
-        const data = userXP[user.username] || { xp: 0, level: 0, totalMessages: 0 };
-        const levelData = getLevelFromXP(data.xp);
-        socket.emit('xp_data', { xp: data.xp, ...levelData, totalMessages: data.totalMessages, bananaPoints: getBananaPoints(user.username) });
+        socket.emit('xp_data', buildXPDataPayload(user.username));
     });
 
     socket.on('get_leaderboard', () => {
@@ -3126,15 +3777,67 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
         socket.emit('leaderboard_data', { leaderboard });
     });
 
+    socket.on('get_minigames_leaderboard', () => {
+        const leaderboard = Object.entries(miniGameStats)
+            .map(([username, data]) => ({
+                username,
+                points: Number(data.points || 0),
+                played: Number(data.played || 0),
+                wins: Number(data.wins || 0),
+                losses: Number(data.losses || 0),
+                draws: Number(data.draws || 0)
+            }))
+            .sort((a, b) => b.points - a.points)
+            .slice(0, 20);
+        socket.emit('minigames_leaderboard_data', { leaderboard });
+    });
+
+    socket.on('minigame_result', (data) => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+
+        const gameType = String(data?.gameType || '').toLowerCase();
+        const outcome = String(data?.outcome || 'played').toLowerCase();
+        const allowedGames = ['guess', 'memory', 'quiz', 'arena2d'];
+        const allowedOutcomes = ['win', 'draw', 'loss', 'played'];
+        if (!allowedGames.includes(gameType) || !allowedOutcomes.includes(outcome)) return;
+
+        const base = getMiniGameReward(gameType, outcome);
+        const claimedPoints = Number(data?.points);
+        const claimedXP = Number(data?.xp);
+        const safePoints = Number.isFinite(claimedPoints) ? Math.max(0, Math.min(base.points + 8, Math.floor(claimedPoints))) : base.points;
+        const safeXP = Number.isFinite(claimedXP) ? Math.max(0, Math.min(base.xp + 20, Math.floor(claimedXP))) : base.xp;
+
+        const result = recordMiniGameResult(user.username, gameType, outcome, { points: safePoints, xp: safeXP });
+        socket.emit('minigame_reward', {
+            gameType,
+            outcome,
+            points: result.points,
+            xp: result.xp,
+            totalMiniGamePoints: result.totals.points
+        });
+        socket.emit('xp_data', buildXPDataPayload(user.username));
+    });
+
     socket.on('banana_use', (data) => {
         const user = connectedUsers.get(socket.id);
         if (!user) return;
 
-        const costs = { confetti: 5, shake: 3, flash: 3, rain: 8, fireworks: 10 };
+        const costs = {
+            confetti: 5,
+            shake: 3,
+            flash: 3,
+            rain: 8,
+            fireworks: 10,
+            xp_boost: 12,
+            streak_shield: 15,
+            reaction_boost: 10,
+            cooldown_reducer: 9
+        };
         const effect = data.effect;
         const cost = costs[effect];
         if (!cost) {
-            socket.emit('banana_error', { message: 'Effet inconnu' });
+            socket.emit('banana_error', { message: 'Objet banane inconnu' });
             return;
         }
 
@@ -3144,12 +3847,79 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
             return;
         }
 
-        if (!userXP[user.username]) userXP[user.username] = { xp: 0, level: 0, totalMessages: 0, lastXpGain: 0 };
-        userXP[user.username].xp = Math.max(0, userXP[user.username].xp - cost * 10);
-        saveXP();
+        const xpEntry = ensureXPEntry(user.username);
 
-        io.emit('banana_effect', { effect, username: user.username });
+        const utilityItems = ['xp_boost', 'streak_shield', 'reaction_boost', 'cooldown_reducer'];
+        if (utilityItems.includes(effect)) {
+            const now = Date.now();
+            if (!xpEntry.shopWindowStart || (now - xpEntry.shopWindowStart) > 60 * 60 * 1000) {
+                xpEntry.shopWindowStart = now;
+                xpEntry.shopWindowCount = 0;
+            }
+            if (xpEntry.shopWindowCount >= UTILITY_PURCHASES_LIMIT_PER_HOUR) {
+                socket.emit('banana_error', {
+                    message: `Limite anti-abus atteinte (${UTILITY_PURCHASES_LIMIT_PER_HOUR} achats utilitaires / heure)`
+                });
+                return;
+            }
+            xpEntry.shopWindowCount += 1;
+        }
+
+        xpEntry.xp = Math.max(0, xpEntry.xp - cost * 10);
+
+        if (effect === 'xp_boost') {
+            const now = Date.now();
+            const base = xpEntry.xpBoostUntil && xpEntry.xpBoostUntil > now ? xpEntry.xpBoostUntil : now;
+            xpEntry.xpBoostUntil = base + 20 * 60 * 1000; // +20 minutes
+            socket.emit('banana_reward', {
+                type: 'xp_boost',
+                title: '🚀 Boost XP',
+                message: 'XP x2 active pendant 20 minutes (cumulable)'
+            });
+        } else if (effect === 'streak_shield') {
+            xpEntry.streakShieldCharges = Math.min(3, (xpEntry.streakShieldCharges || 0) + 1);
+            socket.emit('banana_reward', {
+                type: 'streak_shield',
+                title: '🛡️ Protection de série',
+                message: `Charge active: ${xpEntry.streakShieldCharges}/3`
+            });
+        } else if (effect === 'reaction_boost') {
+            const now = Date.now();
+            const base = xpEntry.reactionBoostUntil && xpEntry.reactionBoostUntil > now ? xpEntry.reactionBoostUntil : now;
+            xpEntry.reactionBoostUntil = base + XP_UTILITY_DURATION_MS;
+            socket.emit('banana_reward', {
+                type: 'reaction_boost',
+                title: '✨ Boost réactions',
+                message: 'XP des réactions x2 pendant 15 minutes (cumulable)'
+            });
+        } else if (effect === 'cooldown_reducer') {
+            const now = Date.now();
+            const base = xpEntry.cooldownReducerUntil && xpEntry.cooldownReducerUntil > now ? xpEntry.cooldownReducerUntil : now;
+            xpEntry.cooldownReducerUntil = base + XP_UTILITY_DURATION_MS;
+            socket.emit('banana_reward', {
+                type: 'cooldown_reducer',
+                title: '⚡ Cadence XP',
+                message: 'Cooldown XP messages réduit à 20s pendant 15 minutes'
+            });
+        }
+
+        xpEntry.level = getLevelFromXP(xpEntry.xp).level;
+        saveXPData();
+
+        if (['confetti', 'shake', 'flash', 'rain', 'fireworks'].includes(effect)) {
+            io.emit('banana_effect', { effect, username: user.username });
+        }
+
         socket.emit('banana_updated', { bananaPoints: getBananaPoints(user.username) });
+        socket.emit('xp_data', buildXPDataPayload(user.username));
+
+        logActivity('ADMIN', 'Achat boutique banane', {
+            username: user.username,
+            item: effect,
+            costBananas: cost,
+            bananasAfter: getBananaPoints(user.username),
+            utilityPurchasesInHour: xpEntry.shopWindowCount
+        });
     });
 
     // =========================================
@@ -3276,20 +4046,25 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
     socket.on('start_hangman', () => {
         const user = connectedUsers.get(socket.id);
         if (!user) return;
-        const words = ['JAVASCRIPT','PYTHON','SERVEUR','DISCORD','ORDINATEUR','INTERNET','CLAVIER','ECRAN','PROGRAMME','FONCTION','VARIABLE','TABLEAU','BOUCLE','CONDITION','MUSIQUE','CINEMA','GALAXIE','PLANETE','ETOILE','LICORNE','DRAGON','CHATEAU','PIRATE','ROBOT','ESPACE','AVENTURE'];
-        const word = words[Math.floor(Math.random() * words.length)];
+        const picked = getRandomHangmanWord();
+        const word = picked.word;
         const gameState = {
             word,
+            hint: picked.hint,
             guessed: [],
             wrong: [],
-            maxErrors: 6,
+            maxErrors: 8,
             display: word.split('').map(() => '_').join(' ')
         };
         socket.hangmanGame = gameState;
+        const hintState = getHangmanHintState(gameState);
         socket.emit('hangman_state', {
             display: gameState.display,
             wrong: gameState.wrong,
             remaining: gameState.maxErrors - gameState.wrong.length,
+            maxErrors: gameState.maxErrors,
+            hintVisible: hintState.visible,
+            hintText: hintState.text,
             finished: false
         });
     });
@@ -3310,11 +4085,15 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
         const display = game.word.split('').map(c => game.guessed.includes(c) ? c : '_').join(' ');
         const won = !display.includes('_');
         const lost = game.wrong.length >= game.maxErrors;
+        const hintState = getHangmanHintState(game);
         
         socket.emit('hangman_state', {
             display,
             wrong: game.wrong,
             remaining: game.maxErrors - game.wrong.length,
+            maxErrors: game.maxErrors,
+            hintVisible: hintState.visible,
+            hintText: hintState.text,
             finished: won || lost,
             won,
             word: (won || lost) ? game.word : undefined
@@ -3322,11 +4101,29 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
         
         if (won) {
             const xpResult = grantXP(user.username, 50);
+            const miniReward = recordMiniGameResult(user.username, 'hangman', 'win');
+            socket.emit('minigame_reward', {
+                gameType: 'hangman',
+                outcome: 'win',
+                points: miniReward.points,
+                xp: miniReward.xp,
+                totalMiniGamePoints: miniReward.totals.points
+            });
+            socket.emit('xp_data', buildXPDataPayload(user.username));
             if (xpResult && xpResult.levelUp) {
                 io.emit('system_message', { type: 'system', message: `🎉 ${user.username} a atteint le niveau ${xpResult.newLevel} !`, timestamp: new Date(), id: messageId++ });
             }
             socket.hangmanGame = null;
         } else if (lost) {
+            const miniReward = recordMiniGameResult(user.username, 'hangman', 'loss');
+            socket.emit('minigame_reward', {
+                gameType: 'hangman',
+                outcome: 'loss',
+                points: miniReward.points,
+                xp: miniReward.xp,
+                totalMiniGamePoints: miniReward.totals.points
+            });
+            socket.emit('xp_data', buildXPDataPayload(user.username));
             socket.hangmanGame = null;
         }
     });
@@ -3337,32 +4134,8 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
     socket.on('start_trivia', () => {
         const user = connectedUsers.get(socket.id);
         if (!user) return;
-        
-        const questions = [
-            { q: "Quelle est la capitale de la France ?", a: ["Paris", "Lyon", "Marseille", "Toulouse"], correct: 0 },
-            { q: "Combien de continents y a-t-il ?", a: ["5", "6", "7", "8"], correct: 2 },
-            { q: "Quel est le plus grand océan ?", a: ["Atlantique", "Pacifique", "Indien", "Arctique"], correct: 1 },
-            { q: "En quelle année a été créé Internet ?", a: ["1969", "1983", "1991", "2000"], correct: 0 },
-            { q: "Quel langage a créé le Web ?", a: ["Java", "Python", "HTML", "C++"], correct: 2 },
-            { q: "Combien de pattes a une araignée ?", a: ["6", "8", "10", "4"], correct: 1 },
-            { q: "Quelle planète est la plus proche du Soleil ?", a: ["Vénus", "Mercure", "Mars", "Terre"], correct: 1 },
-            { q: "Quel est le plus long fleuve du monde ?", a: ["Amazone", "Nil", "Yangtsé", "Mississippi"], correct: 1 },
-            { q: "Qui a peint la Joconde ?", a: ["Michel-Ange", "Raphaël", "Léonard de Vinci", "Botticelli"], correct: 2 },
-            { q: "Combien d'os a le corps humain adulte ?", a: ["186", "206", "226", "256"], correct: 1 },
-            { q: "Quel animal est le plus rapide ?", a: ["Lion", "Guépard", "Faucon pèlerin", "Lévrier"], correct: 2 },
-            { q: "Quelle est la monnaie du Japon ?", a: ["Yuan", "Won", "Yen", "Baht"], correct: 2 },
-            { q: "En quelle année le mur de Berlin est-il tombé ?", a: ["1987", "1989", "1991", "1993"], correct: 1 },
-            { q: "Quel est le symbole chimique de l'or ?", a: ["Ag", "Au", "Or", "Go"], correct: 1 },
-            { q: "Combien de couleurs dans un arc-en-ciel ?", a: ["5", "6", "7", "8"], correct: 2 },
-            { q: "Quel est le plus petit pays du monde ?", a: ["Monaco", "Vatican", "Nauru", "San Marino"], correct: 1 },
-            { q: "Qui a écrit 'Les Misérables' ?", a: ["Zola", "Hugo", "Balzac", "Dumas"], correct: 1 },
-            { q: "Quel gaz les plantes absorbent-elles ?", a: ["Oxygène", "Azote", "CO2", "Hydrogène"], correct: 2 },
-            { q: "Combien de touches sur un piano standard ?", a: ["76", "82", "88", "92"], correct: 2 },
-            { q: "Quelle est la vitesse de la lumière ?", a: ["150 000 km/s", "300 000 km/s", "500 000 km/s", "1 000 000 km/s"], correct: 1 }
-        ];
-        
-        // Pick 5 random questions
-        const shuffled = questions.sort(() => Math.random() - 0.5).slice(0, 5);
+        // 10 questions choisies dans une banque de 50+ questions
+        const shuffled = getRandomTriviaQuestions(10);
         socket.triviaGame = { questions: shuffled, current: 0, score: 0, total: shuffled.length };
         
         socket.emit('trivia_question', {
@@ -3388,6 +4161,12 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
             // Game over
             const xpGained = game.score * 20;
             const xpResult = grantXP(user.username, xpGained);
+            const scoreRatio = game.total > 0 ? (game.score / game.total) : 0;
+            const outcome = scoreRatio >= 0.7 ? 'win' : (scoreRatio >= 0.4 ? 'draw' : 'loss');
+            const miniReward = recordMiniGameResult(user.username, 'trivia', outcome, {
+                points: Math.max(4, Math.floor(game.score * 2.5)),
+                xp: Math.max(10, Math.floor(game.score * 6))
+            });
             socket.emit('trivia_result', {
                 correct,
                 correctAnswer: q.correct,
@@ -3396,6 +4175,14 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
                 finished: true,
                 xpGained
             });
+            socket.emit('minigame_reward', {
+                gameType: 'trivia',
+                outcome,
+                points: miniReward.points,
+                xp: miniReward.xp,
+                totalMiniGamePoints: miniReward.totals.points
+            });
+            socket.emit('xp_data', buildXPDataPayload(user.username));
             if (xpResult && xpResult.levelUp) {
                 io.emit('system_message', { type: 'system', message: `🎉 ${user.username} a atteint le niveau ${xpResult.newLevel} !`, timestamp: new Date(), id: messageId++ });
             }
@@ -3464,25 +4251,15 @@ function initGameState(gameType) {
             return { questions, current: 0, scores: [0, 0], answers: [null, null], total: questions.length };
         }
         case 'trivia': {
-            const triviaQuestions = [
-                { q: "Quelle est la capitale de la France ?", a: ["Paris", "Lyon", "Marseille", "Toulouse"], correct: 0 },
-                { q: "Combien de continents y a-t-il ?", a: ["5", "6", "7", "8"], correct: 2 },
-                { q: "Quel est le plus grand océan ?", a: ["Atlantique", "Pacifique", "Indien", "Arctique"], correct: 1 },
-                { q: "En quelle année a été créé Internet ?", a: ["1969", "1983", "1991", "2000"], correct: 0 },
-                { q: "Quel langage a créé le Web ?", a: ["Java", "Python", "HTML", "C++"], correct: 2 },
-                { q: "Combien de pattes a une araignée ?", a: ["6", "8", "10", "4"], correct: 1 },
-                { q: "Quelle planète est la plus proche du Soleil ?", a: ["Vénus", "Mercure", "Mars", "Terre"], correct: 1 },
-                { q: "Quel est le plus long fleuve du monde ?", a: ["Amazone", "Nil", "Yangtsé", "Mississippi"], correct: 1 },
-                { q: "Qui a peint la Joconde ?", a: ["Michel-Ange", "Raphaël", "Léonard de Vinci", "Botticelli"], correct: 2 },
-                { q: "Combien d'os a le corps humain adulte ?", a: ["186", "206", "226", "256"], correct: 1 }
-            ];
-            const questions = triviaQuestions.sort(() => Math.random() - 0.5).slice(0, 5);
+            const questions = getRandomTriviaQuestions(10);
             return { questions, current: 0, scores: [0, 0], answers: [null, null], total: questions.length };
         }
         case 'hangman': {
-            const words = ['JAVASCRIPT','PYTHON','SERVEUR','DISCORD','ORDINATEUR','INTERNET','CLAVIER','PROGRAMME','MUSIQUE','GALAXIE','PLANETE','DRAGON','CHATEAU','PIRATE','ROBOT','AVENTURE'];
-            const word = words[Math.floor(Math.random() * words.length)];
-            return { word, guessed: [], wrong: [], maxErrors: 6, currentGuesser: 0 };
+            const picked = getRandomHangmanWord();
+            return { word: picked.word, hint: picked.hint, guessed: [], wrong: [], maxErrors: 8, currentGuesser: 0 };
+        }
+        case 'arena2d': {
+            return buildArenaState();
         }
         default:
             return {};
@@ -3690,6 +4467,7 @@ function applyGameMove(game, move, playerIndex) {
             const display = game.state.word.split('').map(c => game.state.guessed.includes(c) ? c : '_').join(' ');
             const won = !display.includes('_');
             const lost = game.state.wrong.length >= game.state.maxErrors;
+            const hintState = getHangmanHintState(game.state);
             
             // Alterner qui devine ou les deux devinent ensemble (co-op style)
             return {
@@ -3702,10 +4480,50 @@ function applyGameMove(game, move, playerIndex) {
                     display,
                     wrong: game.state.wrong,
                     remaining: game.state.maxErrors - game.state.wrong.length,
+                    maxErrors: game.state.maxErrors,
                     finished: won || lost,
                     won,
-                    word: (won || lost) ? game.state.word : undefined
+                    word: (won || lost) ? game.state.word : undefined,
+                    hintVisible: hintState.visible,
+                    hintText: hintState.text
                 }
+            };
+        }
+
+        case 'arena2d': {
+            const dir = move?.dir;
+            if (!['up', 'down', 'left', 'right'].includes(dir)) return { valid: false };
+
+            const now = Date.now();
+            const lastMove = game.state.lastMoveAt[playerIndex] || 0;
+            if (now - lastMove < game.state.moveCooldownMs) return { valid: false };
+            game.state.lastMoveAt[playerIndex] = now;
+
+            const p = game.state.players[playerIndex];
+            if (!p) return { valid: false };
+
+            if (dir === 'up') p.y = Math.max(0, p.y - 1);
+            if (dir === 'down') p.y = Math.min(game.state.height - 1, p.y + 1);
+            if (dir === 'left') p.x = Math.max(0, p.x - 1);
+            if (dir === 'right') p.x = Math.min(game.state.width - 1, p.x + 1);
+
+            const coinIndex = game.state.coins.findIndex(c => c.x === p.x && c.y === p.y);
+            if (coinIndex >= 0) {
+                game.state.coins.splice(coinIndex, 1);
+                p.score += 1;
+                game.state.coins.push(spawnArenaCoin(game.state.width, game.state.height, game.state.players, game.state.coins));
+            }
+
+            let winner = null;
+            if (p.score >= game.state.targetScore) {
+                winner = game.players[playerIndex].username;
+            }
+
+            return {
+                valid: true,
+                state: game.state,
+                winner,
+                draw: false
             };
         }
         
@@ -3879,6 +4697,216 @@ function updateTypingIndicator() {
     }
 }
 
+const TRIVIA_QUESTION_BANK = [
+    { q: "Quelle est la capitale de la France ?", a: ["Paris", "Lyon", "Marseille", "Toulouse"], correct: 0 },
+    { q: "Combien de continents y a-t-il ?", a: ["5", "6", "7", "8"], correct: 2 },
+    { q: "Quel est le plus grand ocean ?", a: ["Atlantique", "Pacifique", "Indien", "Arctique"], correct: 1 },
+    { q: "En quelle annee ARPANET est-il lance ?", a: ["1965", "1969", "1975", "1983"], correct: 1 },
+    { q: "Quel element chimique a le symbole Au ?", a: ["Argent", "Or", "Aluminium", "Argon"], correct: 1 },
+    { q: "Combien de pattes a une araignee ?", a: ["6", "8", "10", "12"], correct: 1 },
+    { q: "Quelle planete est la plus proche du Soleil ?", a: ["Venus", "Mercure", "Terre", "Mars"], correct: 1 },
+    { q: "Qui a peint la Joconde ?", a: ["Raphael", "Michel-Ange", "Leonard de Vinci", "Monet"], correct: 2 },
+    { q: "Combien d'os a le corps humain adulte ?", a: ["186", "206", "226", "246"], correct: 1 },
+    { q: "Quelle est la monnaie du Japon ?", a: ["Yuan", "Won", "Yen", "Dollar"], correct: 2 },
+    { q: "En quelle annee le mur de Berlin est-il tombe ?", a: ["1987", "1989", "1991", "1993"], correct: 1 },
+    { q: "Combien de couleurs dans un arc-en-ciel ?", a: ["5", "6", "7", "8"], correct: 2 },
+    { q: "Quel est le plus petit pays du monde ?", a: ["Monaco", "Vatican", "Malte", "Andorre"], correct: 1 },
+    { q: "Qui a ecrit Les Miserables ?", a: ["Zola", "Hugo", "Balzac", "Dumas"], correct: 1 },
+    { q: "Quel gaz les plantes absorbent-elles ?", a: ["Oxygene", "Azote", "CO2", "Hydrogene"], correct: 2 },
+    { q: "Combien de touches sur un piano standard ?", a: ["76", "82", "88", "96"], correct: 2 },
+    { q: "Quelle est la vitesse de la lumiere (approx.) ?", a: ["150 000 km/s", "300 000 km/s", "450 000 km/s", "1 000 000 km/s"], correct: 1 },
+    { q: "Quel est l'ocean a l'ouest de l'Europe ?", a: ["Pacifique", "Atlantique", "Indien", "Arctique"], correct: 1 },
+    { q: "Combien de joueurs sur le terrain dans une equipe de foot ?", a: ["9", "10", "11", "12"], correct: 2 },
+    { q: "Quelle est la capitale de l'Espagne ?", a: ["Barcelone", "Seville", "Madrid", "Valence"], correct: 2 },
+    { q: "Quel est le plus grand desert chaud ?", a: ["Sahara", "Gobi", "Kalahari", "Namib"], correct: 0 },
+    { q: "Combien de jours dans une annee bissextile ?", a: ["365", "366", "364", "360"], correct: 1 },
+    { q: "Quel instrument mesure les seismes ?", a: ["Barometre", "Sismographe", "Anemometre", "Altimetre"], correct: 1 },
+    { q: "Qui a formule la theorie de la relativite ?", a: ["Newton", "Einstein", "Galilee", "Tesla"], correct: 1 },
+    { q: "Quelle est la capitale de l'Italie ?", a: ["Milan", "Rome", "Naples", "Turin"], correct: 1 },
+    { q: "Quel est le plus grand organe du corps humain ?", a: ["Foie", "Peau", "Poumon", "Rein"], correct: 1 },
+    { q: "Quel est le symbole chimique du sodium ?", a: ["So", "Sn", "Na", "Sd"], correct: 2 },
+    { q: "Combien de faces a un de classique ?", a: ["4", "6", "8", "10"], correct: 1 },
+    { q: "Quelle est la langue officielle du Bresil ?", a: ["Espagnol", "Portugais", "Francais", "Anglais"], correct: 1 },
+    { q: "Quel est le plus haut sommet du monde ?", a: ["K2", "Everest", "Mont Blanc", "Kilimandjaro"], correct: 1 },
+    { q: "Combien de cordes a une guitare standard ?", a: ["4", "5", "6", "7"], correct: 2 },
+    { q: "Quel est l'element principal du Soleil ?", a: ["Oxygene", "Hydrogene", "Fer", "Helium"], correct: 1 },
+    { q: "Quel continent abrite l'Egypte ?", a: ["Asie", "Afrique", "Europe", "Amerique"], correct: 1 },
+    { q: "Quelle est la capitale de l'Allemagne ?", a: ["Munich", "Hambourg", "Berlin", "Francfort"], correct: 2 },
+    { q: "Combien de minutes dans 2 heures ?", a: ["90", "100", "110", "120"], correct: 3 },
+    { q: "Quel est le plus long fleuve d'Afrique ?", a: ["Niger", "Congo", "Nil", "Zambeze"], correct: 2 },
+    { q: "Quel est le nom de la galaxie de la Terre ?", a: ["Andromede", "Voie lactee", "Magellan", "Orion"], correct: 1 },
+    { q: "Quel est le contraire de solide ?", a: ["Lisse", "Liquide", "Dur", "Stable"], correct: 1 },
+    { q: "Combien y a-t-il de mois dans une annee ?", a: ["10", "11", "12", "13"], correct: 2 },
+    { q: "Quel est l'animal terrestre le plus rapide ?", a: ["Lion", "Guepard", "Antilope", "Lievre"], correct: 1 },
+    { q: "Quelle est la capitale du Canada ?", a: ["Toronto", "Ottawa", "Vancouver", "Montreal"], correct: 1 },
+    { q: "Quel est le resultat de 9 x 9 ?", a: ["72", "81", "90", "99"], correct: 1 },
+    { q: "Quel est le metal liquide a temperature ambiante ?", a: ["Mercure", "Aluminium", "Cuivre", "Zinc"], correct: 0 },
+    { q: "Combien de cartes dans un jeu standard ?", a: ["32", "40", "52", "54"], correct: 2 },
+    { q: "Quel est le principal gaz de l'air ?", a: ["Oxygene", "Dioxyde de carbone", "Azote", "Argon"], correct: 2 },
+    { q: "Quel est le pluriel de cheval ?", a: ["Chevals", "Chevaux", "Chevales", "Chevauxs"], correct: 1 },
+    { q: "Quelle est la capitale du Portugal ?", a: ["Porto", "Lisbonne", "Braga", "Coimbra"], correct: 1 },
+    { q: "Combien de cotes a un hexagone ?", a: ["5", "6", "7", "8"], correct: 1 },
+    { q: "Quel instrument a des touches noires et blanches ?", a: ["Violon", "Piano", "Flute", "Batterie"], correct: 1 },
+    { q: "Quel est l'etat de l'eau a 0 degre C ?", a: ["Gaz", "Plasma", "Solide ou liquide", "Toujours liquide"], correct: 2 },
+    { q: "Quelle est la capitale de la Grece ?", a: ["Athenes", "Sparte", "Patras", "Heraklion"], correct: 0 },
+    { q: "Quel est le resultat de 15 + 27 ?", a: ["32", "42", "52", "62"], correct: 1 },
+    { q: "Quel est le plus grand mammifere du monde ?", a: ["Elephant", "Baleine bleue", "Requin-baleine", "Girafe"], correct: 1 },
+    { q: "Quel est l'organe qui pompe le sang ?", a: ["Foie", "Cerveau", "Coeur", "Estomac"], correct: 2 },
+    { q: "Quelle est la capitale de la Belgique ?", a: ["Bruxelles", "Anvers", "Liege", "Gand"], correct: 0 },
+    { q: "Quel est le nombre premier parmi ces choix ?", a: ["21", "25", "29", "33"], correct: 2 },
+    { q: "Quel est le principal composant du sable ?", a: ["Sel", "Silice", "Charbon", "Calcium"], correct: 1 },
+    { q: "Quelle est la capitale de l'Australie ?", a: ["Sydney", "Melbourne", "Canberra", "Perth"], correct: 2 },
+    { q: "Quelle unite mesure la frequence ?", a: ["Newton", "Watt", "Hertz", "Pascal"], correct: 2 },
+    { q: "Quel est le resultat de 144 / 12 ?", a: ["10", "11", "12", "13"], correct: 2 }
+];
+
+const HANGMAN_WORD_BANK = [
+    { word: 'JAVASCRIPT', hint: 'Langage web tres populaire' },
+    { word: 'PYTHON', hint: 'Langage connu pour sa simplicite' },
+    { word: 'SERVEUR', hint: 'Machine qui fournit des services reseau' },
+    { word: 'DISCORD', hint: 'Application de chat vocal et texte' },
+    { word: 'ORDINATEUR', hint: 'Machine electronique programmable' },
+    { word: 'INTERNET', hint: 'Reseau mondial' },
+    { word: 'CLAVIER', hint: 'Peripherique pour taper du texte' },
+    { word: 'ECRAN', hint: 'Affichage visuel' },
+    { word: 'PROGRAMME', hint: 'Suite d instructions executees par une machine' },
+    { word: 'FONCTION', hint: 'Bloc de code reutilisable' },
+    { word: 'VARIABLE', hint: 'Conteneur de valeur en programmation' },
+    { word: 'TABLEAU', hint: 'Structure de donnees indexee' },
+    { word: 'BOUCLE', hint: 'Permet de repeter des instructions' },
+    { word: 'CONDITION', hint: 'Execute selon vrai ou faux' },
+    { word: 'MUSIQUE', hint: 'Art des sons' },
+    { word: 'CINEMA', hint: 'Art du film' },
+    { word: 'GALAXIE', hint: 'Immense ensemble d etoiles' },
+    { word: 'PLANETE', hint: 'Corps celeste en orbite autour d une etoile' },
+    { word: 'ETOILE', hint: 'Astre lumineux' },
+    { word: 'LICORNE', hint: 'Creature mythique avec une corne' },
+    { word: 'DRAGON', hint: 'Creature legendaire souvent cracheuse de feu' },
+    { word: 'CHATEAU', hint: 'Grande forteresse medievale' },
+    { word: 'PIRATE', hint: 'Marin hors-la-loi' },
+    { word: 'ROBOT', hint: 'Machine autonome ou semi-autonome' },
+    { word: 'ESPACE', hint: 'Au-dela de l atmosphere terrestre' },
+    { word: 'AVENTURE', hint: 'Experience pleine de rebondissements' },
+    { word: 'MONTAGNE', hint: 'Relief naturel eleve' },
+    { word: 'RIVIERE', hint: 'Cours d eau naturel' },
+    { word: 'FORET', hint: 'Zone dense d arbres' },
+    { word: 'DESERT', hint: 'Region tres seche' },
+    { word: 'ORAGE', hint: 'Pluie, eclairs et tonnerre' },
+    { word: 'NUAGE', hint: 'Masse visible de gouttelettes dans le ciel' },
+    { word: 'SOLEIL', hint: 'Etoile de notre systeme' },
+    { word: 'LUNE', hint: 'Satellite naturel de la Terre' },
+    { word: 'COMETE', hint: 'Petit corps celeste a queue lumineuse' },
+    { word: 'ASTEROIDE', hint: 'Petit corps rocheux dans l espace' },
+    { word: 'SATELLITE', hint: 'Objet en orbite autour d une planete' },
+    { word: 'GRAVITE', hint: 'Force qui attire les corps' },
+    { word: 'ELECTRON', hint: 'Particule elementaire negative' },
+    { word: 'MOLECULE', hint: 'Assemblage d atomes' },
+    { word: 'OXYGENE', hint: 'Gaz indispensable a la respiration' },
+    { word: 'HYDROGENE', hint: 'Element le plus abondant de l univers' },
+    { word: 'BIBLIOTHEQUE', hint: 'Lieu ou l on emprunte des livres' },
+    { word: 'ROMAN', hint: 'Recit litteraire long' },
+    { word: 'POESIE', hint: 'Art du langage rythme' },
+    { word: 'THEATRE', hint: 'Art de la scene' },
+    { word: 'PEINTURE', hint: 'Art visuel avec couleurs' },
+    { word: 'SCULPTURE', hint: 'Art en volume' },
+    { word: 'GUITARE', hint: 'Instrument a cordes' },
+    { word: 'PIANO', hint: 'Instrument a clavier' },
+    { word: 'TROMPETTE', hint: 'Instrument a vent en cuivre' },
+    { word: 'BASKET', hint: 'Sport avec panier' },
+    { word: 'FOOTBALL', hint: 'Sport au ballon rond' },
+    { word: 'TENNIS', hint: 'Sport de raquette' },
+    { word: 'VOLLEY', hint: 'Sport avec filet' },
+    { word: 'NATATION', hint: 'Sport aquatique' },
+    { word: 'MARATHON', hint: 'Course de longue distance' },
+    { word: 'VOITURE', hint: 'Vehicule a moteur' },
+    { word: 'AVION', hint: 'Transport aerien' },
+    { word: 'BATEAU', hint: 'Transport maritime' },
+    { word: 'TRAIN', hint: 'Transport ferroviaire' },
+    { word: 'VELO', hint: 'Transport a deux roues sans moteur' },
+    { word: 'MOTEUR', hint: 'Piece qui transforme une energie en mouvement' },
+    { word: 'BATTERIE', hint: 'Stockage d energie electrique' },
+    { word: 'CASQUE', hint: 'Protection de la tete' },
+    { word: 'LANTERNE', hint: 'Source de lumiere portable' },
+    { word: 'HORIZON', hint: 'Ligne apparente entre ciel et terre' },
+    { word: 'PARACHUTE', hint: 'Permet de ralentir une chute' },
+    { word: 'BANANE', hint: 'Fruit jaune riche en potassium' },
+    { word: 'CERISE', hint: 'Petit fruit rouge a noyau' },
+    { word: 'CHOCOLAT', hint: 'Gourmandise issue du cacao' },
+    { word: 'FROMAGE', hint: 'Produit laitier affine' },
+    { word: 'PATISSERIE', hint: 'Art des desserts' },
+    { word: 'CROISSANT', hint: 'Viennoiserie en forme de lune' },
+    { word: 'BAGUETTE', hint: 'Pain francais long et fin' },
+    { word: 'FESTIVAL', hint: 'Evenement culturel' },
+    { word: 'VACANCES', hint: 'Periode de repos' },
+    { word: 'VOYAGE', hint: 'Deplacement vers un autre lieu' },
+    { word: 'CARTE', hint: 'Representation geographique' },
+    { word: 'BOUSSOLE', hint: 'Outil d orientation' },
+    { word: 'PHARE', hint: 'Tour lumineuse pour guider les bateaux' },
+    { word: 'TRIANGLE', hint: 'Forme a trois cotes' },
+    { word: 'RECTANGLE', hint: 'Forme a quatre angles droits' },
+    { word: 'CERCLE', hint: 'Forme ronde' },
+    { word: 'PYRAMIDE', hint: 'Monument celebre d Egypte' },
+    { word: 'SEMAPHORE', hint: 'Signalisation lumineuse routiere' }
+];
+
+function getRandomTriviaQuestions(count) {
+    return [...TRIVIA_QUESTION_BANK].sort(() => Math.random() - 0.5).slice(0, Math.min(count, TRIVIA_QUESTION_BANK.length));
+}
+
+function getRandomHangmanWord() {
+    return HANGMAN_WORD_BANK[Math.floor(Math.random() * HANGMAN_WORD_BANK.length)];
+}
+
+function getHangmanHintState(game) {
+    const wrongCount = game.wrong.length;
+    const reveal = wrongCount >= 3;
+    let text = '';
+    if (reveal) {
+        text = game.hint || '';
+        if (!text && wrongCount >= 5) {
+            text = `Le mot commence par ${game.word.charAt(0)} et contient ${game.word.length} lettres`;
+        }
+    }
+    return { visible: reveal, text };
+}
+
+function spawnArenaCoin(width, height, players, existingCoins) {
+    const occupied = new Set();
+    players.forEach((p) => occupied.add(`${p.x},${p.y}`));
+    (existingCoins || []).forEach((c) => occupied.add(`${c.x},${c.y}`));
+    let tries = 0;
+    while (tries < 200) {
+        const x = Math.floor(Math.random() * width);
+        const y = Math.floor(Math.random() * height);
+        const key = `${x},${y}`;
+        if (!occupied.has(key)) return { x, y };
+        tries += 1;
+    }
+    return { x: Math.floor(width / 2), y: Math.floor(height / 2) };
+}
+
+function buildArenaState() {
+    const width = 24;
+    const height = 14;
+    const players = [
+        { x: 2, y: Math.floor(height / 2), score: 0 },
+        { x: width - 3, y: Math.floor(height / 2), score: 0 }
+    ];
+    const coins = [];
+    for (let i = 0; i < 8; i++) {
+        coins.push(spawnArenaCoin(width, height, players, coins));
+    }
+    return {
+        width,
+        height,
+        players,
+        coins,
+        targetScore: 12,
+        moveCooldownMs: 70,
+        lastMoveAt: [0, 0]
+    };
+}
+
 // Tâches de maintenance périodiques
 setInterval(() => {
     // Nettoyer les indicateurs de frappe expirés
@@ -3910,6 +4938,53 @@ setInterval(() => {
         });
     }
 }, 60000); // Chaque minute
+
+// XP passif vocal + progression mission vocal (1 fois / minute)
+setInterval(() => {
+    let anyXpChanged = false;
+    for (const [roomName, roomData] of Object.entries(voiceRooms)) {
+        for (const [socketId, participant] of roomData.participants.entries()) {
+            if (!participant || participant.muted || participant.deafened) continue;
+            const username = participant.username;
+            if (!username) continue;
+
+            const passiveResult = addRawXP(username, VOICE_PASSIVE_XP_PER_MINUTE);
+            const missionRewards = applyMissionProgress(username, { voiceMinutes: 1 });
+
+            if (passiveResult.gainedXP > 0 || missionRewards.length > 0) {
+                anyXpChanged = true;
+                io.to(socketId).emit('xp_data', buildXPDataPayload(username));
+            }
+
+            if (passiveResult.levelUp) {
+                io.emit('system_message', {
+                    type: 'system',
+                    message: `🎉 ${username} a atteint le niveau ${passiveResult.newLevel} !`,
+                    timestamp: new Date(),
+                    id: messageId++
+                });
+            }
+
+            for (const reward of missionRewards) {
+                io.to(socketId).emit('daily_mission_reward', {
+                    missionKey: reward.key,
+                    missionLabel: reward.label,
+                    rewardXP: reward.rewardXP
+                });
+                if (reward.levelUp) {
+                    io.emit('system_message', {
+                        type: 'system',
+                        message: `🎉 ${username} a atteint le niveau ${reward.newLevel} !`,
+                        timestamp: new Date(),
+                        id: messageId++
+                    });
+                }
+            }
+        }
+    }
+
+    if (anyXpChanged) saveXPData();
+}, 60000);
 
 // Nettoyage des fichiers une fois par jour
 setInterval(cleanupOldFiles, 24 * 60 * 60 * 1000);

@@ -5,6 +5,9 @@ const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
 const crypto = require('crypto');
+const PACKAGE_INFO = require('./package.json');
+const SERVER_NAME = 'DocSpace Server';
+const SERVER_VERSION = PACKAGE_INFO.version || '3.2.6';
 
 const app = express();
 const server = http.createServer(app);
@@ -86,22 +89,86 @@ let serverStats = {
     totalConnections: 0,
     startTime: new Date()
 };
+const SERVER_SESSION_START_MS = Date.now();
+let shutdownInProgress = false;
+let runtimeSessionCommitted = false;
+let serverRuntimeStats = {
+    version: 1,
+    accumulatedUptimeSeconds: 0,
+    boots: 0,
+    lastBootAt: null,
+    lastShutdownAt: null,
+    updatedAt: null
+};
+
+const LIVE_EVENT_ROTATION_MINUTES = 45;
+const LIVE_EVENT_DEFAULT_DURATION_MINUTES = 30;
+const LIVE_EVENT_MAX_DURATION_MINUTES = 180;
+const LIVE_EVENTS_CATALOG = [
+    {
+        id: 'double_xp_rush',
+        icon: '⚡',
+        title: 'Double XP Rush',
+        description: 'XP des messages x2 pendant une courte periode.',
+        messageXpMultiplier: 2
+    },
+    {
+        id: 'night_owl',
+        icon: '🌙',
+        title: 'Night Owl',
+        description: 'Bonus nocturne: XP des messages x1.5.',
+        messageXpMultiplier: 1.5
+    },
+    {
+        id: 'creator_spotlight',
+        icon: '🎨',
+        title: 'Creator Spotlight',
+        description: 'Session creative en direct, XP des messages x1.4.',
+        messageXpMultiplier: 1.4
+    },
+    {
+        id: 'arcade_frenzy',
+        icon: '🕹️',
+        title: 'Arcade Frenzy',
+        description: 'Ambiance mini-jeux, XP des messages x1.3.',
+        messageXpMultiplier: 1.3
+    }
+];
+
+let liveOpsState = {
+    version: 1,
+    season: {
+        number: 1,
+        label: 'Saison 1 - Genesis',
+        startedAt: null,
+        xpMultiplier: 1
+    },
+    activeEvent: null,
+    eventRotationMinutes: LIVE_EVENT_ROTATION_MINUTES,
+    nextRotationAt: 0,
+    updatedAt: null
+};
 
 // === SALONS MULTIPLES (BETA) ===
-const AVAILABLE_CHANNELS = ['général', 'présentation', 'jeux', 'musique', 'films', 'random', 'aide', 'ia'];
-const VOICE_CHANNELS = ['Vocal Général', 'Vocal Gaming', 'Vocal Musique'];
-let voiceRooms = {}; // { roomName: { participants: Map(socketId -> {username, muted, deafened, video, screen}) } }
-VOICE_CHANNELS.forEach(vc => {
-    voiceRooms[vc] = { participants: new Map() };
-});
+const DEFAULT_CHANNELS = [
+    { name: 'général', icon: '#', category: '💬 Discussion' },
+    { name: 'présentation', icon: '#', category: '💬 Discussion' },
+    { name: 'jeux', icon: '🎮', category: '🎮 Loisirs' },
+    { name: 'musique', icon: '🎵', category: '🎮 Loisirs' },
+    { name: 'films', icon: '🎬', category: '🎮 Loisirs' },
+    { name: 'random', icon: '🎲', category: '💡 Autres' },
+    { name: 'aide', icon: '❓', category: '💡 Autres' },
+    { name: 'ia', icon: '🤖', category: '🤖 Intelligence Artificielle' }
+];
+const DEFAULT_VOICE_CHANNELS = [
+    { name: 'Vocal Général', icon: '🔊' },
+    { name: 'Vocal Gaming', icon: '🎮' },
+    { name: 'Vocal Musique', icon: '🎵' }
+];
+
+// Channel histories & reactions - initialized after AVAILABLE_CHANNELS (see below)
 let channelHistories = {}; // { channelName: [messages] }
 let channelReactions = {}; // { channelName: { messageId: {emoji: [usernames]} } }
-
-// Initialiser les historiques par salon
-AVAILABLE_CHANNELS.forEach(ch => {
-    channelHistories[ch] = [];
-    channelReactions[ch] = {};
-});
 
 // Stockage des réactions emoji sur les messages (messageId -> {emoji: [usernames]})
 let messageReactions = {};
@@ -140,11 +207,18 @@ const XP_MESSAGE_COOLDOWN_MS = 30000;
 const XP_MESSAGE_COOLDOWN_REDUCED_MS = 20000;
 const XP_UTILITY_DURATION_MS = 15 * 60 * 1000;
 const VOICE_PASSIVE_XP_PER_MINUTE = 3;
+const BANANA_XP_RATIO = 11;
+const VOICE_SPEAKING_EVENT_THROTTLE_MS = 120;
 const UTILITY_PURCHASES_LIMIT_PER_HOUR = 8;
+const NAME_EFFECT_ITEMS = {
+    name_glow: { cost: 24, label: 'Halo lumineux' },
+    name_gradient: { cost: 29, label: 'Dégradé arc-en-ciel' },
+    name_neon: { cost: 34, label: 'Néon vibrant' }
+};
 const DAILY_MISSIONS = {
-    messages: { target: 10, rewardXP: 60, label: 'Messages du jour' },
-    reactions: { target: 5, rewardXP: 40, label: 'Reactions du jour' },
-    voiceMinutes: { target: 10, rewardXP: 70, label: 'Minutes en vocal' }
+    messages: { target: 10, rewardXP: 70, rewardBananas: 2, label: 'Messages du jour' },
+    reactions: { target: 5, rewardXP: 50, rewardBananas: 2, label: 'Reactions du jour' },
+    voiceMinutes: { target: 10, rewardXP: 85, rewardBananas: 3, label: 'Minutes en vocal' }
 };
 function getXPForLevel(level) { return Math.floor(XP_LEVEL_BASE * Math.pow(1.5, level - 1)); }
 function getLevelFromXP(xp) {
@@ -160,7 +234,100 @@ function getLevelFromXP(xp) {
 function getBananaPoints(username) {
     const data = userXP[username];
     if (!data) return 0;
-    return Math.floor(data.xp / 10);
+    const bonusBananas = Math.max(0, Number(data.bonusBananas || 0));
+    return Math.floor((data.xp || 0) / BANANA_XP_RATIO) + bonusBananas;
+}
+
+function spendBananas(username, cost) {
+    const entry = ensureXPEntry(username);
+    let remaining = Math.max(0, Math.floor(cost || 0));
+    if (remaining <= 0) return true;
+
+    const available = getBananaPoints(username);
+    if (available < remaining) return false;
+
+    const bonusBananas = Math.max(0, Number(entry.bonusBananas || 0));
+    const fromBonus = Math.min(bonusBananas, remaining);
+    entry.bonusBananas = bonusBananas - fromBonus;
+    remaining -= fromBonus;
+
+    if (remaining > 0) {
+        const xpCost = remaining * BANANA_XP_RATIO;
+        entry.xp = Math.max(0, (entry.xp || 0) - xpCost);
+        entry.level = getLevelFromXP(entry.xp).level;
+    }
+
+    return true;
+}
+
+function sanitizeNameEffect(effect) {
+    const safe = String(effect || 'none').toLowerCase();
+    if (['name_glow', 'name_gradient', 'name_neon'].includes(safe)) return safe;
+    return 'none';
+}
+
+function getActiveNameEffect(username) {
+    const entry = ensureXPEntry(username);
+    const active = sanitizeNameEffect(entry.activeNameEffect || 'none');
+    if (active === 'none') return 'none';
+    const owned = entry.ownedNameEffects || {};
+    return owned[active] ? active : 'none';
+}
+
+function mergeXPEntries(baseEntry, incomingEntry) {
+    const base = baseEntry || {};
+    const incoming = incomingEntry || {};
+
+    base.xp = Math.max(0, Number(base.xp || 0)) + Math.max(0, Number(incoming.xp || 0));
+    base.totalMessages = Math.max(0, Number(base.totalMessages || 0)) + Math.max(0, Number(incoming.totalMessages || 0));
+    base.bonusBananas = Math.max(0, Number(base.bonusBananas || 0)) + Math.max(0, Number(incoming.bonusBananas || 0));
+    base.streakDays = Math.max(Number(base.streakDays || 0), Number(incoming.streakDays || 0));
+    base.lastXpGain = Math.max(Number(base.lastXpGain || 0), Number(incoming.lastXpGain || 0));
+    base.lastReactionXpAt = Math.max(Number(base.lastReactionXpAt || 0), Number(incoming.lastReactionXpAt || 0));
+    base.streakShieldCharges = Math.min(3, Math.max(Number(base.streakShieldCharges || 0), Number(incoming.streakShieldCharges || 0)));
+    base.xpBoostUntil = Math.max(Number(base.xpBoostUntil || 0), Number(incoming.xpBoostUntil || 0));
+    base.reactionBoostUntil = Math.max(Number(base.reactionBoostUntil || 0), Number(incoming.reactionBoostUntil || 0));
+    base.cooldownReducerUntil = Math.max(Number(base.cooldownReducerUntil || 0), Number(incoming.cooldownReducerUntil || 0));
+    base.shopWindowStart = Math.max(Number(base.shopWindowStart || 0), Number(incoming.shopWindowStart || 0));
+    base.shopWindowCount = Math.max(Number(base.shopWindowCount || 0), Number(incoming.shopWindowCount || 0));
+
+    const owned = { ...(base.ownedNameEffects || {}) };
+    const incomingOwned = incoming.ownedNameEffects || {};
+    Object.keys(NAME_EFFECT_ITEMS).forEach((k) => {
+        owned[k] = !!owned[k] || !!incomingOwned[k];
+    });
+    base.ownedNameEffects = owned;
+
+    const wanted = sanitizeNameEffect(base.activeNameEffect || incoming.activeNameEffect || 'none');
+    base.activeNameEffect = (wanted !== 'none' && owned[wanted]) ? wanted : 'none';
+
+    base.level = getLevelFromXP(base.xp).level;
+    return base;
+}
+
+function mergeMiniGameStatsEntries(baseEntry, incomingEntry) {
+    const base = baseEntry || { points: 0, played: 0, wins: 0, losses: 0, draws: 0, byGame: {} };
+    const incoming = incomingEntry || { byGame: {} };
+
+    base.points = Math.max(0, Number(base.points || 0)) + Math.max(0, Number(incoming.points || 0));
+    base.played = Math.max(0, Number(base.played || 0)) + Math.max(0, Number(incoming.played || 0));
+    base.wins = Math.max(0, Number(base.wins || 0)) + Math.max(0, Number(incoming.wins || 0));
+    base.losses = Math.max(0, Number(base.losses || 0)) + Math.max(0, Number(incoming.losses || 0));
+    base.draws = Math.max(0, Number(base.draws || 0)) + Math.max(0, Number(incoming.draws || 0));
+
+    base.byGame = base.byGame || {};
+    const incomingByGame = incoming.byGame || {};
+    Object.entries(incomingByGame).forEach(([gameKey, row]) => {
+        const cur = base.byGame[gameKey] || { points: 0, played: 0, wins: 0, losses: 0, draws: 0 };
+        cur.points = Math.max(0, Number(cur.points || 0)) + Math.max(0, Number(row.points || 0));
+        cur.played = Math.max(0, Number(cur.played || 0)) + Math.max(0, Number(row.played || 0));
+        cur.wins = Math.max(0, Number(cur.wins || 0)) + Math.max(0, Number(row.wins || 0));
+        cur.losses = Math.max(0, Number(cur.losses || 0)) + Math.max(0, Number(row.losses || 0));
+        cur.draws = Math.max(0, Number(cur.draws || 0)) + Math.max(0, Number(row.draws || 0));
+        base.byGame[gameKey] = cur;
+    });
+    base.lastPlayedAt = incoming.lastPlayedAt || base.lastPlayedAt || null;
+    return base;
 }
 
 function ensureXPEntry(username) {
@@ -175,6 +342,9 @@ function ensureXPEntry(username) {
             xpBoostUntil: 0,
             reactionBoostUntil: 0,
             cooldownReducerUntil: 0,
+            bonusBananas: 0,
+            ownedNameEffects: {},
+            activeNameEffect: 'none',
             streakShieldCharges: 0,
             lastReactionXpAt: 0,
             shopWindowStart: 0,
@@ -190,6 +360,12 @@ function ensureXPEntry(username) {
     if (typeof userXP[username].xpBoostUntil !== 'number') userXP[username].xpBoostUntil = 0;
     if (typeof userXP[username].reactionBoostUntil !== 'number') userXP[username].reactionBoostUntil = 0;
     if (typeof userXP[username].cooldownReducerUntil !== 'number') userXP[username].cooldownReducerUntil = 0;
+    if (typeof userXP[username].bonusBananas !== 'number') userXP[username].bonusBananas = 0;
+    if (!userXP[username].ownedNameEffects || typeof userXP[username].ownedNameEffects !== 'object') userXP[username].ownedNameEffects = {};
+    userXP[username].activeNameEffect = sanitizeNameEffect(userXP[username].activeNameEffect || 'none');
+    if (userXP[username].activeNameEffect !== 'none' && !userXP[username].ownedNameEffects[userXP[username].activeNameEffect]) {
+        userXP[username].activeNameEffect = 'none';
+    }
     if (typeof userXP[username].streakShieldCharges !== 'number') userXP[username].streakShieldCharges = 0;
     if (typeof userXP[username].lastReactionXpAt !== 'number') userXP[username].lastReactionXpAt = 0;
     if (typeof userXP[username].shopWindowStart !== 'number') userXP[username].shopWindowStart = 0;
@@ -228,6 +404,11 @@ function buildXPDataPayload(username) {
         ...levelData,
         totalMessages: data.totalMessages || 0,
         bananaPoints: getBananaPoints(username),
+        bananaBreakdown: {
+            fromXP: Math.floor((data.xp || 0) / BANANA_XP_RATIO),
+            fromTasks: Math.max(0, Number(data.bonusBananas || 0)),
+            ratioXP: BANANA_XP_RATIO
+        },
         streakDays: data.streakDays || 0,
         xpBoostUntil: boostUntil,
         xpBoostActive: boostUntil > Date.now(),
@@ -236,12 +417,23 @@ function buildXPDataPayload(username) {
         cooldownReducerUntil,
         cooldownReducerActive: cooldownReducerUntil > Date.now(),
         streakShieldCharges: data.streakShieldCharges || 0,
+        activeNameEffect: getActiveNameEffect(username),
+        ownedNameEffects: {
+            name_glow: !!data.ownedNameEffects?.name_glow,
+            name_gradient: !!data.ownedNameEffects?.name_gradient,
+            name_neon: !!data.ownedNameEffects?.name_neon
+        },
         dailyMissions: {
             dayKey: data.dailyMissionDay || getDayKey(),
             targets: {
                 messages: DAILY_MISSIONS.messages.target,
                 reactions: DAILY_MISSIONS.reactions.target,
                 voiceMinutes: DAILY_MISSIONS.voiceMinutes.target
+            },
+            rewards: {
+                messages: { xp: DAILY_MISSIONS.messages.rewardXP, bananas: DAILY_MISSIONS.messages.rewardBananas },
+                reactions: { xp: DAILY_MISSIONS.reactions.rewardXP, bananas: DAILY_MISSIONS.reactions.rewardBananas },
+                voiceMinutes: { xp: DAILY_MISSIONS.voiceMinutes.rewardXP, bananas: DAILY_MISSIONS.voiceMinutes.rewardBananas }
             },
             progress: {
                 messages: data.dailyMissionProgress?.messages || 0,
@@ -302,11 +494,16 @@ function applyMissionProgress(username, deltas = {}) {
         if ((entry.dailyMissionProgress[key] || 0) >= DAILY_MISSIONS[key].target) {
             entry.dailyMissionCompleted[key] = true;
             const rewardXP = DAILY_MISSIONS[key].rewardXP;
+            const rewardBananas = Math.max(0, Number(DAILY_MISSIONS[key].rewardBananas || 0));
             const xpResult = addRawXP(username, rewardXP);
+            if (rewardBananas > 0) {
+                entry.bonusBananas = Math.max(0, Number(entry.bonusBananas || 0)) + rewardBananas;
+            }
             rewards.push({
                 key,
                 label: DAILY_MISSIONS[key].label,
                 rewardXP,
+                rewardBananas,
                 levelUp: xpResult.levelUp,
                 newLevel: xpResult.newLevel
             });
@@ -367,6 +564,39 @@ const REMINDERS_FILE = path.join(DATA_DIR, 'reminders.json');
 const AUTOMOD_FILE = path.join(DATA_DIR, 'automod.json');
 const ACCOUNTS_FILE = path.join(DATA_DIR, 'accounts.json');
 const MINIGAMES_FILE = path.join(DATA_DIR, 'mini_games_stats.json');
+const CHANNEL_CONFIG_FILE = path.join(DATA_DIR, 'channel_config.json');
+const SERVER_RUNTIME_FILE = path.join(DATA_DIR, 'server_runtime_stats.json');
+const LIVE_EVENTS_FILE = path.join(DATA_DIR, 'live_events_state.json');
+
+// Charger ou initialiser la config des salons
+let channelConfig = { channels: [...DEFAULT_CHANNELS], voiceChannels: [...DEFAULT_VOICE_CHANNELS], categories: ['💬 Discussion', '🎮 Loisirs', '💡 Autres', '🤖 Intelligence Artificielle'] };
+function loadChannelConfig() {
+    try {
+        if (fs.existsSync(CHANNEL_CONFIG_FILE)) {
+            const data = JSON.parse(fs.readFileSync(CHANNEL_CONFIG_FILE, 'utf8'));
+            if (data.channels && data.channels.length > 0) channelConfig = data;
+            console.log(`✅ Config salons chargée: ${channelConfig.channels.length} text, ${channelConfig.voiceChannels.length} voice`);
+        }
+    } catch (e) { console.error('❌ Erreur chargement config salons:', e.message); }
+}
+function saveChannelConfig() {
+    try { fs.writeFileSync(CHANNEL_CONFIG_FILE, JSON.stringify(channelConfig, null, 2)); } catch (e) { console.error('❌ Erreur sauvegarde config salons:', e.message); }
+}
+loadChannelConfig();
+
+// Derive AVAILABLE_CHANNELS and VOICE_CHANNELS from config
+let AVAILABLE_CHANNELS = channelConfig.channels.map(c => c.name);
+let VOICE_CHANNELS = channelConfig.voiceChannels.map(c => c.name);
+let voiceRooms = {};
+VOICE_CHANNELS.forEach(vc => {
+    voiceRooms[vc] = { participants: new Map() };
+});
+
+// Initialiser les historiques par salon
+AVAILABLE_CHANNELS.forEach(ch => {
+    if (!channelHistories[ch]) channelHistories[ch] = [];
+    if (!channelReactions[ch]) channelReactions[ch] = {};
+});
 
 console.log(`📂 Dossier de données: ${DATA_DIR}`);
 
@@ -374,6 +604,300 @@ console.log(`📂 Dossier de données: ${DATA_DIR}`);
 if (!fs.existsSync(DATA_DIR)) {
     fs.mkdirSync(DATA_DIR, { recursive: true });
     console.log(`📁 Dossier créé: ${DATA_DIR}`);
+}
+
+function normalizeRuntimeStats(data = {}) {
+    const accumulated = Number(data.accumulatedUptimeSeconds || 0);
+    const boots = Number(data.boots || 0);
+    return {
+        version: 1,
+        accumulatedUptimeSeconds: Number.isFinite(accumulated) && accumulated > 0 ? Math.floor(accumulated) : 0,
+        boots: Number.isFinite(boots) && boots > 0 ? Math.floor(boots) : 0,
+        lastBootAt: data.lastBootAt || null,
+        lastShutdownAt: data.lastShutdownAt || null,
+        updatedAt: data.updatedAt || null
+    };
+}
+
+function getSessionUptimeSeconds() {
+    return Math.max(0, Math.floor((Date.now() - SERVER_SESSION_START_MS) / 1000));
+}
+
+function getTotalUptimeSeconds() {
+    return Math.max(0, Math.floor((serverRuntimeStats.accumulatedUptimeSeconds || 0) + getSessionUptimeSeconds()));
+}
+
+function formatDurationShort(totalSeconds) {
+    const seconds = Math.max(0, Math.floor(totalSeconds || 0));
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hours}h ${minutes}m ${secs}s`;
+}
+
+function saveServerRuntimeStats(options = {}) {
+    const includeCurrentSession = options.includeCurrentSession !== false;
+    try {
+        const payload = normalizeRuntimeStats(serverRuntimeStats);
+        if (includeCurrentSession && !runtimeSessionCommitted) {
+            payload.accumulatedUptimeSeconds += getSessionUptimeSeconds();
+        }
+        payload.updatedAt = new Date().toISOString();
+        fs.writeFileSync(SERVER_RUNTIME_FILE, JSON.stringify(payload, null, 2));
+    } catch (error) {
+        console.error('❌ Erreur sauvegarde runtime serveur:', error.message);
+    }
+}
+
+function commitRuntimeSession() {
+    if (runtimeSessionCommitted) return;
+    serverRuntimeStats.accumulatedUptimeSeconds += getSessionUptimeSeconds();
+    serverRuntimeStats.lastShutdownAt = new Date().toISOString();
+    serverRuntimeStats.updatedAt = new Date().toISOString();
+    runtimeSessionCommitted = true;
+    saveServerRuntimeStats({ includeCurrentSession: false });
+}
+
+function loadServerRuntimeStats() {
+    try {
+        if (fs.existsSync(SERVER_RUNTIME_FILE)) {
+            const raw = JSON.parse(fs.readFileSync(SERVER_RUNTIME_FILE, 'utf8'));
+            serverRuntimeStats = normalizeRuntimeStats(raw);
+        } else {
+            serverRuntimeStats = normalizeRuntimeStats({});
+        }
+    } catch (error) {
+        console.error('❌ Erreur chargement runtime serveur:', error.message);
+        serverRuntimeStats = normalizeRuntimeStats({});
+    }
+
+    serverRuntimeStats.boots += 1;
+    serverRuntimeStats.lastBootAt = new Date().toISOString();
+    serverRuntimeStats.updatedAt = new Date().toISOString();
+    saveServerRuntimeStats({ includeCurrentSession: false });
+}
+
+loadServerRuntimeStats();
+
+function findLiveEventById(eventId) {
+    const wanted = String(eventId || '').trim().toLowerCase();
+    if (!wanted) return null;
+    return LIVE_EVENTS_CATALOG.find((event) => String(event.id).toLowerCase() === wanted) || null;
+}
+
+function createDefaultLiveOpsState() {
+    const now = Date.now();
+    return {
+        version: 1,
+        season: {
+            number: 1,
+            label: 'Saison 1 - Genesis',
+            startedAt: new Date(now).toISOString(),
+            xpMultiplier: 1
+        },
+        activeEvent: null,
+        eventRotationMinutes: LIVE_EVENT_ROTATION_MINUTES,
+        nextRotationAt: now + LIVE_EVENT_ROTATION_MINUTES * 60 * 1000,
+        updatedAt: new Date(now).toISOString()
+    };
+}
+
+function normalizeLiveOpsState(raw = {}) {
+    const fallback = createDefaultLiveOpsState();
+
+    const seasonRaw = raw.season || {};
+    const seasonNumber = parseInt(seasonRaw.number, 10);
+    const xpMultiplier = Number(seasonRaw.xpMultiplier);
+    const eventRotationMinutes = parseInt(raw.eventRotationMinutes, 10);
+    const nextRotationAt = Number(raw.nextRotationAt);
+    const activeEventRaw = raw.activeEvent || null;
+
+    let activeEvent = null;
+    if (activeEventRaw && activeEventRaw.id) {
+        const ref = findLiveEventById(activeEventRaw.id);
+        const endsAt = Number(activeEventRaw.endsAt || 0);
+        if (ref && Number.isFinite(endsAt) && endsAt > 0) {
+            activeEvent = {
+                id: ref.id,
+                icon: ref.icon,
+                title: ref.title,
+                description: ref.description,
+                messageXpMultiplier: Number(ref.messageXpMultiplier || 1),
+                startsAt: activeEventRaw.startsAt || new Date().toISOString(),
+                endsAt,
+                activatedBy: String(activeEventRaw.activatedBy || 'system')
+            };
+        }
+    }
+
+    return {
+        version: 1,
+        season: {
+            number: Number.isFinite(seasonNumber) && seasonNumber > 0 ? seasonNumber : fallback.season.number,
+            label: String(seasonRaw.label || fallback.season.label).substring(0, 70) || fallback.season.label,
+            startedAt: seasonRaw.startedAt || fallback.season.startedAt,
+            xpMultiplier: Number.isFinite(xpMultiplier) ? Math.min(5, Math.max(0.5, xpMultiplier)) : fallback.season.xpMultiplier
+        },
+        activeEvent,
+        eventRotationMinutes: Number.isFinite(eventRotationMinutes) && eventRotationMinutes >= 10
+            ? Math.min(240, eventRotationMinutes)
+            : fallback.eventRotationMinutes,
+        nextRotationAt: Number.isFinite(nextRotationAt) && nextRotationAt > 0
+            ? nextRotationAt
+            : fallback.nextRotationAt,
+        updatedAt: raw.updatedAt || fallback.updatedAt
+    };
+}
+
+function saveLiveOpsState() {
+    try {
+        liveOpsState.updatedAt = new Date().toISOString();
+        fs.writeFileSync(LIVE_EVENTS_FILE, JSON.stringify(liveOpsState, null, 2));
+    } catch (error) {
+        console.error('❌ Erreur sauvegarde live events:', error.message);
+    }
+}
+
+function loadLiveOpsState() {
+    try {
+        if (fs.existsSync(LIVE_EVENTS_FILE)) {
+            const raw = JSON.parse(fs.readFileSync(LIVE_EVENTS_FILE, 'utf8'));
+            liveOpsState = normalizeLiveOpsState(raw);
+        } else {
+            liveOpsState = createDefaultLiveOpsState();
+            saveLiveOpsState();
+        }
+        console.log('✅ Live events charges');
+    } catch (error) {
+        console.error('❌ Erreur chargement live events:', error.message);
+        liveOpsState = createDefaultLiveOpsState();
+    }
+}
+
+function getLiveMessageXpMultiplier() {
+    const seasonMultiplier = Math.min(5, Math.max(0.5, Number(liveOpsState?.season?.xpMultiplier || 1)));
+    let eventMultiplier = 1;
+    const event = liveOpsState.activeEvent;
+    if (event && Number(event.endsAt || 0) > Date.now()) {
+        eventMultiplier = Math.max(1, Number(event.messageXpMultiplier || 1));
+    }
+    return Math.max(0.5, Math.min(8, Number((seasonMultiplier * eventMultiplier).toFixed(2))));
+}
+
+function getLiveOpsPayload() {
+    const now = Date.now();
+    const payload = {
+        season: {
+            number: liveOpsState.season.number,
+            label: liveOpsState.season.label,
+            startedAt: liveOpsState.season.startedAt,
+            xpMultiplier: liveOpsState.season.xpMultiplier
+        },
+        event: null,
+        nextRotationAt: liveOpsState.nextRotationAt,
+        eventRotationMinutes: liveOpsState.eventRotationMinutes,
+        effectiveMessageXpMultiplier: getLiveMessageXpMultiplier(),
+        serverTime: now,
+        catalog: LIVE_EVENTS_CATALOG.map((event) => ({
+            id: event.id,
+            icon: event.icon,
+            title: event.title,
+            description: event.description,
+            messageXpMultiplier: event.messageXpMultiplier
+        }))
+    };
+
+    if (liveOpsState.activeEvent && Number(liveOpsState.activeEvent.endsAt || 0) > now) {
+        payload.event = {
+            ...liveOpsState.activeEvent,
+            remainingMs: Math.max(0, Number(liveOpsState.activeEvent.endsAt || 0) - now)
+        };
+    }
+
+    return payload;
+}
+
+function broadcastLiveOpsState() {
+    io.emit('season_event_state', getLiveOpsPayload());
+}
+
+function emitLiveOpsSystemMessage(message) {
+    const systemMessage = {
+        type: 'system',
+        message,
+        timestamp: new Date(),
+        id: messageId++
+    };
+    addToHistory(systemMessage);
+    io.emit('system_message', systemMessage);
+}
+
+function activateLiveEvent(eventId, options = {}) {
+    const ref = findLiveEventById(eventId);
+    if (!ref) return null;
+
+    const now = Date.now();
+    const durationRaw = parseInt(options.durationMinutes, 10);
+    const durationMinutes = Number.isFinite(durationRaw)
+        ? Math.min(LIVE_EVENT_MAX_DURATION_MINUTES, Math.max(5, durationRaw))
+        : LIVE_EVENT_DEFAULT_DURATION_MINUTES;
+
+    liveOpsState.activeEvent = {
+        id: ref.id,
+        icon: ref.icon,
+        title: ref.title,
+        description: ref.description,
+        messageXpMultiplier: Number(ref.messageXpMultiplier || 1),
+        startsAt: new Date(now).toISOString(),
+        endsAt: now + durationMinutes * 60 * 1000,
+        activatedBy: String(options.actor || 'system')
+    };
+    liveOpsState.nextRotationAt = now + liveOpsState.eventRotationMinutes * 60 * 1000;
+    saveLiveOpsState();
+    broadcastLiveOpsState();
+
+    if (options.announce !== false) {
+        emitLiveOpsSystemMessage(`${ref.icon} Event live: ${ref.title} (${durationMinutes} min)`);
+    }
+
+    return liveOpsState.activeEvent;
+}
+
+function endLiveEvent(options = {}) {
+    const current = liveOpsState.activeEvent;
+    if (!current) return false;
+
+    liveOpsState.activeEvent = null;
+    liveOpsState.nextRotationAt = Date.now() + liveOpsState.eventRotationMinutes * 60 * 1000;
+    saveLiveOpsState();
+    broadcastLiveOpsState();
+
+    if (options.announce !== false) {
+        const actor = options.actor ? ` par ${options.actor}` : '';
+        emitLiveOpsSystemMessage(`🧊 Event termine: ${current.title}${actor}`);
+    }
+
+    return true;
+}
+
+function rotateLiveEvent(options = {}) {
+    const currentId = liveOpsState.activeEvent ? liveOpsState.activeEvent.id : null;
+    const pool = LIVE_EVENTS_CATALOG.filter((event) => event.id !== currentId);
+    const source = pool.length > 0 ? pool : LIVE_EVENTS_CATALOG;
+    const selected = source[Math.floor(Math.random() * source.length)] || null;
+    if (!selected) return null;
+    return activateLiveEvent(selected.id, options);
+}
+
+function refreshLiveOpsState() {
+    const now = Date.now();
+    if (liveOpsState.activeEvent && Number(liveOpsState.activeEvent.endsAt || 0) <= now) {
+        endLiveEvent({ actor: 'system', announce: true });
+    }
+
+    if (!liveOpsState.activeEvent && Number(liveOpsState.nextRotationAt || 0) <= now) {
+        rotateLiveEvent({ actor: 'system', announce: true, durationMinutes: LIVE_EVENT_DEFAULT_DURATION_MINUTES });
+    }
 }
 
 // === FONCTIONS DE PERSISTANCE ===
@@ -530,6 +1054,8 @@ loadDMs();
 // Charger les données au démarrage
 loadPersistedData();
 loadPinnedMessages();
+loadLiveOpsState();
+refreshLiveOpsState();
 
 // === CHARGEMENT DES NOUVELLES DONNÉES ===
 function loadXPData() {
@@ -540,8 +1066,32 @@ function loadXPData() {
         }
     } catch (e) { console.error('❌ Erreur chargement XP:', e.message); userXP = {}; }
 }
+
+const XP_SAVE_DEBOUNCE_MS = 1200;
+let xpSaveTimer = null;
+
+function writeXPDataNow() {
+    try {
+        fs.writeFileSync(XP_FILE, JSON.stringify(userXP, null, 2));
+    } catch (e) {
+        console.error('❌ Erreur sauvegarde XP:', e.message);
+    }
+}
+
 function saveXPData() {
-    try { fs.writeFileSync(XP_FILE, JSON.stringify(userXP, null, 2)); } catch (e) { console.error('❌ Erreur sauvegarde XP:', e.message); }
+    if (xpSaveTimer) return;
+    xpSaveTimer = setTimeout(() => {
+        xpSaveTimer = null;
+        writeXPDataNow();
+    }, XP_SAVE_DEBOUNCE_MS);
+}
+
+function saveXPDataImmediate() {
+    if (xpSaveTimer) {
+        clearTimeout(xpSaveTimer);
+        xpSaveTimer = null;
+    }
+    writeXPDataNow();
 }
 function loadFriendships() {
     try {
@@ -646,6 +1196,22 @@ function loadMiniGameStats() {
 }
 
 function saveMiniGameStats() {
+    if (saveMiniGameStats._timer) return;
+    saveMiniGameStats._timer = setTimeout(() => {
+        saveMiniGameStats._timer = null;
+        try {
+            fs.writeFileSync(MINIGAMES_FILE, JSON.stringify(miniGameStats, null, 2));
+        } catch (e) {
+            console.error('❌ Erreur sauvegarde stats mini-jeux:', e.message);
+        }
+    }, 1500);
+}
+
+function saveMiniGameStatsImmediate() {
+    if (saveMiniGameStats._timer) {
+        clearTimeout(saveMiniGameStats._timer);
+        saveMiniGameStats._timer = null;
+    }
     try {
         fs.writeFileSync(MINIGAMES_FILE, JSON.stringify(miniGameStats, null, 2));
     } catch (e) {
@@ -841,6 +1407,15 @@ function recordMiniGameResult(username, gameType, outcome = 'played', extra = {}
     saveMiniGameStats();
 
     let xpResult = null;
+    let bananas = 0;
+    if (outcome === 'win') bananas = 2;
+    else if (outcome === 'draw') bananas = 1;
+
+    if (bananas > 0) {
+        const xpEntry = ensureXPEntry(username);
+        xpEntry.bonusBananas = Math.max(0, Number(xpEntry.bonusBananas || 0)) + bananas;
+    }
+
     if (xp > 0) {
         xpResult = grantXP(username, xp, { ignoreCooldown: true, source: 'minigame' });
         saveXPData();
@@ -849,6 +1424,7 @@ function recordMiniGameResult(username, gameType, outcome = 'played', extra = {}
     return {
         points,
         xp,
+        bananas,
         xpResult,
         totals: {
             points: stats.points,
@@ -1155,17 +1731,22 @@ app.get('/ADMIN', (req, res) => {
 
 // Route de santé pour Render avec stats détaillées
 app.get('/health', (req, res) => {
-    const uptime = Math.floor(process.uptime());
+    const uptimeSession = getSessionUptimeSeconds();
+    const uptimeTotal = getTotalUptimeSeconds();
     const memUsage = process.memoryUsage();
     
     const healthData = {
         status: 'OK',
-        uptime: `${Math.floor(uptime / 60)}min ${uptime % 60}s`,
+        uptime: formatDurationShort(uptimeTotal),
+        uptimeSession: formatDurationShort(uptimeSession),
+        uptimeTotalSeconds: uptimeTotal,
         users: connectedUsers.size,
         messages: chatHistory.length,
         totalMessages: serverStats.totalMessages,
         totalUploads: serverStats.totalUploads,
         totalConnections: serverStats.totalConnections,
+        serverName: SERVER_NAME,
+        serverVersion: SERVER_VERSION,
         memory: {
             used: `${Math.round(memUsage.heapUsed / 1024 / 1024)}MB`,
             total: `${Math.round(memUsage.heapTotal / 1024 / 1024)}MB`
@@ -1183,8 +1764,10 @@ app.get('/health', (req, res) => {
 
 // === API STATISTIQUES PUBLIQUES ===
 app.get('/api/stats', (req, res) => {
-    const uptime = Math.floor(process.uptime());
+    const uptimeTotal = getTotalUptimeSeconds();
     const totalChannelMessages = Object.values(channelHistories).reduce((sum, arr) => sum + arr.length, 0);
+    refreshLiveOpsState();
+    const liveOpsPayload = getLiveOpsPayload();
     
     // Top channels by activity
     const channelStats = {};
@@ -1198,10 +1781,82 @@ app.get('/api/stats', (req, res) => {
         totalChannelMessages: totalChannelMessages,
         totalUploads: serverStats.totalUploads,
         totalConnectionsEver: serverStats.totalConnections,
+        serverName: SERVER_NAME,
+        serverVersion: SERVER_VERSION,
         channels: channelStats,
-        uptime: `${Math.floor(uptime / 3600)}h ${Math.floor((uptime % 3600) / 60)}m`,
+        uptime: `${Math.floor(uptimeTotal / 3600)}h ${Math.floor((uptimeTotal % 3600) / 60)}m`,
+        uptimeTotalSeconds: uptimeTotal,
         activePolls: Object.keys(polls).length,
-        dmConversations: Object.keys(dmHistory).length
+        dmConversations: Object.keys(dmHistory).length,
+        season: liveOpsPayload.season,
+        activeLiveEvent: liveOpsPayload.event ? {
+            id: liveOpsPayload.event.id,
+            title: liveOpsPayload.event.title,
+            icon: liveOpsPayload.event.icon,
+            remainingMs: liveOpsPayload.event.remainingMs,
+            messageXpMultiplier: liveOpsPayload.event.messageXpMultiplier
+        } : null
+    });
+});
+
+// === API DASHBOARD POUR OUTILS EXTERNES (ex: interface Python) ===
+app.get('/api/server/dashboard', (req, res) => {
+    const sessionUptimeSeconds = getSessionUptimeSeconds();
+    const uptimeSeconds = getTotalUptimeSeconds();
+    refreshLiveOpsState();
+    const liveOpsPayload = getLiveOpsPayload();
+    const mem = process.memoryUsage();
+    const textChannels = Array.isArray(AVAILABLE_CHANNELS) ? AVAILABLE_CHANNELS : [];
+    const voiceRoomsSummary = Object.entries(voiceRooms || {}).map(([roomName, roomData]) => ({
+        name: roomName,
+        participants: roomData?.participants ? roomData.participants.size : 0
+    }));
+
+    const channelsByActivity = textChannels.map((ch) => ({
+        name: ch,
+        messages: Array.isArray(channelHistories[ch]) ? channelHistories[ch].length : 0
+    })).sort((a, b) => b.messages - a.messages);
+
+    res.json({
+        server: {
+            name: SERVER_NAME,
+            version: SERVER_VERSION,
+            node: process.version,
+            uptimeSeconds,
+            sessionUptimeSeconds,
+            boots: serverRuntimeStats.boots,
+            lastBootAt: serverRuntimeStats.lastBootAt
+        },
+        traffic: {
+            onlineUsers: connectedUsers.size,
+            totalConnections: serverStats.totalConnections,
+            totalMessages: serverStats.totalMessages,
+            totalUploads: serverStats.totalUploads
+        },
+        memory: {
+            heapUsedMB: Math.round(mem.heapUsed / 1024 / 1024),
+            heapTotalMB: Math.round(mem.heapTotal / 1024 / 1024),
+            rssMB: Math.round(mem.rss / 1024 / 1024)
+        },
+        channels: {
+            textTotal: textChannels.length,
+            voiceTotal: voiceRoomsSummary.length,
+            topTextByMessages: channelsByActivity.slice(0, 8),
+            voiceRooms: voiceRoomsSummary
+        },
+        realtime: {
+            activeGames: global.activeGames ? global.activeGames.size : 0,
+            pendingInvites: global.gameInvites ? global.gameInvites.size : 0,
+            typingUsers: typingUsers.size
+        },
+        liveOps: {
+            season: liveOpsPayload.season,
+            activeEvent: liveOpsPayload.event,
+            effectiveMessageXpMultiplier: liveOpsPayload.effectiveMessageXpMultiplier,
+            nextRotationAt: liveOpsPayload.nextRotationAt,
+            eventRotationMinutes: liveOpsPayload.eventRotationMinutes
+        },
+        generatedAt: new Date().toISOString()
     });
 });
 
@@ -1284,7 +1939,8 @@ io.on('connection', (socket) => {
                 socket.emit('daily_mission_reward', {
                     missionKey: reward.key,
                     missionLabel: reward.label,
-                    rewardXP: reward.rewardXP
+                    rewardXP: reward.rewardXP,
+                    rewardBananas: reward.rewardBananas || 0
                 });
                 if (reward.levelUp) {
                     io.emit('system_message', {
@@ -1375,6 +2031,38 @@ io.on('connection', (socket) => {
             // Mettre à jour le pseudo
             user.username = cleanNewUsername;
             connectedUsers.set(socket.id, user);
+
+            if (oldUsername !== cleanNewUsername) {
+                const oldXP = userXP[oldUsername];
+                const newXP = userXP[cleanNewUsername];
+                if (oldXP && newXP) {
+                    userXP[cleanNewUsername] = mergeXPEntries(ensureXPEntry(cleanNewUsername), oldXP);
+                    delete userXP[oldUsername];
+                    saveXPData();
+                } else if (oldXP && !newXP) {
+                    userXP[cleanNewUsername] = oldXP;
+                    delete userXP[oldUsername];
+                    ensureXPEntry(cleanNewUsername);
+                    saveXPData();
+                }
+
+                const oldMiniGames = miniGameStats[oldUsername];
+                const newMiniGames = miniGameStats[cleanNewUsername];
+                if (oldMiniGames && newMiniGames) {
+                    miniGameStats[cleanNewUsername] = mergeMiniGameStatsEntries(newMiniGames, oldMiniGames);
+                    delete miniGameStats[oldUsername];
+                    saveMiniGameStats();
+                } else if (oldMiniGames && !newMiniGames) {
+                    miniGameStats[cleanNewUsername] = oldMiniGames;
+                    delete miniGameStats[oldUsername];
+                    saveMiniGameStats();
+                }
+
+                for (const [, rData] of Object.entries(voiceRooms)) {
+                    const participant = rData.participants.get(socket.id);
+                    if (participant) participant.username = cleanNewUsername;
+                }
+            }
             
             // Transférer le statut
             if (userStatuses[oldUsername]) {
@@ -1803,6 +2491,94 @@ io.on('connection', (socket) => {
                 logActivity('ADMIN', 'XP défini', { admin: adminName, target: xpName, totalXP: amount });
                 break;
             }
+
+            case 'live_ops_get': {
+                refreshLiveOpsState();
+                socket.emit('season_event_state', getLiveOpsPayload());
+                socket.emit('admin_response', { success: true, message: 'Etat saison/event transmis' });
+                break;
+            }
+
+            case 'season_update': {
+                const wantedNumber = parseInt(data.seasonNumber, 10);
+                const wantedLabel = String(data.seasonLabel || '').trim();
+                const wantedMultiplier = Number(data.xpMultiplier);
+
+                if (Number.isFinite(wantedNumber) && wantedNumber > 0) {
+                    liveOpsState.season.number = Math.min(999, wantedNumber);
+                }
+                if (wantedLabel) {
+                    liveOpsState.season.label = wantedLabel.substring(0, 70);
+                }
+                if (Number.isFinite(wantedMultiplier)) {
+                    liveOpsState.season.xpMultiplier = Math.min(5, Math.max(0.5, wantedMultiplier));
+                }
+                if (!liveOpsState.season.startedAt) {
+                    liveOpsState.season.startedAt = new Date().toISOString();
+                }
+
+                saveLiveOpsState();
+                broadcastLiveOpsState();
+                socket.emit('admin_response', {
+                    success: true,
+                    message: `Saison ${liveOpsState.season.number} mise a jour (x${liveOpsState.season.xpMultiplier.toFixed(2)})`
+                });
+                logActivity('ADMIN', 'Saison mise a jour', {
+                    admin: adminName,
+                    season: liveOpsState.season
+                });
+                break;
+            }
+
+            case 'live_event_set': {
+                const eventId = data.eventId || value;
+                const durationMinutes = parseInt(data.duration, 10);
+                const activated = activateLiveEvent(eventId, {
+                    actor: adminName,
+                    durationMinutes: Number.isFinite(durationMinutes) ? durationMinutes : LIVE_EVENT_DEFAULT_DURATION_MINUTES,
+                    announce: true
+                });
+                if (!activated) {
+                    socket.emit('admin_response', { success: false, message: 'Event live introuvable' });
+                    break;
+                }
+                socket.emit('admin_response', {
+                    success: true,
+                    message: `Event live lance: ${activated.title}`
+                });
+                logActivity('ADMIN', 'Event live lance', {
+                    admin: adminName,
+                    eventId: activated.id,
+                    durationMinutes: Math.round((activated.endsAt - Date.now()) / 60000)
+                });
+                break;
+            }
+
+            case 'live_event_rotate': {
+                const rotated = rotateLiveEvent({
+                    actor: adminName,
+                    announce: true,
+                    durationMinutes: LIVE_EVENT_DEFAULT_DURATION_MINUTES
+                });
+                if (!rotated) {
+                    socket.emit('admin_response', { success: false, message: 'Impossible de tourner l\'event live' });
+                    break;
+                }
+                socket.emit('admin_response', { success: true, message: `Event tourne: ${rotated.title}` });
+                logActivity('ADMIN', 'Event live tourne', { admin: adminName, eventId: rotated.id });
+                break;
+            }
+
+            case 'live_event_end': {
+                const ended = endLiveEvent({ actor: adminName, announce: true });
+                if (!ended) {
+                    socket.emit('admin_response', { success: false, message: 'Aucun event live actif' });
+                    break;
+                }
+                socket.emit('admin_response', { success: true, message: 'Event live termine' });
+                logActivity('ADMIN', 'Event live termine', { admin: adminName });
+                break;
+            }
             
             // === NOUVELLES ACTIONS ADMIN ===
             case 'set_private':
@@ -1901,6 +2677,7 @@ io.on('connection', (socket) => {
                 // Sauvegarder avant de redémarrer
                 saveHistory();
                 saveReactions();
+                commitRuntimeSession();
                 
                 setTimeout(() => {
                     process.exit(0); // render.com redémarrera automatiquement
@@ -1908,7 +2685,7 @@ io.on('connection', (socket) => {
                 break;
             
             case 'get_stats':
-                const uptimeSeconds = Math.floor((new Date() - serverStats.startTime) / 1000);
+                const uptimeSeconds = getTotalUptimeSeconds();
                 socket.emit('server_stats', {
                     connectedUsers: connectedUsers.size,
                     totalMessages: serverStats.totalMessages,
@@ -2023,6 +2800,202 @@ io.on('connection', (socket) => {
             
             // Broadcaster la liste des admins à tout le monde
             io.emit('admin_list_update', { admins: adminUsersList });
+        }
+    });
+
+    socket.on('admin_logout', (data) => {
+        const user = connectedUsers.get(socket.id);
+        const username = String(data?.username || user?.username || '').trim();
+        if (!username) return;
+        const idx = adminUsersList.indexOf(username);
+        if (idx > -1) {
+            adminUsersList.splice(idx, 1);
+            io.emit('admin_list_update', { admins: adminUsersList });
+            logActivity('ADMIN', `${username} s'est déconnecté du mode admin`);
+        }
+    });
+
+    // === ADMIN CHANNEL MANAGEMENT ===
+    socket.on('admin_get_channel_config', (data) => {
+        const adminPassword = process.env.ADMIN_PASSWORD || 'IndieGabVR2024';
+        if (data?.password !== adminPassword) return;
+        socket.emit('channel_config', channelConfig);
+    });
+
+    socket.on('admin_channel_action', (data) => {
+        const adminPassword = process.env.ADMIN_PASSWORD || 'IndieGabVR2024';
+        if (data?.password !== adminPassword) {
+            socket.emit('admin_response', { success: false, message: 'Non autorisé' });
+            return;
+        }
+        const { action } = data;
+        switch (action) {
+            case 'create_text': {
+                const name = String(data.name || '').trim().toLowerCase();
+                const icon = String(data.icon || '#').trim();
+                const category = String(data.category || '💬 Discussion').trim();
+                if (!name || name.length > 30) { socket.emit('admin_response', { success: false, message: 'Nom invalide (1-30 caractères)' }); return; }
+                if (channelConfig.channels.some(c => c.name === name)) { socket.emit('admin_response', { success: false, message: 'Ce salon existe déjà' }); return; }
+                channelConfig.channels.push({ name, icon, category });
+                if (!channelConfig.categories.includes(category)) channelConfig.categories.push(category);
+                AVAILABLE_CHANNELS = channelConfig.channels.map(c => c.name);
+                if (!channelHistories[name]) { channelHistories[name] = []; channelReactions[name] = {}; }
+                saveChannelConfig(); saveChannelHistories();
+                io.emit('channel_config_update', channelConfig);
+                socket.emit('admin_response', { success: true, message: `Salon #${name} créé` });
+                logActivity('ADMIN', `Salon #${name} créé`, { icon, category });
+                break;
+            }
+            case 'create_voice': {
+                const name = String(data.name || '').trim();
+                const icon = String(data.icon || '🔊').trim();
+                if (!name || name.length > 30) { socket.emit('admin_response', { success: false, message: 'Nom invalide' }); return; }
+                if (channelConfig.voiceChannels.some(c => c.name === name)) { socket.emit('admin_response', { success: false, message: 'Ce vocal existe déjà' }); return; }
+                channelConfig.voiceChannels.push({ name, icon });
+                VOICE_CHANNELS = channelConfig.voiceChannels.map(c => c.name);
+                voiceRooms[name] = { participants: new Map() };
+                saveChannelConfig();
+                io.emit('channel_config_update', channelConfig);
+                socket.emit('admin_response', { success: true, message: `Vocal "${name}" créé` });
+                logActivity('ADMIN', `Vocal "${name}" créé`);
+                break;
+            }
+            case 'delete_text': {
+                const name = String(data.name || '').trim();
+                if (name === 'général') { socket.emit('admin_response', { success: false, message: 'Impossible de supprimer #général' }); return; }
+                const idx = channelConfig.channels.findIndex(c => c.name === name);
+                if (idx === -1) { socket.emit('admin_response', { success: false, message: 'Salon non trouvé' }); return; }
+                channelConfig.channels.splice(idx, 1);
+                AVAILABLE_CHANNELS = channelConfig.channels.map(c => c.name);
+                saveChannelConfig();
+                io.emit('channel_config_update', channelConfig);
+                socket.emit('admin_response', { success: true, message: `Salon #${name} supprimé` });
+                logActivity('ADMIN', `Salon #${name} supprimé`);
+                break;
+            }
+            case 'delete_voice': {
+                const name = String(data.name || '').trim();
+                const idx = channelConfig.voiceChannels.findIndex(c => c.name === name);
+                if (idx === -1) { socket.emit('admin_response', { success: false, message: 'Vocal non trouvé' }); return; }
+                // Kick everyone from this voice channel first
+                if (voiceRooms[name]) {
+                    for (const [sid] of voiceRooms[name].participants) {
+                        const s = io.sockets.sockets.get(sid);
+                        if (s) s.emit('voice_force_disconnect', { reason: 'Salon vocal supprimé' });
+                    }
+                    delete voiceRooms[name];
+                }
+                channelConfig.voiceChannels.splice(idx, 1);
+                VOICE_CHANNELS = channelConfig.voiceChannels.map(c => c.name);
+                saveChannelConfig();
+                io.emit('channel_config_update', channelConfig);
+                socket.emit('admin_response', { success: true, message: `Vocal "${name}" supprimé` });
+                logActivity('ADMIN', `Vocal "${name}" supprimé`);
+                break;
+            }
+            case 'edit_text': {
+                const oldName = String(data.oldName || '').trim();
+                const ch = channelConfig.channels.find(c => c.name === oldName);
+                if (!ch) { socket.emit('admin_response', { success: false, message: 'Salon non trouvé' }); return; }
+                if (data.icon) ch.icon = String(data.icon).trim();
+                if (data.category) {
+                    ch.category = String(data.category).trim();
+                    if (!channelConfig.categories.includes(ch.category)) channelConfig.categories.push(ch.category);
+                }
+                if (data.newName && data.newName !== oldName) {
+                    const newName = String(data.newName).trim().toLowerCase();
+                    if (channelConfig.channels.some(c => c.name === newName)) { socket.emit('admin_response', { success: false, message: 'Ce nom existe déjà' }); return; }
+                    // Migrate history
+                    if (channelHistories[oldName]) { channelHistories[newName] = channelHistories[oldName]; delete channelHistories[oldName]; }
+                    if (channelReactions[oldName]) { channelReactions[newName] = channelReactions[oldName]; delete channelReactions[oldName]; }
+                    ch.name = newName;
+                    AVAILABLE_CHANNELS = channelConfig.channels.map(c => c.name);
+
+                    // Migrate users currently in the old channel to keep server state in sync
+                    connectedUsers.forEach((u, sid) => {
+                        if (u && u.currentChannel === oldName) {
+                            u.currentChannel = newName;
+                            connectedUsers.set(sid, u);
+                        }
+                    });
+
+                    saveChannelHistories();
+                    // Migrate users currently in the old channel
+                    io.emit('channel_renamed', { oldName, newName });
+                }
+                saveChannelConfig();
+                io.emit('channel_config_update', channelConfig);
+                socket.emit('admin_response', { success: true, message: `Salon modifié` });
+                logActivity('ADMIN', `Salon modifié: ${oldName}`, data);
+                break;
+            }
+            case 'edit_voice': {
+                const oldName = String(data.oldName || '').trim();
+                const vc = channelConfig.voiceChannels.find(c => c.name === oldName);
+                if (!vc) { socket.emit('admin_response', { success: false, message: 'Vocal non trouvé' }); return; }
+                if (data.icon) vc.icon = String(data.icon).trim();
+                if (data.newName && data.newName !== oldName) {
+                    const newName = String(data.newName).trim();
+                    if (channelConfig.voiceChannels.some(c => c.name === newName)) { socket.emit('admin_response', { success: false, message: 'Ce nom existe déjà' }); return; }
+                    if (voiceRooms[oldName]) { voiceRooms[newName] = voiceRooms[oldName]; delete voiceRooms[oldName]; }
+                    vc.name = newName;
+                    VOICE_CHANNELS = channelConfig.voiceChannels.map(c => c.name);
+                }
+                saveChannelConfig();
+                io.emit('channel_config_update', channelConfig);
+                socket.emit('admin_response', { success: true, message: `Vocal modifié` });
+                logActivity('ADMIN', `Vocal modifié: ${oldName}`, data);
+                break;
+            }
+            case 'reorder': {
+                if (Array.isArray(data.channels)) {
+                    // Validate all names exist
+                    const valid = data.channels.every(n => channelConfig.channels.some(c => c.name === n));
+                    if (valid && data.channels.length === channelConfig.channels.length) {
+                        const reordered = data.channels.map(n => channelConfig.channels.find(c => c.name === n));
+                        channelConfig.channels = reordered;
+                        AVAILABLE_CHANNELS = reordered.map(c => c.name);
+                        saveChannelConfig();
+                        io.emit('channel_config_update', channelConfig);
+                        socket.emit('admin_response', { success: true, message: 'Ordre mis à jour' });
+                    }
+                }
+                if (Array.isArray(data.voiceChannels)) {
+                    const valid = data.voiceChannels.every(n => channelConfig.voiceChannels.some(c => c.name === n));
+                    if (valid && data.voiceChannels.length === channelConfig.voiceChannels.length) {
+                        const reordered = data.voiceChannels.map(n => channelConfig.voiceChannels.find(c => c.name === n));
+                        channelConfig.voiceChannels = reordered;
+                        VOICE_CHANNELS = reordered.map(c => c.name);
+                        saveChannelConfig();
+                        io.emit('channel_config_update', channelConfig);
+                        socket.emit('admin_response', { success: true, message: 'Ordre vocal mis à jour' });
+                    }
+                }
+                break;
+            }
+            case 'add_category': {
+                const cat = String(data.category || '').trim();
+                if (!cat) { socket.emit('admin_response', { success: false, message: 'Nom vide' }); return; }
+                if (!channelConfig.categories.includes(cat)) {
+                    channelConfig.categories.push(cat);
+                    saveChannelConfig();
+                    io.emit('channel_config_update', channelConfig);
+                    socket.emit('admin_response', { success: true, message: `Catégorie "${cat}" ajoutée` });
+                }
+                break;
+            }
+            case 'delete_category': {
+                const cat = String(data.category || '').trim();
+                channelConfig.categories = channelConfig.categories.filter(c => c !== cat);
+                // Move orphaned channels to first category
+                channelConfig.channels.forEach(ch => { if (ch.category === cat) ch.category = channelConfig.categories[0] || '💬 Discussion'; });
+                saveChannelConfig();
+                io.emit('channel_config_update', channelConfig);
+                socket.emit('admin_response', { success: true, message: `Catégorie supprimée` });
+                break;
+            }
+            default:
+                socket.emit('admin_response', { success: false, message: 'Action inconnue' });
         }
     });
 
@@ -2279,6 +3252,9 @@ io.on('connection', (socket) => {
             socket.emit('user_statuses_sync', userStatuses);
             socket.emit('admin_list_update', { admins: adminUsersList });
             socket.emit('pinned_update', { pinnedMessages });
+            socket.emit('channel_config_update', channelConfig);
+            refreshLiveOpsState();
+            socket.emit('season_event_state', getLiveOpsPayload());
             
             // Send new feature data
             socket.emit('xp_data', buildXPDataPayload(cleanUsername));
@@ -2502,6 +3478,7 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
                 type: messageData.type || 'user',
                 id: messageId++,
                 username: user.username,
+                nameEffect: getActiveNameEffect(user.username),
                 avatar: user.avatar,
                 content: messageData.content ? messageData.content.trim().substring(0, 500) : '',
                 timestamp: new Date(),
@@ -2510,6 +3487,25 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
                 attachment: messageData.attachment || null,
                 channel: channel // Ajouter le salon au message
             };
+
+            if (message.attachment && typeof message.attachment === 'object' && message.attachment.isVoiceClip) {
+                const clipMime = String(message.attachment.mimetype || '');
+                const clipSize = Number(message.attachment.size || 0);
+                const clipDuration = Number(message.attachment.duration || 0);
+                if (!clipMime.startsWith('audio/')) {
+                    socket.emit('error', { message: 'Clip vocal invalide (format)' });
+                    return;
+                }
+                if (!Number.isFinite(clipSize) || clipSize <= 0 || clipSize > 8 * 1024 * 1024) {
+                    socket.emit('error', { message: 'Clip vocal invalide (taille max 8MB)' });
+                    return;
+                }
+                if (!Number.isFinite(clipDuration) || clipDuration <= 0 || clipDuration > 25) {
+                    socket.emit('error', { message: 'Clip vocal invalide (max 20s)' });
+                    return;
+                }
+                message.attachment.clipLabel = String(message.attachment.clipLabel || '').substring(0, 80);
+            }
 
             // Validation du message
             if (!message.content && !message.attachment) {
@@ -2571,7 +3567,10 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
             // === XP SYSTEM ===
             const xpEntry = ensureXPEntry(user.username);
             xpEntry.totalMessages++;
-            const xpResult = grantXP(user.username, XP_PER_MESSAGE);
+            const xpResult = grantXP(user.username, XP_PER_MESSAGE, {
+                source: 'message',
+                multiplier: getLiveMessageXpMultiplier()
+            });
             if (xpResult && xpResult.levelUp) {
                 io.emit('system_message', {
                     type: 'system',
@@ -2586,7 +3585,8 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
                 socket.emit('daily_mission_reward', {
                     missionKey: reward.key,
                     missionLabel: reward.label,
-                    rewardXP: reward.rewardXP
+                    rewardXP: reward.rewardXP,
+                    rewardBananas: reward.rewardBananas || 0
                 });
                 if (reward.levelUp) {
                     io.emit('system_message', {
@@ -2631,8 +3631,9 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
     socket.on('switch_channel', (data) => {
         const user = connectedUsers.get(socket.id);
         if (!user) return;
-        
-        const { channel, previousChannel } = data;
+
+        const channel = typeof data === 'string' ? data : data?.channel;
+        const previousChannel = typeof data === 'string' ? user.currentChannel : data?.previousChannel;
         
         if (!AVAILABLE_CHANNELS.includes(channel)) {
             socket.emit('error', { message: 'Salon invalide' });
@@ -2842,8 +3843,19 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
         for (const [rName, rData] of Object.entries(voiceRooms)) {
             const participant = rData.participants.get(socket.id);
             if (participant) {
-                participant.speaking = !!data.speaking;
-                io.emit('voice_participants_update', { room: rName, participants: getVoiceParticipants(rName) });
+                const speaking = !!data.speaking;
+                const now = Date.now();
+                const previous = !!participant.speaking;
+                const lastEmit = Number(participant.speakingUpdatedAt || 0);
+                if (previous !== speaking || now - lastEmit >= VOICE_SPEAKING_EVENT_THROTTLE_MS) {
+                    participant.speaking = speaking;
+                    participant.speakingUpdatedAt = now;
+                    io.emit('voice_speaking_update', {
+                        room: rName,
+                        socketId: socket.id,
+                        speaking
+                    });
+                }
                 break;
             }
         }
@@ -3769,6 +4781,28 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
         socket.emit('xp_data', buildXPDataPayload(user.username));
     });
 
+    socket.on('set_name_effect', (data) => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+
+        const xpEntry = ensureXPEntry(user.username);
+        const requested = sanitizeNameEffect(data?.effect || 'none');
+        if (requested !== 'none' && !xpEntry.ownedNameEffects?.[requested]) {
+            socket.emit('banana_error', { message: 'Effet non possédé' });
+            return;
+        }
+
+        xpEntry.activeNameEffect = requested;
+        saveXPData();
+        socket.emit('xp_data', buildXPDataPayload(user.username));
+        updateUsersList();
+        for (const [rName, rData] of Object.entries(voiceRooms)) {
+            if (rData.participants.has(socket.id)) {
+                io.emit('voice_participants_update', { room: rName, participants: getVoiceParticipants(rName) });
+            }
+        }
+    });
+
     socket.on('get_leaderboard', () => {
         const leaderboard = Object.entries(userXP)
             .map(([username, data]) => ({ username, xp: data.xp, ...getLevelFromXP(data.xp), totalMessages: data.totalMessages, bananaPoints: getBananaPoints(username) }))
@@ -3814,6 +4848,7 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
             outcome,
             points: result.points,
             xp: result.xp,
+            bananas: result.bananas,
             totalMiniGamePoints: result.totals.points
         });
         socket.emit('xp_data', buildXPDataPayload(user.username));
@@ -3824,15 +4859,18 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
         if (!user) return;
 
         const costs = {
-            confetti: 5,
-            shake: 3,
-            flash: 3,
-            rain: 8,
-            fireworks: 10,
-            xp_boost: 12,
-            streak_shield: 15,
-            reaction_boost: 10,
-            cooldown_reducer: 9
+            confetti: 12,
+            shake: 9,
+            flash: 100,
+            rain: 16,
+            fireworks: 23,
+            xp_boost: 15,
+            streak_shield: 18,
+            reaction_boost: 13,
+            cooldown_reducer: 12,
+            name_glow: NAME_EFFECT_ITEMS.name_glow.cost,
+            name_gradient: NAME_EFFECT_ITEMS.name_gradient.cost,
+            name_neon: NAME_EFFECT_ITEMS.name_neon.cost
         };
         const effect = data.effect;
         const cost = costs[effect];
@@ -3841,13 +4879,30 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
             return;
         }
 
+        const xpEntry = ensureXPEntry(user.username);
+        if (NAME_EFFECT_ITEMS[effect] && xpEntry.ownedNameEffects?.[effect]) {
+            xpEntry.activeNameEffect = effect;
+            saveXPData();
+            socket.emit('banana_reward', {
+                type: effect,
+                title: '✨ Effet activé',
+                message: `${NAME_EFFECT_ITEMS[effect].label} activé sur votre pseudo`
+            });
+            socket.emit('xp_data', buildXPDataPayload(user.username));
+            updateUsersList();
+            for (const [rName, rData] of Object.entries(voiceRooms)) {
+                if (rData.participants.has(socket.id)) {
+                    io.emit('voice_participants_update', { room: rName, participants: getVoiceParticipants(rName) });
+                }
+            }
+            return;
+        }
+
         const bananas = getBananaPoints(user.username);
         if (bananas < cost) {
             socket.emit('banana_error', { message: `Pas assez de bananes ! (${bananas}/${cost} 🍌)` });
             return;
         }
-
-        const xpEntry = ensureXPEntry(user.username);
 
         const utilityItems = ['xp_boost', 'streak_shield', 'reaction_boost', 'cooldown_reducer'];
         if (utilityItems.includes(effect)) {
@@ -3865,7 +4920,11 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
             xpEntry.shopWindowCount += 1;
         }
 
-        xpEntry.xp = Math.max(0, xpEntry.xp - cost * 10);
+        const spendOk = spendBananas(user.username, cost);
+        if (!spendOk) {
+            socket.emit('banana_error', { message: 'Impossible de débiter les bananes, réessayez.' });
+            return;
+        }
 
         if (effect === 'xp_boost') {
             const now = Date.now();
@@ -3901,6 +4960,15 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
                 title: '⚡ Cadence XP',
                 message: 'Cooldown XP messages réduit à 20s pendant 15 minutes'
             });
+        } else if (NAME_EFFECT_ITEMS[effect]) {
+            xpEntry.ownedNameEffects = xpEntry.ownedNameEffects || {};
+            xpEntry.ownedNameEffects[effect] = true;
+            xpEntry.activeNameEffect = effect;
+            socket.emit('banana_reward', {
+                type: effect,
+                title: '🌈 Effet pseudo débloqué',
+                message: `${NAME_EFFECT_ITEMS[effect].label} obtenu en permanent`
+            });
         }
 
         xpEntry.level = getLevelFromXP(xpEntry.xp).level;
@@ -3912,6 +4980,12 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
 
         socket.emit('banana_updated', { bananaPoints: getBananaPoints(user.username) });
         socket.emit('xp_data', buildXPDataPayload(user.username));
+        updateUsersList();
+        for (const [rName, rData] of Object.entries(voiceRooms)) {
+            if (rData.participants.has(socket.id)) {
+                io.emit('voice_participants_update', { room: rName, participants: getVoiceParticipants(rName) });
+            }
+        }
 
         logActivity('ADMIN', 'Achat boutique banane', {
             username: user.username,
@@ -4501,17 +5575,65 @@ function applyGameMove(game, move, playerIndex) {
 
             const p = game.state.players[playerIndex];
             if (!p) return { valid: false };
+            const otherIndex = playerIndex === 0 ? 1 : 0;
+            const other = game.state.players[otherIndex];
 
-            if (dir === 'up') p.y = Math.max(0, p.y - 1);
-            if (dir === 'down') p.y = Math.min(game.state.height - 1, p.y + 1);
-            if (dir === 'left') p.x = Math.max(0, p.x - 1);
-            if (dir === 'right') p.x = Math.min(game.state.width - 1, p.x + 1);
+            const nextX = dir === 'left' ? Math.max(0, p.x - 1)
+                : dir === 'right' ? Math.min(game.state.width - 1, p.x + 1)
+                : p.x;
+            const nextY = dir === 'up' ? Math.max(0, p.y - 1)
+                : dir === 'down' ? Math.min(game.state.height - 1, p.y + 1)
+                : p.y;
+
+            const wallHit = (game.state.walls || []).some(w => w.x === nextX && w.y === nextY);
+            if (!wallHit) {
+                p.x = nextX;
+                p.y = nextY;
+            }
+
+            const jumpPad = (game.state.jumpPads || []).find(j => j.x === p.x && j.y === p.y);
+            if (jumpPad) {
+                const jx = Math.min(game.state.width - 1, Math.max(0, p.x + (jumpPad.dx || 0)));
+                const jy = Math.min(game.state.height - 1, Math.max(0, p.y + (jumpPad.dy || 0)));
+                if (!(game.state.walls || []).some(w => w.x === jx && w.y === jy)) {
+                    p.x = jx;
+                    p.y = jy;
+                }
+            }
+
+            const pipe = (game.state.pipes || []).find(pp => pp.a.x === p.x && pp.a.y === p.y);
+            if (pipe) {
+                p.x = pipe.b.x;
+                p.y = pipe.b.y;
+            } else {
+                const pipeRev = (game.state.pipes || []).find(pp => pp.b.x === p.x && pp.b.y === p.y);
+                if (pipeRev) {
+                    p.x = pipeRev.a.x;
+                    p.y = pipeRev.a.y;
+                }
+            }
+
+            const hazardHit = (game.state.hazards || []).some(h => h.x === p.x && h.y === p.y);
+            if (hazardHit) {
+                p.score = Math.max(0, p.score - 1);
+                const spawn = (game.state.spawns && game.state.spawns[playerIndex]) || { x: playerIndex === 0 ? 2 : game.state.width - 3, y: Math.floor(game.state.height / 2) };
+                p.x = spawn.x;
+                p.y = spawn.y;
+            }
+
+            if (game.state.mode === 'sword_duel' && other && p.x === other.x && p.y === other.y) {
+                p.score += 1;
+                other.score = Math.max(0, other.score - 1);
+                const otherSpawn = (game.state.spawns && game.state.spawns[otherIndex]) || { x: otherIndex === 0 ? 2 : game.state.width - 3, y: Math.floor(game.state.height / 2) };
+                other.x = otherSpawn.x;
+                other.y = otherSpawn.y;
+            }
 
             const coinIndex = game.state.coins.findIndex(c => c.x === p.x && c.y === p.y);
             if (coinIndex >= 0) {
                 game.state.coins.splice(coinIndex, 1);
-                p.score += 1;
-                game.state.coins.push(spawnArenaCoin(game.state.width, game.state.height, game.state.players, game.state.coins));
+                p.score += Math.max(1, Number(game.state.coinValue || 1));
+                game.state.coins.push(spawnArenaCoin(game.state.width, game.state.height, game.state.players, game.state.coins, getArenaBlockedPositions(game.state)));
             }
 
             let winner = null;
@@ -4616,6 +5738,7 @@ function getVoiceParticipants(room) {
         participants.push({
             socketId,
             username: data.username,
+            nameEffect: getActiveNameEffect(data.username),
             muted: data.muted,
             deafened: data.deafened,
             video: data.video,
@@ -4654,6 +5777,7 @@ function updateUsersList() {
         return {
             id: user.id,
             username: user.username,
+            nameEffect: getActiveNameEffect(user.username),
             avatar: user.avatar,
             joinTime: user.joinTime,
             lastActivity: user.lastActivity,
@@ -4870,10 +5994,91 @@ function getHangmanHintState(game) {
     return { visible: reveal, text };
 }
 
-function spawnArenaCoin(width, height, players, existingCoins) {
+const ARENA2D_MODE_POOL = [
+    { key: 'coin_rush', label: 'Coin Rush', coinValue: 1, targetScore: 12, moveCooldownMs: 70, coinCount: 8 },
+    { key: 'turbo_rush', label: 'Turbo Rush', coinValue: 2, targetScore: 18, moveCooldownMs: 55, coinCount: 10 },
+    { key: 'spike_storm', label: 'Spike Storm', coinValue: 1, targetScore: 11, moveCooldownMs: 72, coinCount: 8, hazardsCount: 20 },
+    { key: 'sword_duel', label: 'Sword Duel', coinValue: 1, targetScore: 9, moveCooldownMs: 68, coinCount: 6 },
+    { key: 'mario_pipes', label: 'Mario Pipes', coinValue: 1, targetScore: 12, moveCooldownMs: 66, coinCount: 8, pipesPairs: 3, jumpPadsCount: 6, wallsCount: 18 }
+];
+
+function pickArena2DMode() {
+    const idx = Math.floor(Math.random() * ARENA2D_MODE_POOL.length);
+    return { ...ARENA2D_MODE_POOL[idx], modeIndex: idx + 1 };
+}
+
+function getArenaBlockedPositions(state) {
+    const blocked = [];
+    (state.walls || []).forEach((w) => blocked.push({ x: w.x, y: w.y }));
+    return blocked;
+}
+
+function spawnArenaCell(width, height, used, avoid = []) {
+    const localUsed = used || new Set();
+    const avoidSet = new Set((avoid || []).map((p) => `${p.x},${p.y}`));
+    for (let i = 0; i < 400; i++) {
+        const x = Math.floor(Math.random() * width);
+        const y = Math.floor(Math.random() * height);
+        const key = `${x},${y}`;
+        if (!localUsed.has(key) && !avoidSet.has(key)) {
+            localUsed.add(key);
+            return { x, y };
+        }
+    }
+    return null;
+}
+
+function spawnArenaFeatures(width, height, players, mode) {
+    const used = new Set(players.map((p) => `${p.x},${p.y}`));
+    const hazards = [];
+    const walls = [];
+    const jumpPads = [];
+    const pipes = [];
+
+    const hazardsCount = Number(mode.hazardsCount || 0);
+    for (let i = 0; i < hazardsCount; i++) {
+        const cell = spawnArenaCell(width, height, used);
+        if (!cell) break;
+        hazards.push(cell);
+    }
+
+    const wallsCount = Number(mode.wallsCount || 0);
+    for (let i = 0; i < wallsCount; i++) {
+        const cell = spawnArenaCell(width, height, used);
+        if (!cell) break;
+        walls.push(cell);
+    }
+
+    const jumpPadsCount = Number(mode.jumpPadsCount || 0);
+    const vectors = [
+        { dx: 2, dy: 0 },
+        { dx: -2, dy: 0 },
+        { dx: 0, dy: 2 },
+        { dx: 0, dy: -2 }
+    ];
+    for (let i = 0; i < jumpPadsCount; i++) {
+        const cell = spawnArenaCell(width, height, used);
+        if (!cell) break;
+        const vec = vectors[Math.floor(Math.random() * vectors.length)];
+        jumpPads.push({ ...cell, dx: vec.dx, dy: vec.dy });
+    }
+
+    const pipesPairs = Number(mode.pipesPairs || 0);
+    for (let i = 0; i < pipesPairs; i++) {
+        const a = spawnArenaCell(width, height, used);
+        const b = spawnArenaCell(width, height, used);
+        if (!a || !b) break;
+        pipes.push({ a, b });
+    }
+
+    return { hazards, walls, jumpPads, pipes, used };
+}
+
+function spawnArenaCoin(width, height, players, existingCoins, blockedPositions = []) {
     const occupied = new Set();
     players.forEach((p) => occupied.add(`${p.x},${p.y}`));
     (existingCoins || []).forEach((c) => occupied.add(`${c.x},${c.y}`));
+    (blockedPositions || []).forEach((b) => occupied.add(`${b.x},${b.y}`));
     let tries = 0;
     while (tries < 200) {
         const x = Math.floor(Math.random() * width);
@@ -4888,22 +6093,39 @@ function spawnArenaCoin(width, height, players, existingCoins) {
 function buildArenaState() {
     const width = 24;
     const height = 14;
-    const players = [
-        { x: 2, y: Math.floor(height / 2), score: 0 },
-        { x: width - 3, y: Math.floor(height / 2), score: 0 }
+    const mode = pickArena2DMode();
+    const spawns = [
+        { x: 2, y: Math.floor(height / 2) },
+        { x: width - 3, y: Math.floor(height / 2) }
     ];
+    const players = [
+        { x: spawns[0].x, y: spawns[0].y, score: 0 },
+        { x: spawns[1].x, y: spawns[1].y, score: 0 }
+    ];
+    const features = spawnArenaFeatures(width, height, players, mode);
+    const blocked = [...getArenaBlockedPositions({ walls: features.walls })];
     const coins = [];
-    for (let i = 0; i < 8; i++) {
-        coins.push(spawnArenaCoin(width, height, players, coins));
+    for (let i = 0; i < Number(mode.coinCount || 8); i++) {
+        const c = spawnArenaCoin(width, height, players, coins, blocked);
+        if (c) coins.push(c);
     }
     return {
         width,
         height,
         players,
         coins,
-        targetScore: 12,
-        moveCooldownMs: 70,
-        lastMoveAt: [0, 0]
+        mode: mode.key,
+        modeLabel: mode.label,
+        modeIndex: Number(mode.modeIndex || 1),
+        coinValue: Number(mode.coinValue || 1),
+        targetScore: Number(mode.targetScore || 12),
+        moveCooldownMs: Number(mode.moveCooldownMs || 70),
+        lastMoveAt: [0, 0],
+        spawns,
+        hazards: features.hazards,
+        walls: features.walls,
+        jumpPads: features.jumpPads,
+        pipes: features.pipes
     };
 }
 
@@ -4969,7 +6191,8 @@ setInterval(() => {
                 io.to(socketId).emit('daily_mission_reward', {
                     missionKey: reward.key,
                     missionLabel: reward.label,
-                    rewardXP: reward.rewardXP
+                    rewardXP: reward.rewardXP,
+                    rewardBananas: reward.rewardBananas || 0
                 });
                 if (reward.levelUp) {
                     io.emit('system_message', {
@@ -4989,11 +6212,16 @@ setInterval(() => {
 // Nettoyage des fichiers une fois par jour
 setInterval(cleanupOldFiles, 24 * 60 * 60 * 1000);
 
+// Rotation/expiration des evenements live
+setInterval(() => {
+    refreshLiveOpsState();
+}, 10000);
+
 // Affichage des statistiques serveur
 setInterval(() => {
     if (connectedUsers.size > 0 || serverStats.totalMessages > 0) {
         const memUsage = process.memoryUsage();
-        const uptime = process.uptime();
+        const uptime = getTotalUptimeSeconds();
         
         logActivity('SYSTEM', `Statistiques serveur`, {
             utilisateursConnectes: connectedUsers.size,
@@ -5008,12 +6236,17 @@ setInterval(() => {
     }
 }, 300000); // Toutes les 5 minutes
 
+// Sauvegarde régulière du temps serveur cumulé
+setInterval(() => {
+    saveServerRuntimeStats({ includeCurrentSession: true });
+}, 30000);
+
 // Démarrage du serveur
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
 
 server.listen(PORT, HOST, () => {
-    logActivity('SYSTEM', `DocSpace Server v2.3 démarré avec succès !`, {
+    logActivity('SYSTEM', `${SERVER_NAME} v${SERVER_VERSION} démarré avec succès !`, {
         port: PORT,
         host: HOST,
         uploadsDir: uploadDir,
@@ -5045,6 +6278,9 @@ server.on('error', (error) => {
 
 // Gestion propre de l'arrêt
 function gracefulShutdown(signal) {
+    if (shutdownInProgress) return;
+    shutdownInProgress = true;
+
     logActivity('SYSTEM', `Signal ${signal} reçu - arrêt propre du serveur`, {
         signal: signal,
         utilisateursConnectes: connectedUsers.size,
@@ -5060,15 +6296,23 @@ function gracefulShutdown(signal) {
     });
     
     // Sauvegarder les statistiques finales
+    const uptimeSession = getSessionUptimeSeconds();
+    commitRuntimeSession();
+    const uptimeTotal = Math.max(0, Math.floor(serverRuntimeStats.accumulatedUptimeSeconds || 0));
     const finalStats = {
         totalMessages: serverStats.totalMessages,
         totalUploads: serverStats.totalUploads,
         totalConnections: serverStats.totalConnections,
-        uptime: process.uptime(),
+        uptimeSession,
+        uptimeTotal,
         shutdownTime: new Date()
     };
     
     logActivity('SYSTEM', `Statistiques finales du serveur`, finalStats);
+
+    // Flush explicite des buffers de persistance avant fermeture
+    saveXPDataImmediate();
+    saveMiniGameStatsImmediate();
     
     // Fermer le serveur
     server.close(() => {
@@ -5129,11 +6373,12 @@ setInterval(() => {
 const KEEP_ALIVE_INTERVAL = 4 * 60 * 1000; // 4 minutes (plus fréquent)
 let keepAliveCount = 0;
 
-// Créer une route /health pour le ping
-app.get('/health', (req, res) => {
+// Créer une route /health-lite dédiée au ping interne
+app.get('/health-lite', (req, res) => {
     res.status(200).json({
         status: 'ok',
-        uptime: process.uptime(),
+        uptime: getTotalUptimeSeconds(),
+        sessionUptime: getSessionUptimeSeconds(),
         timestamp: new Date().toISOString(),
         users: connectedUsers.size,
         keepAliveCount: keepAliveCount
@@ -5177,6 +6422,7 @@ keepAlive(); // Premier ping immédiat
 
 console.log(`⏰ Keep-alive configuré: ping toutes les 4 minutes`);
 console.log(`🌐 Route /health disponible pour monitoring`);
+console.log(`🌐 Route /api/server/dashboard disponible pour supervision externe`);
 
 logActivity('SYSTEM', 'Tous les gestionnaires d\'événements configurés', {
     maxHistoryMessages: MAX_HISTORY,

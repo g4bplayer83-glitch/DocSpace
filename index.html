@@ -11226,15 +11226,41 @@
                         <label class="admin-label">Saison</label>
                         <div class="admin-grid">
                             <input type="number" id="studioSeasonNumber" class="admin-input" min="1" step="1" placeholder="No saison">
-                            <input type="number" id="studioSeasonXpMultiplier" class="admin-input" min="0.5" max="5" step="0.1" placeholder="Multiplicateur XP saison">
+                            <input type="number" id="studioSeasonYear" class="admin-input" min="2000" max="2200" step="1" placeholder="Année">
+                        </div>
+                        <div class="admin-grid" style="margin-top: 8px;">
+                            <input type="number" id="studioSeasonXpMultiplier" class="admin-input" min="0.5" max="10" step="0.1" placeholder="Multiplicateur XP saison (x10 max)">
+                            <input type="number" id="studioAutoRotationHours" class="admin-input" min="1" max="24" step="1" placeholder="Rotation auto (heures)">
                         </div>
                         <input type="text" id="studioSeasonLabel" class="admin-input" placeholder="Nom de saison (ex: Saison 2 - Neon Rush)">
                         <button class="admin-btn" onclick="adminApplySeasonConfig()">💾 Mettre à jour la saison</button>
+
+                        <label class="admin-label" style="margin-top: 10px;">Options d'automatisation</label>
+                        <div class="admin-grid">
+                            <label class="admin-setting-row" style="margin:0;"> 
+                                <span>Auto-events selon l'heure</span>
+                                <input type="checkbox" id="studioAutoModeToggle">
+                            </label>
+                            <select id="studioBannerDisplayMode" class="admin-select">
+                                <option value="dismissible">Bannière fermable (croix)</option>
+                                <option value="always">Bannière toujours visible</option>
+                            </select>
+                        </div>
+                        <button class="admin-btn" onclick="adminApplyLiveOpsSettings()">🕒 Appliquer les options auto</button>
 
                         <label class="admin-label" style="margin-top: 10px;">Lancer un event live</label>
                         <div class="admin-grid">
                             <select id="studioLiveEventSelect" class="admin-select"></select>
                             <input type="number" id="studioLiveEventDuration" class="admin-input" min="5" max="180" step="5" value="30" placeholder="Durée (min)">
+                        </div>
+                        <div class="admin-grid" style="margin-top: 8px;">
+                            <select id="studioLiveEventMultiplier" class="admin-select">
+                                <option value="">Multiplicateur par défaut de l'event</option>
+                                <option value="2">Forcer x2</option>
+                                <option value="5">Forcer x5</option>
+                                <option value="10">Forcer x10</option>
+                            </select>
+                            <div class="admin-hint" style="margin:0;align-self:center;">Astuce: x5/x10 pour les gros events</div>
                         </div>
                         <div class="admin-grid" style="margin-top: 8px;">
                             <button class="admin-btn success" onclick="adminLaunchLiveEvent()">🚀 Lancer</button>
@@ -11928,6 +11954,32 @@
         let showAvatarsEnabled = true; // Afficher les avatars
         let currentFontSize = 14; // Taille de police
         let currentBubbleStyle = 'default'; // Style des bulles
+        const UI_SFX_CATALOG = {
+            typingKey: ['/sound/typing_key1.ogg', '/sound/typing_key2.ogg', '/sound/typing_key3.ogg', '/sound/typing_key4.ogg', '/sound/typing_key5.ogg', '/sound/typing_key6.ogg'],
+            typingSpace: ['/sound/typing_space1.ogg', '/sound/typing_space2.ogg'],
+            typingEnter: ['/sound/typing_enter1.ogg', '/sound/typing_enter2.ogg', '/sound/typing_enter3.ogg', '/sound/typing_enter4.ogg'],
+            click: ['/sound/click1.wav', '/sound/click2.wav', '/sound/click3.wav', '/sound/click4.wav', '/sound/click5.wav'],
+            channelSwitch: ['/sound/channel_switch_soft.ogg', '/sound/channel_switch_soft2.ogg', '/sound/channel_switch_soft3.ogg'],
+            message: ['/sound/msg_receive.ogg'],
+            mentionDm: ['/sound/msg_mention_dm.ogg'],
+            connect: ['/sound/connect_ok.ogg'],
+            disconnect: ['/sound/disconnect_warn.ogg'],
+            reminder: ['/sound/reminder_ping.ogg'],
+            voiceJoin: ['/sound/voice_join.ogg'],
+            voiceLeave: ['/sound/voice_leave.ogg'],
+            micMute: ['/sound/mic_mute.ogg'],
+            micUnmute: ['/sound/mic_unmute.ogg'],
+            friendRequest: ['/sound/friend_request_in.ogg'],
+            friendAccept: ['/sound/friend_accept.ogg'],
+            questComplete: ['/sound/quest_complete.ogg'],
+            xpReward: ['/sound/xp_reward.ogg'],
+            shopBuy: ['/sound/shop_buy.ogg'],
+            shopDenied: ['/sound/shop_denied.ogg']
+        };
+        const uiSfxCooldowns = {};
+        let uiSfxLastKeyAt = 0;
+        let uiSfxLastSpaceAt = 0;
+        let uiSfxLastEnterAt = 0;
 
         // === SALONS MULTIPLES (BETA) ===
         let currentChannel = 'général'; // Salon actuel
@@ -11952,6 +12004,69 @@
             if (!Array.isArray(channelMessages[channelName])) channelMessages[channelName] = [];
             if (typeof channelUnread[channelName] !== 'number') channelUnread[channelName] = 0;
             if (!Array.isArray(channelTypingUsers[channelName])) channelTypingUsers[channelName] = [];
+        }
+
+        function pickRandomSfxFile(eventName) {
+            const pool = UI_SFX_CATALOG[eventName];
+            if (!Array.isArray(pool) || pool.length === 0) return '';
+            const index = Math.floor(Math.random() * pool.length);
+            return pool[index];
+        }
+
+        function playUISfx(eventName, options = {}) {
+            if (!notificationsEnabled) return false;
+
+            const now = Date.now();
+            const cooldownMs = Number(options.cooldownMs || 0);
+            if (cooldownMs > 0) {
+                const previous = Number(uiSfxCooldowns[eventName] || 0);
+                if (now - previous < cooldownMs) return false;
+                uiSfxCooldowns[eventName] = now;
+            }
+
+            const src = options.src || pickRandomSfxFile(eventName);
+            if (!src) return false;
+
+            try {
+                const audio = new Audio(src);
+                audio.volume = Math.max(0, Math.min(1, Number(options.volume ?? 0.22)));
+                audio.preload = 'auto';
+                audio.play().catch(() => {});
+                return true;
+            } catch (error) {
+                console.debug('SFX indisponible:', eventName, error);
+                return false;
+            }
+        }
+
+        function playTypingSfxForKey(event) {
+            if (!event || event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
+
+            const now = Date.now();
+            const key = String(event.key || '');
+
+            if (key === 'Enter') {
+                if (now - uiSfxLastEnterAt >= 60) {
+                    uiSfxLastEnterAt = now;
+                    playUISfx('typingEnter', { cooldownMs: 40, volume: 0.16 });
+                }
+                return;
+            }
+
+            if (key === ' ' || event.code === 'Space') {
+                if (now - uiSfxLastSpaceAt >= 40) {
+                    uiSfxLastSpaceAt = now;
+                    playUISfx('typingSpace', { cooldownMs: 30, volume: 0.14 });
+                }
+                return;
+            }
+
+            if (key.length === 1 || key === 'Backspace' || key === 'Delete') {
+                if (now - uiSfxLastKeyAt >= 28) {
+                    uiSfxLastKeyAt = now;
+                    playUISfx('typingKey', { cooldownMs: 22, volume: 0.12 });
+                }
+            }
         }
 
         function syncAvailableChannels(channels) {
@@ -11989,6 +12104,8 @@
 
         function closeLiveEventBanner() {
             if (!seasonEventState || !seasonEventState.season) return;
+            const bannerMode = seasonEventState?.bannerDisplayMode === 'always' ? 'always' : 'dismissible';
+            if (bannerMode === 'always') return;
             const currentToken = buildSeasonBannerToken();
             seasonBannerDismissedToken = currentToken;
             seasonBannerVisibleDueToNovelty = false;
@@ -12048,6 +12165,7 @@
             const titleEl = document.getElementById('liveEventTitle');
             const timerEl = document.getElementById('liveEventTimer');
             const descEl = document.getElementById('liveEventDescription');
+            const closeBtn = document.getElementById('liveEventCloseBtn');
             if (!banner || !seasonChip || !titleEl || !timerEl || !descEl) return;
 
             if (!seasonEventState || !seasonEventState.season) {
@@ -12057,7 +12175,11 @@
 
             const season = seasonEventState.season;
             const event = seasonEventState.event;
-            seasonChip.textContent = `S${season.number || 1}`;
+            const bannerMode = seasonEventState?.bannerDisplayMode === 'always' ? 'always' : 'dismissible';
+            seasonChip.textContent = `S${season.number || 1} · ${season.year || new Date().getFullYear()}`;
+            if (closeBtn) {
+                closeBtn.style.display = bannerMode === 'always' ? 'none' : '';
+            }
 
             if (event) {
                 const remainingMs = Math.max(0, Number(event.endsAt || 0) - Date.now());
@@ -12066,12 +12188,16 @@
                 timerEl.textContent = formatDurationClock(Math.ceil(remainingMs / 1000));
             } else {
                 titleEl.textContent = `${season.label || 'Saison active'} x${Number(season.xpMultiplier || 1).toFixed(2)} XP`;
-                descEl.textContent = 'Aucun event live actif. Prochaine rotation automatiquement planifiee.';
+                descEl.textContent = seasonEventState?.autoModeEnabled
+                    ? 'Aucun event live actif. Prochaine rotation automatiquement planifiee.'
+                    : 'Aucun event live actif. Rotation automatique desactivee par l\'admin.';
                 timerEl.textContent = '';
             }
 
             const currentToken = buildSeasonBannerToken();
-            const shouldShow = seasonBannerVisibleDueToNovelty && seasonBannerDismissedToken !== currentToken;
+            const shouldShow = bannerMode === 'always'
+                ? true
+                : (seasonBannerVisibleDueToNovelty && seasonBannerDismissedToken !== currentToken);
             banner.style.display = shouldShow ? 'flex' : 'none';
         }
 
@@ -12733,6 +12859,7 @@
                 console.log('✅ Connecté au serveur');
                 updateConnectionStatus(true, serverUrl);
                 dismissAutoReconnect();
+                playUISfx('connect', { cooldownMs: 600, volume: 0.24 });
 
                 if (password) {
                     // Authentification avec mot de passe
@@ -12834,6 +12961,7 @@
                 console.log('❌ Déconnecté du serveur:', reason);
                 updateConnectionStatus(false);
                 isConnected = false;
+                playUISfx('disconnect', { cooldownMs: 800, volume: 0.24 });
                 
                 // Si déconnexion involontaire (pas un disconnect manuel), tenter la reconnexion
                 if (!isManualDisconnect && reason !== 'io client disconnect') {
@@ -13469,7 +13597,7 @@
                     
                     // Son
                     if (!isTabActive && notificationsEnabled) {
-                        playNotificationSound();
+                        playNotificationSound('mention');
                     }
                 }
                 
@@ -13594,6 +13722,7 @@
             const oldChannel = currentChannel;
             currentChannel = channelName;
             forceBottomOnChannelLoad = true;
+            playUISfx('channelSwitch', { cooldownMs: 120, volume: 0.2 });
             
             // Mettre à jour l'UI
             document.querySelectorAll('.channel-item').forEach(item => {
@@ -14784,7 +14913,7 @@
             if (content && content.toLowerCase().includes('@' + currentUsername.toLowerCase())) {
                 messageDiv.classList.add('mentioned');
                 if (notificationsEnabled) {
-                    playNotificationSound();
+                    playNotificationSound('mention');
                     showNotification('💬 Vous avez été mentionné', `${username}: ${content.substring(0, 50)}...`, 'info');
                 }
             }
@@ -15286,23 +15415,27 @@ window.addEmojiReaction = addEmojiReaction;
         }
 
         // Son de notification
-        function playNotificationSound() {
+        function playNotificationSound(kind = 'message') {
             if (!notificationsEnabled) return;
-            
+
+            const sfxEvent = kind === 'mention' ? 'mentionDm' : 'message';
+            const didPlay = playUISfx(sfxEvent, { cooldownMs: 80, volume: kind === 'mention' ? 0.24 : 0.2 });
+            if (didPlay) return;
+
             try {
                 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 const oscillator = audioContext.createOscillator();
                 const gainNode = audioContext.createGain();
-                
+
                 oscillator.connect(gainNode);
                 gainNode.connect(audioContext.destination);
-                
+
                 oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
                 oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
-                
+
                 gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
                 gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-                
+
                 oscillator.start(audioContext.currentTime);
                 oscillator.stop(audioContext.currentTime + 0.3);
             } catch (e) {
@@ -15379,6 +15512,7 @@ window.addEmojiReaction = addEmojiReaction;
 
         // Gestion des touches - CORRECTION: Enter envoie, plus de Shift+Enter
         document.getElementById('messageInput').addEventListener('keydown', function(e) {
+            playTypingSfxForKey(e);
             if (e.key === 'Enter') {
                 e.preventDefault(); // Empêcher le saut de ligne
                 sendMessage();
@@ -15469,6 +15603,12 @@ window.addEmojiReaction = addEmojiReaction;
 
         // Gestion des raccourcis clavier
         document.addEventListener('keydown', function(e) {
+            const activeEl = document.activeElement;
+            const isTypingField = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable);
+            if (!isTypingField || activeEl.id !== 'messageInput') {
+                playTypingSfxForKey(e);
+            }
+
             // Échapper pour fermer les modaux
             if (e.key === 'Escape') {
                 if (document.getElementById('settingsModal').style.display === 'block') {
@@ -21382,6 +21522,9 @@ window.addEmojiReaction = addEmojiReaction;
 
             const season = seasonEventState?.season;
             const event = seasonEventState?.event;
+            const autoModeEnabled = !!seasonEventState?.autoModeEnabled;
+            const autoRotationHours = Number(seasonEventState?.autoRotationHours || 1);
+            const bannerDisplayMode = seasonEventState?.bannerDisplayMode === 'always' ? 'always' : 'dismissible';
             if (!season) {
                 chip.textContent = '🧊 Aucun event live actif';
                 status.textContent = 'Les bonus live sont inactifs pour le moment.';
@@ -21389,11 +21532,19 @@ window.addEmojiReaction = addEmojiReaction;
             }
 
             const seasonInput = document.getElementById('studioSeasonNumber');
+            const seasonYear = document.getElementById('studioSeasonYear');
             const seasonLabel = document.getElementById('studioSeasonLabel');
             const seasonMultiplier = document.getElementById('studioSeasonXpMultiplier');
+            const autoToggle = document.getElementById('studioAutoModeToggle');
+            const autoHoursInput = document.getElementById('studioAutoRotationHours');
+            const bannerModeSelect = document.getElementById('studioBannerDisplayMode');
             if (seasonInput && !seasonInput.matches(':focus')) seasonInput.value = season.number || 1;
+            if (seasonYear && !seasonYear.matches(':focus')) seasonYear.value = season.year || new Date().getFullYear();
             if (seasonLabel && !seasonLabel.matches(':focus')) seasonLabel.value = season.label || '';
             if (seasonMultiplier && !seasonMultiplier.matches(':focus')) seasonMultiplier.value = Number(season.xpMultiplier || 1).toFixed(2);
+            if (autoToggle) autoToggle.checked = autoModeEnabled;
+            if (autoHoursInput && !autoHoursInput.matches(':focus')) autoHoursInput.value = Math.max(1, Math.min(24, Math.round(autoRotationHours)));
+            if (bannerModeSelect) bannerModeSelect.value = bannerDisplayMode;
 
             if (event) {
                 const remainingMs = Math.max(0, Number(event.endsAt || 0) - Date.now());
@@ -21401,7 +21552,7 @@ window.addEmojiReaction = addEmojiReaction;
                 status.textContent = `${event.description || 'Event live actif'} · Temps restant: ${formatDurationClock(Math.ceil(remainingMs / 1000))}`;
             } else {
                 chip.textContent = '🧊 Aucun event live actif';
-                status.textContent = `Saison ${season.number || 1}: ${season.label || 'active'} (x${Number(season.xpMultiplier || 1).toFixed(2)} XP)`;
+                status.textContent = `Saison ${season.number || 1} · ${season.year || new Date().getFullYear()} · ${season.label || 'active'} (x${Number(season.xpMultiplier || 1).toFixed(2)} XP) · Auto: ${autoModeEnabled ? `ON (${Math.max(1, Math.min(24, Math.round(autoRotationHours)))}h)` : 'OFF'} · Bannière: ${bannerDisplayMode === 'always' ? 'toujours visible' : 'fermable'}`;
             }
 
             populateLiveEventSelectOptions();
@@ -21460,14 +21611,30 @@ window.addEmojiReaction = addEmojiReaction;
         function adminApplySeasonConfig() {
             if (!isAdmin || !socket) return;
             const seasonNumber = parseInt(document.getElementById('studioSeasonNumber')?.value || '1', 10);
+            const seasonYear = parseInt(document.getElementById('studioSeasonYear')?.value || `${new Date().getFullYear()}`, 10);
             const seasonLabel = (document.getElementById('studioSeasonLabel')?.value || '').trim();
             const xpMultiplier = parseFloat(document.getElementById('studioSeasonXpMultiplier')?.value || '1');
             socket.emit('admin_action', {
                 password: ADMIN_PASSWORD,
                 action: 'season_update',
                 seasonNumber,
+                seasonYear,
                 seasonLabel,
                 xpMultiplier
+            });
+        }
+
+        function adminApplyLiveOpsSettings() {
+            if (!isAdmin || !socket) return;
+            const autoModeEnabled = !!document.getElementById('studioAutoModeToggle')?.checked;
+            const autoRotationHours = parseInt(document.getElementById('studioAutoRotationHours')?.value || '1', 10);
+            const bannerDisplayMode = (document.getElementById('studioBannerDisplayMode')?.value || 'dismissible');
+            socket.emit('admin_action', {
+                password: ADMIN_PASSWORD,
+                action: 'live_ops_settings_update',
+                autoModeEnabled,
+                autoRotationHours,
+                bannerDisplayMode
             });
         }
 
@@ -21475,6 +21642,8 @@ window.addEmojiReaction = addEmojiReaction;
             if (!isAdmin || !socket) return;
             const eventId = document.getElementById('studioLiveEventSelect')?.value;
             const duration = parseInt(document.getElementById('studioLiveEventDuration')?.value || '30', 10);
+            const messageXpMultiplierRaw = document.getElementById('studioLiveEventMultiplier')?.value;
+            const messageXpMultiplier = messageXpMultiplierRaw ? parseFloat(messageXpMultiplierRaw) : null;
             if (!eventId) {
                 showNotification('❌ Event live', 'Selectionnez un event live.', 'error');
                 return;
@@ -21483,7 +21652,8 @@ window.addEmojiReaction = addEmojiReaction;
                 password: ADMIN_PASSWORD,
                 action: 'live_event_set',
                 eventId,
-                duration
+                duration,
+                messageXpMultiplier
             });
         }
 
@@ -22667,6 +22837,7 @@ window.addEmojiReaction = addEmojiReaction;
                 await startVoiceClipCapture();
                 showSidebarVoiceBar(room);
                 emitSyncStatePatch({ voiceRoom: room, activeChannel: currentChannel });
+                playUISfx('voiceJoin', { cooldownMs: 200, volume: 0.24 });
                 
                 showNotification('🔊', `Connecté à ${room}`, 'success');
             } catch (err) {
@@ -22741,6 +22912,7 @@ window.addEmojiReaction = addEmojiReaction;
             document.querySelectorAll('.remote-audio').forEach(el => el.remove());
 
             emitSyncStatePatch({ voiceRoom: null, activeChannel: currentChannel });
+            if (!silent) playUISfx('voiceLeave', { cooldownMs: 200, volume: 0.24 });
             
             if (!silent) showNotification('🔇', 'Déconnecté du vocal', 'info');
         }
@@ -23137,6 +23309,7 @@ window.addEmojiReaction = addEmojiReaction;
             if (localAudioStream) {
                 localAudioStream.getAudioTracks().forEach(t => { t.enabled = !voiceMuted; });
             }
+            playUISfx(voiceMuted ? 'micMute' : 'micUnmute', { cooldownMs: 80, volume: 0.24 });
             socket.emit('voice_status_update', { muted: voiceMuted });
             updateVoiceControlUI();
         }
@@ -23943,6 +24116,9 @@ window.addEmojiReaction = addEmojiReaction;
         
         // Fermer les menus au clic ailleurs
         document.addEventListener('click', function(e) {
+            if (e.isTrusted) {
+                playUISfx('click', { cooldownMs: 22, volume: 0.1 });
+            }
             if (!e.target.closest('.message-menu-container')) {
                 closeAllMenus();
             }
@@ -24548,18 +24724,21 @@ window.addEmojiReaction = addEmojiReaction;
             toast.innerHTML = `<div class="toast-title">⏰ Rappel !</div><div class="toast-msg">${escapeHtml(data.message)}</div>`;
             document.body.appendChild(toast);
             setTimeout(() => toast.remove(), 8000);
-            // Also play a beep
-            try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.frequency.value = 880;
-                gain.gain.value = 0.1;
-                osc.start();
-                setTimeout(() => { osc.stop(); ctx.close(); }, 300);
-            } catch(e) {}
+            const didPlay = playUISfx('reminder', { cooldownMs: 400, volume: 0.24 });
+            if (!didPlay) {
+                // Fallback WebAudio si le fichier n'est pas disponible.
+                try {
+                    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.frequency.value = 880;
+                    gain.gain.value = 0.1;
+                    osc.start();
+                    setTimeout(() => { osc.stop(); ctx.close(); }, 300);
+                } catch(e) {}
+            }
         }
 
         // ===========================================================
@@ -25140,11 +25319,13 @@ window.addEmojiReaction = addEmojiReaction;
             });
             socket.on('friend_request_received', (data) => {
                 showFriendRequestPopup(data.from, data.avatar);
+                playUISfx('friendRequest', { cooldownMs: 220, volume: 0.24 });
                 socket.emit('get_friends');
             });
             socket.on('friend_request_sent', () => showNotification('✅', 'Demande envoyée !', 'success'));
             socket.on('friend_accepted', (data) => {
                 showNotification('🎉', `${data.username} est maintenant votre ami !`, 'success');
+                playUISfx('friendAccept', { cooldownMs: 220, volume: 0.24 });
                 socket.emit('get_friends');
             });
             socket.on('friend_removed', () => socket.emit('get_friends'));
@@ -25159,7 +25340,10 @@ window.addEmojiReaction = addEmojiReaction;
             socket.on('xp_data', updateMyXPDisplay);
             socket.on('leaderboard_data', (data) => renderLeaderboard(data.leaderboard || []));
             socket.on('minigames_leaderboard_data', (data) => renderMiniGamesLeaderboard(data.leaderboard || []));
-            socket.on('banana_error', (data) => showNotification('🍌', data.message, 'warning'));
+            socket.on('banana_error', (data) => {
+                showNotification('🍌', data.message, 'warning');
+                playUISfx('shopDenied', { cooldownMs: 160, volume: 0.24 });
+            });
             socket.on('banana_updated', (data) => {
                 const el = document.getElementById('myBananaPoints');
                 if (el) el.textContent = data.bananaPoints;
@@ -25168,6 +25352,7 @@ window.addEmojiReaction = addEmojiReaction;
                 const title = data?.title || '🍌 Récompense';
                 const message = data?.message || 'Achat banane validé';
                 showNotification(title, message, 'success');
+                playUISfx('shopBuy', { cooldownMs: 160, volume: 0.24 });
             });
             socket.on('banana_effect', (data) => {
                 triggerBananaEffect(data.effect, data.username);
@@ -25177,6 +25362,7 @@ window.addEmojiReaction = addEmojiReaction;
                 const streak = Number(data.streakDays || 1);
                 const bonus = Number(data.bonusXP || 0);
                 showNotification('🎁 Bonus quotidien', `+${bonus} XP · Série ${streak} jour${streak > 1 ? 's' : ''}`, 'success');
+                playUISfx('xpReward', { cooldownMs: 220, volume: 0.24 });
             });
             socket.on('daily_mission_reward', (data) => {
                 if (!data) return;
@@ -25184,6 +25370,7 @@ window.addEmojiReaction = addEmojiReaction;
                 const reward = Number(data.rewardXP || 0);
                 const bananas = Number(data.rewardBananas || 0);
                 showNotification('🎯 Mission validée', `${label} terminée: +${reward} XP · +${bananas} 🍌`, 'success');
+                playUISfx('questComplete', { cooldownMs: 220, volume: 0.24 });
             });
             socket.on('minigame_reward', (data) => {
                 if (!data) return;
@@ -25192,6 +25379,7 @@ window.addEmojiReaction = addEmojiReaction;
                 const xp = Number(data.xp || 0);
                 const bananas = Number(data.bananas || 0);
                 showNotification('🎮 Récompense Mini-Jeu', `${game}: +${points} pts · +${xp} XP · +${bananas} 🍌`, 'success');
+                playUISfx('xpReward', { cooldownMs: 220, volume: 0.24 });
                 socket.emit('get_minigames_leaderboard');
             });
             socket.on('clicker_state', (data) => {

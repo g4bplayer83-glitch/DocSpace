@@ -5,8 +5,9 @@
     {
       "version": "3.2.8-alpha",
       "date": "2026-04-05",
-      "title": "🧪 3.2.8-alpha - Reconnexion propre, quêtes saisonnières & social",
+      "title": "🧪 3.2.8-alpha - Live Ops horaire, bannière flexible, SFX & stabilité",
       "changes": [
+        "📌 Version maintenue en 3.2.8-alpha (pas de passage en 3.3.0 pour l'instant)",
         "🛠️ Fix majeur reconnexion: plus de doublons du même compte dans la liste utilisateurs",
         "🛠️ Reconnexion même appareil: remplacement automatique de la socket stale",
         "🛠️ Présence améliorée: messages join/leave uniquement sur vraie transition online/offline",
@@ -14,6 +15,12 @@
         "🧩 Moteur de quêtes saisonnières dynamique (rotation hebdo, objectifs ajustés par saison/event)",
         "🔐 E2EE alpha ajouté: annuaire de clés publiques + relais d'enveloppes chiffrées messages/fichiers",
         "🤝 Moteur de recommandations sociales: score par amis communs + salons partagés + présence en ligne",
+        "🎛️ Admin Studio: mode auto-events on/off avec rotation horaire configurable (1h à 24h)",
+        "🗓️ Saisons enrichies: gestion du numéro, du label, de l'année et du multiplicateur jusqu'à x10",
+        "⚡ Events live: override de multiplicateur au lancement (défaut, x2, x5, x10)",
+        "🪧 Bannière live configurable: mode fermable (croix) ou mode toujours visible",
+        "🔊 Intégration SFX complète: frappe (key/space/enter), clic, switch salon, notif, vocal, rappels, social et rewards",
+        "🧱 Rotation live robuste: respect du mode auto, expiration/rotation fiabilisées côté serveur",
         "🛰️ Base SFU conservée (mode runtime P2P/SFU configurable)",
         "📊 Observabilité conservée: /api/observability/summary et /metrics"
       ]

@@ -169,7 +169,7 @@ const observability = {
 };
 let observabilityLastLoopTick = Date.now();
 
-const LIVE_EVENT_ROTATION_MINUTES = 45;
+const LIVE_EVENT_DEFAULT_ROTATION_HOURS = 1;
 const LIVE_EVENT_DEFAULT_DURATION_MINUTES = 30;
 const LIVE_EVENT_MAX_DURATION_MINUTES = 180;
 const LIVE_EVENTS_CATALOG = [
@@ -208,11 +208,15 @@ let liveOpsState = {
     season: {
         number: 1,
         label: 'Saison 1 - Genesis',
+        year: new Date().getFullYear(),
         startedAt: null,
         xpMultiplier: 1
     },
     activeEvent: null,
-    eventRotationMinutes: LIVE_EVENT_ROTATION_MINUTES,
+    autoModeEnabled: true,
+    autoRotationHours: LIVE_EVENT_DEFAULT_ROTATION_HOURS,
+    bannerDisplayMode: 'dismissible',
+    eventRotationMinutes: LIVE_EVENT_DEFAULT_ROTATION_HOURS * 60,
     nextRotationAt: 0,
     updatedAt: null
 };
@@ -1036,6 +1040,11 @@ function findLiveEventById(eventId) {
     return LIVE_EVENTS_CATALOG.find((event) => String(event.id).toLowerCase() === wanted) || null;
 }
 
+function computeNextLiveRotationTs(hours = LIVE_EVENT_DEFAULT_ROTATION_HOURS, fromTs = Date.now()) {
+    const safeHours = Math.max(1, Math.min(24, Number(hours) || LIVE_EVENT_DEFAULT_ROTATION_HOURS));
+    return Number(fromTs) + safeHours * 60 * 60 * 1000;
+}
+
 function createDefaultLiveOpsState() {
     const now = Date.now();
     return {
@@ -1043,12 +1052,16 @@ function createDefaultLiveOpsState() {
         season: {
             number: 1,
             label: 'Saison 1 - Genesis',
+            year: new Date(now).getFullYear(),
             startedAt: new Date(now).toISOString(),
             xpMultiplier: 1
         },
         activeEvent: null,
-        eventRotationMinutes: LIVE_EVENT_ROTATION_MINUTES,
-        nextRotationAt: now + LIVE_EVENT_ROTATION_MINUTES * 60 * 1000,
+        autoModeEnabled: true,
+        autoRotationHours: LIVE_EVENT_DEFAULT_ROTATION_HOURS,
+        bannerDisplayMode: 'dismissible',
+        eventRotationMinutes: LIVE_EVENT_DEFAULT_ROTATION_HOURS * 60,
+        nextRotationAt: computeNextLiveRotationTs(LIVE_EVENT_DEFAULT_ROTATION_HOURS, now),
         updatedAt: new Date(now).toISOString()
     };
 }
@@ -1058,8 +1071,20 @@ function normalizeLiveOpsState(raw = {}) {
 
     const seasonRaw = raw.season || {};
     const seasonNumber = parseInt(seasonRaw.number, 10);
+    const seasonYear = parseInt(seasonRaw.year, 10);
     const xpMultiplier = Number(seasonRaw.xpMultiplier);
     const eventRotationMinutes = parseInt(raw.eventRotationMinutes, 10);
+    const autoRotationHoursRaw = parseInt(raw.autoRotationHours, 10);
+    const derivedHoursFromMinutes = Number.isFinite(eventRotationMinutes) && eventRotationMinutes > 0
+        ? Math.max(1, Math.min(24, Math.round(eventRotationMinutes / 60)))
+        : fallback.autoRotationHours;
+    const autoRotationHours = Number.isFinite(autoRotationHoursRaw) && autoRotationHoursRaw > 0
+        ? Math.max(1, Math.min(24, autoRotationHoursRaw))
+        : derivedHoursFromMinutes;
+    const autoModeEnabled = typeof raw.autoModeEnabled === 'boolean' ? raw.autoModeEnabled : true;
+    const bannerDisplayMode = String(raw.bannerDisplayMode || fallback.bannerDisplayMode).toLowerCase() === 'always'
+        ? 'always'
+        : 'dismissible';
     const nextRotationAt = Number(raw.nextRotationAt);
     const activeEventRaw = raw.activeEvent || null;
 
@@ -1068,12 +1093,15 @@ function normalizeLiveOpsState(raw = {}) {
         const ref = findLiveEventById(activeEventRaw.id);
         const endsAt = Number(activeEventRaw.endsAt || 0);
         if (ref && Number.isFinite(endsAt) && endsAt > 0) {
+            const customEventMultiplier = Number(activeEventRaw.messageXpMultiplier);
             activeEvent = {
                 id: ref.id,
                 icon: ref.icon,
                 title: ref.title,
                 description: ref.description,
-                messageXpMultiplier: Number(ref.messageXpMultiplier || 1),
+                messageXpMultiplier: Number.isFinite(customEventMultiplier)
+                    ? Math.min(10, Math.max(1, customEventMultiplier))
+                    : Number(ref.messageXpMultiplier || 1),
                 startsAt: activeEventRaw.startsAt || new Date().toISOString(),
                 endsAt,
                 activatedBy: String(activeEventRaw.activatedBy || 'system')
@@ -1086,16 +1114,20 @@ function normalizeLiveOpsState(raw = {}) {
         season: {
             number: Number.isFinite(seasonNumber) && seasonNumber > 0 ? seasonNumber : fallback.season.number,
             label: String(seasonRaw.label || fallback.season.label).substring(0, 70) || fallback.season.label,
+            year: Number.isFinite(seasonYear) && seasonYear >= 2000 && seasonYear <= 2200 ? seasonYear : fallback.season.year,
             startedAt: seasonRaw.startedAt || fallback.season.startedAt,
-            xpMultiplier: Number.isFinite(xpMultiplier) ? Math.min(5, Math.max(0.5, xpMultiplier)) : fallback.season.xpMultiplier
+            xpMultiplier: Number.isFinite(xpMultiplier) ? Math.min(10, Math.max(0.5, xpMultiplier)) : fallback.season.xpMultiplier
         },
         activeEvent,
-        eventRotationMinutes: Number.isFinite(eventRotationMinutes) && eventRotationMinutes >= 10
-            ? Math.min(240, eventRotationMinutes)
-            : fallback.eventRotationMinutes,
-        nextRotationAt: Number.isFinite(nextRotationAt) && nextRotationAt > 0
-            ? nextRotationAt
-            : fallback.nextRotationAt,
+        autoModeEnabled,
+        autoRotationHours,
+        bannerDisplayMode,
+        eventRotationMinutes: autoRotationHours * 60,
+        nextRotationAt: autoModeEnabled
+            ? (Number.isFinite(nextRotationAt) && nextRotationAt > 0
+                ? nextRotationAt
+                : computeNextLiveRotationTs(autoRotationHours))
+            : 0,
         updatedAt: raw.updatedAt || fallback.updatedAt
     };
 }
@@ -1126,13 +1158,13 @@ function loadLiveOpsState() {
 }
 
 function getLiveMessageXpMultiplier() {
-    const seasonMultiplier = Math.min(5, Math.max(0.5, Number(liveOpsState?.season?.xpMultiplier || 1)));
+    const seasonMultiplier = Math.min(10, Math.max(0.5, Number(liveOpsState?.season?.xpMultiplier || 1)));
     let eventMultiplier = 1;
     const event = liveOpsState.activeEvent;
     if (event && Number(event.endsAt || 0) > Date.now()) {
-        eventMultiplier = Math.max(1, Number(event.messageXpMultiplier || 1));
+        eventMultiplier = Math.min(10, Math.max(1, Number(event.messageXpMultiplier || 1)));
     }
-    return Math.max(0.5, Math.min(8, Number((seasonMultiplier * eventMultiplier).toFixed(2))));
+    return Math.max(0.5, Math.min(10, Number((seasonMultiplier * eventMultiplier).toFixed(2))));
 }
 
 function getLiveOpsPayload() {
@@ -1141,10 +1173,14 @@ function getLiveOpsPayload() {
         season: {
             number: liveOpsState.season.number,
             label: liveOpsState.season.label,
+            year: liveOpsState.season.year,
             startedAt: liveOpsState.season.startedAt,
             xpMultiplier: liveOpsState.season.xpMultiplier
         },
         event: null,
+        autoModeEnabled: !!liveOpsState.autoModeEnabled,
+        autoRotationHours: Math.max(1, Math.min(24, Number(liveOpsState.autoRotationHours || LIVE_EVENT_DEFAULT_ROTATION_HOURS))),
+        bannerDisplayMode: liveOpsState.bannerDisplayMode === 'always' ? 'always' : 'dismissible',
         nextRotationAt: liveOpsState.nextRotationAt,
         eventRotationMinutes: liveOpsState.eventRotationMinutes,
         effectiveMessageXpMultiplier: getLiveMessageXpMultiplier(),
@@ -1192,18 +1228,24 @@ function activateLiveEvent(eventId, options = {}) {
     const durationMinutes = Number.isFinite(durationRaw)
         ? Math.min(LIVE_EVENT_MAX_DURATION_MINUTES, Math.max(5, durationRaw))
         : LIVE_EVENT_DEFAULT_DURATION_MINUTES;
+    const customMultiplier = Number(options.messageXpMultiplier);
+    const messageXpMultiplier = Number.isFinite(customMultiplier)
+        ? Math.min(10, Math.max(1, customMultiplier))
+        : Number(ref.messageXpMultiplier || 1);
 
     liveOpsState.activeEvent = {
         id: ref.id,
         icon: ref.icon,
         title: ref.title,
         description: ref.description,
-        messageXpMultiplier: Number(ref.messageXpMultiplier || 1),
+        messageXpMultiplier,
         startsAt: new Date(now).toISOString(),
         endsAt: now + durationMinutes * 60 * 1000,
         activatedBy: String(options.actor || 'system')
     };
-    liveOpsState.nextRotationAt = now + liveOpsState.eventRotationMinutes * 60 * 1000;
+    liveOpsState.nextRotationAt = liveOpsState.autoModeEnabled
+        ? computeNextLiveRotationTs(liveOpsState.autoRotationHours, now)
+        : 0;
     saveLiveOpsState();
     broadcastLiveOpsState();
 
@@ -1219,7 +1261,9 @@ function endLiveEvent(options = {}) {
     if (!current) return false;
 
     liveOpsState.activeEvent = null;
-    liveOpsState.nextRotationAt = Date.now() + liveOpsState.eventRotationMinutes * 60 * 1000;
+    liveOpsState.nextRotationAt = liveOpsState.autoModeEnabled
+        ? computeNextLiveRotationTs(liveOpsState.autoRotationHours)
+        : 0;
     saveLiveOpsState();
     broadcastLiveOpsState();
 
@@ -1245,6 +1289,8 @@ function refreshLiveOpsState() {
     if (liveOpsState.activeEvent && Number(liveOpsState.activeEvent.endsAt || 0) <= now) {
         endLiveEvent({ actor: 'system', announce: true });
     }
+
+    if (!liveOpsState.autoModeEnabled) return;
 
     if (!liveOpsState.activeEvent && Number(liveOpsState.nextRotationAt || 0) <= now) {
         rotateLiveEvent({ actor: 'system', announce: true, durationMinutes: LIVE_EVENT_DEFAULT_DURATION_MINUTES });
@@ -3095,6 +3141,7 @@ io.on('connection', (socket) => {
 
             case 'season_update': {
                 const wantedNumber = parseInt(data.seasonNumber, 10);
+                const wantedYear = parseInt(data.seasonYear, 10);
                 const wantedLabel = String(data.seasonLabel || '').trim();
                 const wantedMultiplier = Number(data.xpMultiplier);
 
@@ -3104,8 +3151,11 @@ io.on('connection', (socket) => {
                 if (wantedLabel) {
                     liveOpsState.season.label = wantedLabel.substring(0, 70);
                 }
+                if (Number.isFinite(wantedYear) && wantedYear >= 2000 && wantedYear <= 2200) {
+                    liveOpsState.season.year = wantedYear;
+                }
                 if (Number.isFinite(wantedMultiplier)) {
-                    liveOpsState.season.xpMultiplier = Math.min(5, Math.max(0.5, wantedMultiplier));
+                    liveOpsState.season.xpMultiplier = Math.min(10, Math.max(0.5, wantedMultiplier));
                 }
                 if (!liveOpsState.season.startedAt) {
                     liveOpsState.season.startedAt = new Date().toISOString();
@@ -3124,12 +3174,46 @@ io.on('connection', (socket) => {
                 break;
             }
 
+            case 'live_ops_settings_update': {
+                const autoModeEnabled = !!data.autoModeEnabled;
+                const autoRotationHours = parseInt(data.autoRotationHours, 10);
+                const bannerDisplayMode = String(data.bannerDisplayMode || '').toLowerCase() === 'always'
+                    ? 'always'
+                    : 'dismissible';
+
+                liveOpsState.autoModeEnabled = autoModeEnabled;
+                if (Number.isFinite(autoRotationHours) && autoRotationHours > 0) {
+                    liveOpsState.autoRotationHours = Math.max(1, Math.min(24, autoRotationHours));
+                }
+                liveOpsState.eventRotationMinutes = liveOpsState.autoRotationHours * 60;
+                liveOpsState.bannerDisplayMode = bannerDisplayMode;
+                liveOpsState.nextRotationAt = liveOpsState.autoModeEnabled
+                    ? computeNextLiveRotationTs(liveOpsState.autoRotationHours)
+                    : 0;
+
+                saveLiveOpsState();
+                broadcastLiveOpsState();
+                socket.emit('admin_response', {
+                    success: true,
+                    message: `Live ops: auto ${liveOpsState.autoModeEnabled ? 'active' : 'desactive'} · toutes ${liveOpsState.autoRotationHours}h · banniere ${liveOpsState.bannerDisplayMode === 'always' ? 'toujours visible' : 'fermable'}`
+                });
+                logActivity('ADMIN', 'Parametres live ops', {
+                    admin: adminName,
+                    autoModeEnabled: liveOpsState.autoModeEnabled,
+                    autoRotationHours: liveOpsState.autoRotationHours,
+                    bannerDisplayMode: liveOpsState.bannerDisplayMode
+                });
+                break;
+            }
+
             case 'live_event_set': {
                 const eventId = data.eventId || value;
                 const durationMinutes = parseInt(data.duration, 10);
+                const messageXpMultiplier = Number(data.messageXpMultiplier);
                 const activated = activateLiveEvent(eventId, {
                     actor: adminName,
                     durationMinutes: Number.isFinite(durationMinutes) ? durationMinutes : LIVE_EVENT_DEFAULT_DURATION_MINUTES,
+                    messageXpMultiplier: Number.isFinite(messageXpMultiplier) ? messageXpMultiplier : undefined,
                     announce: true
                 });
                 if (!activated) {

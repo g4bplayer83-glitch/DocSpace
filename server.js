@@ -7,7 +7,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 const PACKAGE_INFO = require('./package.json');
 const SERVER_NAME = 'DocSpace Server';
-const SERVER_VERSION = PACKAGE_INFO.version || '3.2.6';
+const SERVER_VERSION = PACKAGE_INFO.version || '3.2.8-alpha';
 
 const app = express();
 const server = http.createServer(app);
@@ -71,6 +71,33 @@ const avatarUpload = multer({
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 
+app.use((req, res, next) => {
+    const start = Date.now();
+    observability.http.requestsTotal += 1;
+    observability.http.byPath[req.path] = (observability.http.byPath[req.path] || 0) + 1;
+
+    res.on('finish', () => {
+        const statusKey = String(res.statusCode || 0);
+        observability.http.byStatus[statusKey] = (observability.http.byStatus[statusKey] || 0) + 1;
+
+        const latency = Date.now() - start;
+        observability.http.samples.push(latency);
+        if (observability.http.samples.length > 200) observability.http.samples.shift();
+
+        const samples = observability.http.samples;
+        if (samples.length > 0) {
+            const avg = samples.reduce((sum, value) => sum + value, 0) / samples.length;
+            observability.http.latencyMsAvg = Math.round(avg);
+
+            const sorted = [...samples].sort((a, b) => a - b);
+            const p95Index = Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95));
+            observability.http.latencyMsP95 = sorted[p95Index];
+        }
+    });
+
+    next();
+});
+
 // Servir les fichiers statiques
 app.use(express.static(__dirname));
 app.use('/uploads', express.static(uploadDir));
@@ -100,6 +127,47 @@ let serverRuntimeStats = {
     lastShutdownAt: null,
     updatedAt: null
 };
+
+// === 3.2.8-alpha: voix SFU / sync multi-device / observabilite ===
+const VOICE_RUNTIME_MODE = String(process.env.DOCSPACE_VOICE_MODE || 'p2p').toLowerCase(); // p2p | sfu
+const VOICE_SFU_PROVIDER = String(process.env.DOCSPACE_SFU_PROVIDER || 'mediasoup').toLowerCase();
+const VOICE_SFU_SIGNALING_URL = process.env.DOCSPACE_SFU_SIGNALING_URL || '';
+const VOICE_SFU_PUBLIC_WS = process.env.DOCSPACE_SFU_PUBLIC_WS || '';
+
+let userSocketIndex = new Map(); // username(lower) -> Set(socketId)
+let multiDeviceSyncState = new Map(); // username(lower) -> { updatedAt, byDevice: { deviceId: state } }
+let e2eeKeyDirectory = new Map(); // username(lower) -> Map(deviceId -> key metadata)
+
+const observability = {
+    startedAt: Date.now(),
+    sockets: {
+        totalConnections: 0,
+        currentTransportConnections: 0,
+        currentAuthenticatedUsers: 0,
+        disconnections: 0
+    },
+    http: {
+        requestsTotal: 0,
+        byStatus: {},
+        byPath: {},
+        latencyMsAvg: 0,
+        latencyMsP95: 0,
+        samples: []
+    },
+    socketEvents: {},
+    voice: {
+        offers: 0,
+        answers: 0,
+        iceCandidates: 0,
+        reconnectIntents: 0,
+        sfuSignals: 0
+    },
+    runtime: {
+        eventLoopLagMs: 0,
+        eventLoopLagMsMax: 0
+    }
+};
+let observabilityLastLoopTick = Date.now();
 
 const LIVE_EVENT_ROTATION_MINUTES = 45;
 const LIVE_EVENT_DEFAULT_DURATION_MINUTES = 30;
@@ -197,29 +265,80 @@ let friendships = {}; // username -> { friends: [username], pending: [username],
 // === LEVELING / XP SYSTEM ===
 let userXP = {}; // username -> { xp, level, totalMessages, lastXpGain }
 let miniGameStats = {}; // username -> { points, played, wins, losses, draws, byGame }
-const XP_PER_MESSAGE = 15;
-const XP_PER_REACTION = 5;
+const XP_PER_MESSAGE = 18;
+const XP_PER_REACTION = 8;
 const XP_LEVEL_BASE = 100; // XP for level 1, doubles each level
-const DAILY_LOGIN_XP_BONUS = 50;
-const DAILY_LOGIN_STREAK_STEP = 10;
-const DAILY_LOGIN_STREAK_MAX_BONUS = 60;
-const XP_MESSAGE_COOLDOWN_MS = 30000;
-const XP_MESSAGE_COOLDOWN_REDUCED_MS = 20000;
+const DAILY_LOGIN_XP_BONUS = 60;
+const DAILY_LOGIN_STREAK_STEP = 15;
+const DAILY_LOGIN_STREAK_MAX_BONUS = 90;
+const XP_MESSAGE_COOLDOWN_MS = 25000;
+const XP_MESSAGE_COOLDOWN_REDUCED_MS = 18000;
 const XP_UTILITY_DURATION_MS = 15 * 60 * 1000;
-const VOICE_PASSIVE_XP_PER_MINUTE = 3;
+const VOICE_PASSIVE_XP_PER_MINUTE = 5;
 const BANANA_XP_RATIO = 11;
 const VOICE_SPEAKING_EVENT_THROTTLE_MS = 120;
 const UTILITY_PURCHASES_LIMIT_PER_HOUR = 8;
+const CLICKER_XP_PER_CLICK = 2;
+const CLICKER_TAP_COOLDOWN_MS = 180;
+const CLICKER_LUCKY_BANANA_CHANCE = 0.03;
+const CLICKER_JACKPOT_CHANCE = 0.004;
+const CLICKER_JACKPOT_XP = 50;
+const CLICKER_JACKPOT_BANANAS = 5;
+const CLICKER_MEGA_JACKPOT_CHANCE = 0.0005;
+const CLICKER_MEGA_JACKPOT_XP = 200;
+const CLICKER_MEGA_JACKPOT_BANANAS = 20;
 const NAME_EFFECT_ITEMS = {
     name_glow: { cost: 24, label: 'Halo lumineux' },
     name_gradient: { cost: 29, label: 'Dégradé arc-en-ciel' },
     name_neon: { cost: 34, label: 'Néon vibrant' }
 };
 const DAILY_MISSIONS = {
-    messages: { target: 10, rewardXP: 70, rewardBananas: 2, label: 'Messages du jour' },
-    reactions: { target: 5, rewardXP: 50, rewardBananas: 2, label: 'Reactions du jour' },
-    voiceMinutes: { target: 10, rewardXP: 85, rewardBananas: 3, label: 'Minutes en vocal' }
+    messages: { target: 10, rewardXP: 80, rewardBananas: 3, label: 'Messages du jour' },
+    reactions: { target: 5, rewardXP: 60, rewardBananas: 2, label: 'Reactions du jour' },
+    voiceMinutes: { target: 10, rewardXP: 100, rewardBananas: 4, label: 'Minutes en vocal' },
+    miniGameRounds: { target: 3, rewardXP: 90, rewardBananas: 3, label: 'Mini-jeux du jour' },
+    clickerClicks: { target: 100, rewardXP: 120, rewardBananas: 5, label: 'Cookie Clicker' }
 };
+
+const SEASONAL_QUEST_ROTATION_DAYS = 7;
+const SEASONAL_QUEST_POOL = [
+    { id: 'season_messages', metric: 'messages', title: 'Sprint messagerie', label: 'Messages saison', baseTarget: 16, targetGrowthPerSeason: 2, rewardXP: 140, rewardBananas: 6 },
+    { id: 'season_reactions', metric: 'reactions', title: 'Amplificateur social', label: 'Reactions saison', baseTarget: 12, targetGrowthPerSeason: 1, rewardXP: 110, rewardBananas: 5 },
+    { id: 'season_voice', metric: 'voiceMinutes', title: 'Pulse vocal', label: 'Minutes vocal saison', baseTarget: 20, targetGrowthPerSeason: 2, rewardXP: 170, rewardBananas: 7 },
+    { id: 'season_arcade', metric: 'miniGameRounds', title: 'Arcade saisonniere', label: 'Parties mini-jeux saison', baseTarget: 5, targetGrowthPerSeason: 1, rewardXP: 150, rewardBananas: 6 },
+    { id: 'season_clicker', metric: 'clickerClicks', title: 'Cookie Marathon', label: 'Clicks saison', baseTarget: 180, targetGrowthPerSeason: 15, rewardXP: 190, rewardBananas: 8 }
+];
+
+const XP_ROLES = [
+    { minLevel: 50, key: 'eternal', label: 'Éternel', icon: '👑' },
+    { minLevel: 40, key: 'diamond', label: 'Diamant', icon: '💎' },
+    { minLevel: 30, key: 'platinum', label: 'Platine', icon: '🏛️' },
+    { minLevel: 20, key: 'gold', label: 'Or', icon: '🥇' },
+    { minLevel: 10, key: 'silver', label: 'Argent', icon: '🥈' },
+    { minLevel: 5, key: 'bronze', label: 'Bronze', icon: '🥉' },
+    { minLevel: 0, key: 'rookie', label: 'Recrue', icon: '🛡️' }
+];
+
+function buildDailyMissionProgressDefaults() {
+    const defaults = {};
+    Object.keys(DAILY_MISSIONS).forEach((key) => {
+        defaults[key] = 0;
+    });
+    return defaults;
+}
+
+function buildDailyMissionCompletedDefaults() {
+    const defaults = {};
+    Object.keys(DAILY_MISSIONS).forEach((key) => {
+        defaults[key] = false;
+    });
+    return defaults;
+}
+
+function getRoleForLevel(level) {
+    const safeLevel = Math.max(0, Number(level || 0));
+    return XP_ROLES.find((role) => safeLevel >= role.minLevel) || XP_ROLES[XP_ROLES.length - 1];
+}
 function getXPForLevel(level) { return Math.floor(XP_LEVEL_BASE * Math.pow(1.5, level - 1)); }
 function getLevelFromXP(xp) {
     let level = 0;
@@ -234,8 +353,7 @@ function getLevelFromXP(xp) {
 function getBananaPoints(username) {
     const data = userXP[username];
     if (!data) return 0;
-    const bonusBananas = Math.max(0, Number(data.bonusBananas || 0));
-    return Math.floor((data.xp || 0) / BANANA_XP_RATIO) + bonusBananas;
+    return Math.max(0, Math.floor(Number(data.bonusBananas || 0)));
 }
 
 function spendBananas(username, cost) {
@@ -243,21 +361,39 @@ function spendBananas(username, cost) {
     let remaining = Math.max(0, Math.floor(cost || 0));
     if (remaining <= 0) return true;
 
-    const available = getBananaPoints(username);
+    const available = Math.max(0, Number(entry.bonusBananas || 0));
     if (available < remaining) return false;
-
-    const bonusBananas = Math.max(0, Number(entry.bonusBananas || 0));
-    const fromBonus = Math.min(bonusBananas, remaining);
-    entry.bonusBananas = bonusBananas - fromBonus;
-    remaining -= fromBonus;
-
-    if (remaining > 0) {
-        const xpCost = remaining * BANANA_XP_RATIO;
-        entry.xp = Math.max(0, (entry.xp || 0) - xpCost);
-        entry.level = getLevelFromXP(entry.xp).level;
-    }
+    entry.bonusBananas = available - remaining;
 
     return true;
+}
+
+function convertXPToBananas(username, bananaAmount) {
+    const entry = ensureXPEntry(username);
+    const requested = Math.max(0, Math.floor(Number(bananaAmount || 0)));
+    if (requested <= 0) {
+        return { success: false, message: 'Montant invalide' };
+    }
+
+    const xpCost = requested * BANANA_XP_RATIO;
+    const currentXP = Math.max(0, Number(entry.xp || 0));
+    if (currentXP < xpCost) {
+        return {
+            success: false,
+            message: `XP insuffisante (${currentXP}/${xpCost})`
+        };
+    }
+
+    entry.xp = currentXP - xpCost;
+    entry.level = getLevelFromXP(entry.xp).level;
+    entry.bonusBananas = Math.max(0, Number(entry.bonusBananas || 0)) + requested;
+
+    return {
+        success: true,
+        bananasAdded: requested,
+        xpSpent: xpCost,
+        bananaPoints: getBananaPoints(username)
+    };
 }
 
 function sanitizeNameEffect(effect) {
@@ -300,6 +436,31 @@ function mergeXPEntries(baseEntry, incomingEntry) {
 
     const wanted = sanitizeNameEffect(base.activeNameEffect || incoming.activeNameEffect || 'none');
     base.activeNameEffect = (wanted !== 'none' && owned[wanted]) ? wanted : 'none';
+
+    base.dailyMissionDay = base.dailyMissionDay || incoming.dailyMissionDay || null;
+    const progress = {
+        ...buildDailyMissionProgressDefaults(),
+        ...(base.dailyMissionProgress || {}),
+        ...(incoming.dailyMissionProgress || {})
+    };
+    const completed = {
+        ...buildDailyMissionCompletedDefaults(),
+        ...(base.dailyMissionCompleted || {}),
+        ...(incoming.dailyMissionCompleted || {})
+    };
+    Object.keys(DAILY_MISSIONS).forEach((key) => {
+        progress[key] = Math.max(0, Number(progress[key] || 0));
+        completed[key] = !!completed[key];
+    });
+    base.dailyMissionProgress = progress;
+    base.dailyMissionCompleted = completed;
+
+    base.clicker = {
+        totalClicks: Math.max(0, Number(base?.clicker?.totalClicks || 0)) + Math.max(0, Number(incoming?.clicker?.totalClicks || 0)),
+        sessionClicks: Math.max(0, Number(base?.clicker?.sessionClicks || 0)) + Math.max(0, Number(incoming?.clicker?.sessionClicks || 0)),
+        luckyDrops: Math.max(0, Number(base?.clicker?.luckyDrops || 0)) + Math.max(0, Number(incoming?.clicker?.luckyDrops || 0)),
+        lastTapAt: Math.max(0, Number(base?.clicker?.lastTapAt || 0), Number(incoming?.clicker?.lastTapAt || 0))
+    };
 
     base.level = getLevelFromXP(base.xp).level;
     return base;
@@ -350,8 +511,14 @@ function ensureXPEntry(username) {
             shopWindowStart: 0,
             shopWindowCount: 0,
             dailyMissionDay: null,
-            dailyMissionProgress: { messages: 0, reactions: 0, voiceMinutes: 0 },
-            dailyMissionCompleted: { messages: false, reactions: false, voiceMinutes: false }
+            dailyMissionProgress: buildDailyMissionProgressDefaults(),
+            dailyMissionCompleted: buildDailyMissionCompletedDefaults(),
+            clicker: {
+                totalClicks: 0,
+                sessionClicks: 0,
+                luckyDrops: 0,
+                lastTapAt: 0
+            }
         };
     }
 
@@ -372,11 +539,22 @@ function ensureXPEntry(username) {
     if (typeof userXP[username].shopWindowCount !== 'number') userXP[username].shopWindowCount = 0;
     if (typeof userXP[username].dailyMissionDay !== 'string') userXP[username].dailyMissionDay = null;
     if (!userXP[username].dailyMissionProgress || typeof userXP[username].dailyMissionProgress !== 'object') {
-        userXP[username].dailyMissionProgress = { messages: 0, reactions: 0, voiceMinutes: 0 };
+        userXP[username].dailyMissionProgress = buildDailyMissionProgressDefaults();
     }
     if (!userXP[username].dailyMissionCompleted || typeof userXP[username].dailyMissionCompleted !== 'object') {
-        userXP[username].dailyMissionCompleted = { messages: false, reactions: false, voiceMinutes: false };
+        userXP[username].dailyMissionCompleted = buildDailyMissionCompletedDefaults();
     }
+    Object.keys(DAILY_MISSIONS).forEach((key) => {
+        userXP[username].dailyMissionProgress[key] = Math.max(0, Number(userXP[username].dailyMissionProgress[key] || 0));
+        userXP[username].dailyMissionCompleted[key] = !!userXP[username].dailyMissionCompleted[key];
+    });
+    if (!userXP[username].clicker || typeof userXP[username].clicker !== 'object') {
+        userXP[username].clicker = { totalClicks: 0, sessionClicks: 0, luckyDrops: 0, lastTapAt: 0 };
+    }
+    userXP[username].clicker.totalClicks = Math.max(0, Number(userXP[username].clicker.totalClicks || 0));
+    userXP[username].clicker.sessionClicks = Math.max(0, Number(userXP[username].clicker.sessionClicks || 0));
+    userXP[username].clicker.luckyDrops = Math.max(0, Number(userXP[username].clicker.luckyDrops || 0));
+    userXP[username].clicker.lastTapAt = Math.max(0, Number(userXP[username].clicker.lastTapAt || 0));
     return userXP[username];
 }
 
@@ -396,16 +574,34 @@ function buildXPDataPayload(username) {
     const data = ensureXPEntry(username);
     ensureDailyMissionsForEntry(data);
     const levelData = getLevelFromXP(data.xp || 0);
+    const role = getRoleForLevel(levelData.level);
     const boostUntil = data.xpBoostUntil || 0;
     const reactionBoostUntil = data.reactionBoostUntil || 0;
     const cooldownReducerUntil = data.cooldownReducerUntil || 0;
+    const missionTargets = {};
+    const missionRewards = {};
+    const missionProgress = {};
+    const missionCompleted = {};
+
+    Object.entries(DAILY_MISSIONS).forEach(([key, mission]) => {
+        missionTargets[key] = mission.target;
+        missionRewards[key] = {
+            xp: mission.rewardXP,
+            bananas: mission.rewardBananas
+        };
+        missionProgress[key] = Number(data.dailyMissionProgress?.[key] || 0);
+        missionCompleted[key] = !!data.dailyMissionCompleted?.[key];
+    });
+
     return {
         xp: data.xp || 0,
         ...levelData,
+        role,
         totalMessages: data.totalMessages || 0,
         bananaPoints: getBananaPoints(username),
         bananaBreakdown: {
-            fromXP: Math.floor((data.xp || 0) / BANANA_XP_RATIO),
+            fromWallet: Math.max(0, Number(data.bonusBananas || 0)),
+            convertibleFromXP: Math.floor((data.xp || 0) / BANANA_XP_RATIO),
             fromTasks: Math.max(0, Number(data.bonusBananas || 0)),
             ratioXP: BANANA_XP_RATIO
         },
@@ -423,29 +619,20 @@ function buildXPDataPayload(username) {
             name_gradient: !!data.ownedNameEffects?.name_gradient,
             name_neon: !!data.ownedNameEffects?.name_neon
         },
+        clicker: {
+            totalClicks: Number(data.clicker?.totalClicks || 0),
+            sessionClicks: Number(data.clicker?.sessionClicks || 0),
+            luckyDrops: Number(data.clicker?.luckyDrops || 0),
+            cooldownMs: CLICKER_TAP_COOLDOWN_MS
+        },
         dailyMissions: {
             dayKey: data.dailyMissionDay || getDayKey(),
-            targets: {
-                messages: DAILY_MISSIONS.messages.target,
-                reactions: DAILY_MISSIONS.reactions.target,
-                voiceMinutes: DAILY_MISSIONS.voiceMinutes.target
-            },
-            rewards: {
-                messages: { xp: DAILY_MISSIONS.messages.rewardXP, bananas: DAILY_MISSIONS.messages.rewardBananas },
-                reactions: { xp: DAILY_MISSIONS.reactions.rewardXP, bananas: DAILY_MISSIONS.reactions.rewardBananas },
-                voiceMinutes: { xp: DAILY_MISSIONS.voiceMinutes.rewardXP, bananas: DAILY_MISSIONS.voiceMinutes.rewardBananas }
-            },
-            progress: {
-                messages: data.dailyMissionProgress?.messages || 0,
-                reactions: data.dailyMissionProgress?.reactions || 0,
-                voiceMinutes: data.dailyMissionProgress?.voiceMinutes || 0
-            },
-            completed: {
-                messages: !!data.dailyMissionCompleted?.messages,
-                reactions: !!data.dailyMissionCompleted?.reactions,
-                voiceMinutes: !!data.dailyMissionCompleted?.voiceMinutes
-            }
-        }
+            targets: missionTargets,
+            rewards: missionRewards,
+            progress: missionProgress,
+            completed: missionCompleted
+        },
+        seasonalQuests: buildSeasonalQuestsPayload(username)
     };
 }
 
@@ -459,8 +646,13 @@ function ensureDailyMissionsForEntry(entry) {
     const todayKey = getDayKey();
     if (entry.dailyMissionDay !== todayKey) {
         entry.dailyMissionDay = todayKey;
-        entry.dailyMissionProgress = { messages: 0, reactions: 0, voiceMinutes: 0 };
-        entry.dailyMissionCompleted = { messages: false, reactions: false, voiceMinutes: false };
+        entry.dailyMissionProgress = buildDailyMissionProgressDefaults();
+        entry.dailyMissionCompleted = buildDailyMissionCompletedDefaults();
+    } else {
+        Object.keys(DAILY_MISSIONS).forEach((key) => {
+            entry.dailyMissionProgress[key] = Math.max(0, Number(entry.dailyMissionProgress[key] || 0));
+            entry.dailyMissionCompleted[key] = !!entry.dailyMissionCompleted[key];
+        });
     }
 }
 
@@ -483,12 +675,13 @@ function applyMissionProgress(username, deltas = {}) {
     const entry = ensureXPEntry(username);
     ensureDailyMissionsForEntry(entry);
 
-    entry.dailyMissionProgress.messages = Math.max(0, (entry.dailyMissionProgress.messages || 0) + (deltas.messages || 0));
-    entry.dailyMissionProgress.reactions = Math.max(0, (entry.dailyMissionProgress.reactions || 0) + (deltas.reactions || 0));
-    entry.dailyMissionProgress.voiceMinutes = Math.max(0, (entry.dailyMissionProgress.voiceMinutes || 0) + (deltas.voiceMinutes || 0));
+    Object.keys(deltas || {}).forEach((key) => {
+        if (!Object.prototype.hasOwnProperty.call(DAILY_MISSIONS, key)) return;
+        entry.dailyMissionProgress[key] = Math.max(0, Number(entry.dailyMissionProgress[key] || 0) + Number(deltas[key] || 0));
+    });
 
     const rewards = [];
-    const keys = ['messages', 'reactions', 'voiceMinutes'];
+    const keys = Object.keys(DAILY_MISSIONS);
     for (const key of keys) {
         if (entry.dailyMissionCompleted[key]) continue;
         if ((entry.dailyMissionProgress[key] || 0) >= DAILY_MISSIONS[key].target) {
@@ -511,6 +704,32 @@ function applyMissionProgress(username, deltas = {}) {
     }
 
     return rewards;
+}
+
+function emitMissionRewardsToSocket(targetSocket, username, rewards = [], options = {}) {
+    if (!targetSocket || !Array.isArray(rewards) || rewards.length === 0) return;
+
+    rewards.forEach((reward) => {
+        targetSocket.emit('daily_mission_reward', {
+            missionKey: reward.key,
+            missionLabel: reward.label,
+            rewardXP: reward.rewardXP,
+            rewardBananas: reward.rewardBananas || 0
+        });
+
+        if (reward.levelUp) {
+            io.emit('system_message', {
+                type: 'system',
+                message: `🎉 ${username} a atteint le niveau ${reward.newLevel} !`,
+                timestamp: new Date(),
+                id: messageId++
+            });
+        }
+    });
+
+    if (options.emitXpData) {
+        targetSocket.emit('xp_data', buildXPDataPayload(username));
+    }
 }
 
 // === REMINDERS ===
@@ -567,6 +786,7 @@ const MINIGAMES_FILE = path.join(DATA_DIR, 'mini_games_stats.json');
 const CHANNEL_CONFIG_FILE = path.join(DATA_DIR, 'channel_config.json');
 const SERVER_RUNTIME_FILE = path.join(DATA_DIR, 'server_runtime_stats.json');
 const LIVE_EVENTS_FILE = path.join(DATA_DIR, 'live_events_state.json');
+const PROFILES_FILE = path.join(DATA_DIR, 'profiles.json');
 
 // Charger ou initialiser la config des salons
 let channelConfig = { channels: [...DEFAULT_CHANNELS], voiceChannels: [...DEFAULT_VOICE_CHANNELS], categories: ['💬 Discussion', '🎮 Loisirs', '💡 Autres', '🤖 Intelligence Artificielle'] };
@@ -634,6 +854,137 @@ function formatDurationShort(totalSeconds) {
     const secs = seconds % 60;
     return `${hours}h ${minutes}m ${secs}s`;
 }
+
+function incrementCounter(bucket, key, amount = 1) {
+    if (!bucket || !key) return;
+    bucket[key] = (bucket[key] || 0) + amount;
+}
+
+function normalizeUsernameKey(username) {
+    return String(username || '').trim().toLowerCase();
+}
+
+function getSocketsForUsername(username) {
+    const key = normalizeUsernameKey(username);
+    const set = userSocketIndex.get(key);
+    return set ? Array.from(set) : [];
+}
+
+function registerUserSocket(username, socketId) {
+    const key = normalizeUsernameKey(username);
+    if (!key || !socketId) return;
+    if (!userSocketIndex.has(key)) userSocketIndex.set(key, new Set());
+    userSocketIndex.get(key).add(socketId);
+}
+
+function unregisterUserSocket(username, socketId) {
+    const key = normalizeUsernameKey(username);
+    const set = userSocketIndex.get(key);
+    if (!set) return;
+    set.delete(socketId);
+    if (set.size === 0) {
+        userSocketIndex.delete(key);
+    }
+}
+
+function upsertE2EEPublicKey(username, deviceId, keyData = {}) {
+    const userKey = normalizeUsernameKey(username);
+    const safeDeviceId = String(deviceId || '').trim().substring(0, 80);
+    if (!userKey || !safeDeviceId) return;
+
+    if (!e2eeKeyDirectory.has(userKey)) {
+        e2eeKeyDirectory.set(userKey, new Map());
+    }
+
+    const bucket = e2eeKeyDirectory.get(userKey);
+    bucket.set(safeDeviceId, {
+        deviceId: safeDeviceId,
+        fingerprint: String(keyData.fingerprint || '').trim().substring(0, 200),
+        publicKey: String(keyData.publicKey || '').trim().substring(0, 6000),
+        algorithm: String(keyData.algorithm || 'x25519').trim().substring(0, 60),
+        updatedAt: Date.now()
+    });
+}
+
+function removeE2EEPublicKey(username, deviceId) {
+    const userKey = normalizeUsernameKey(username);
+    const safeDeviceId = String(deviceId || '').trim().substring(0, 80);
+    if (!userKey || !safeDeviceId) return;
+
+    const bucket = e2eeKeyDirectory.get(userKey);
+    if (!bucket) return;
+    bucket.delete(safeDeviceId);
+    if (bucket.size === 0) {
+        e2eeKeyDirectory.delete(userKey);
+    }
+}
+
+function getE2EEPublicKeys(username) {
+    const userKey = normalizeUsernameKey(username);
+    const bucket = e2eeKeyDirectory.get(userKey);
+    if (!bucket) return [];
+    return Array.from(bucket.values()).map((entry) => ({
+        deviceId: entry.deviceId,
+        fingerprint: entry.fingerprint,
+        publicKey: entry.publicKey,
+        algorithm: entry.algorithm,
+        updatedAt: entry.updatedAt
+    }));
+}
+
+function evictSocketConnection(socketId, options = {}) {
+    const user = connectedUsers.get(socketId);
+    if (!user) return false;
+
+    // Nettoyer la présence vocale de cette socket pour éviter les "ghost users".
+    for (const [roomName, roomData] of Object.entries(voiceRooms || {})) {
+        if (!roomData || !roomData.participants || !roomData.participants.has(socketId)) continue;
+        roomData.participants.delete(socketId);
+        io.emit('voice_participants_update', { room: roomName, participants: getVoiceParticipants(roomName) });
+        io.to('voice_' + roomName).emit('voice_peer_left', { socketId });
+    }
+
+    if (typingUsers.has(socketId)) {
+        typingUsers.delete(socketId);
+        updateTypingIndicator();
+    }
+
+    connectedUsers.delete(socketId);
+    authenticatedSockets.delete(socketId);
+    unregisterUserSocket(user.username, socketId);
+    removeE2EEPublicKey(user.username, user.deviceId);
+
+    const staleSocket = io.sockets.sockets.get(socketId);
+    if (staleSocket) {
+        staleSocket.disconnect(true);
+    }
+
+    if (!options.skipUsersRefresh) {
+        updateUsersList();
+    }
+
+    return true;
+}
+
+function emitMultiDevicePresence(username) {
+    const sockets = getSocketsForUsername(username);
+    const payload = {
+        username,
+        activeDevices: sockets.length,
+        updatedAt: Date.now()
+    };
+    sockets.forEach((socketId) => {
+        io.to(socketId).emit('multi_device_presence', payload);
+    });
+}
+
+setInterval(() => {
+    const now = Date.now();
+    const lag = Math.max(0, now - observabilityLastLoopTick - 10000);
+    observability.runtime.eventLoopLagMs = lag;
+    observability.runtime.eventLoopLagMsMax = Math.max(observability.runtime.eventLoopLagMsMax, lag);
+    observabilityLastLoopTick = now;
+}, 10000);
 
 function saveServerRuntimeStats(options = {}) {
     const includeCurrentSession = options.includeCurrentSession !== false;
@@ -900,6 +1251,151 @@ function refreshLiveOpsState() {
     }
 }
 
+function getSeasonalQuestWeekIndex(now = Date.now()) {
+    const seasonStartRaw = liveOpsState?.season?.startedAt;
+    const parsedSeasonStart = Date.parse(seasonStartRaw || '');
+    const seasonStart = Number.isFinite(parsedSeasonStart) ? parsedSeasonStart : now;
+    const elapsedMs = Math.max(0, now - seasonStart);
+    return Math.floor(elapsedMs / (SEASONAL_QUEST_ROTATION_DAYS * 24 * 60 * 60 * 1000));
+}
+
+function buildSeasonalQuestsPayload(username) {
+    const now = Date.now();
+    const seasonNumber = Math.max(1, Number(liveOpsState?.season?.number || 1));
+    const weekIndex = getSeasonalQuestWeekIndex(now);
+    const selectionCount = Math.min(3, SEASONAL_QUEST_POOL.length);
+    const selected = [];
+
+    for (let i = 0; i < selectionCount; i += 1) {
+        const idx = (weekIndex * 3 + seasonNumber + i * 2) % SEASONAL_QUEST_POOL.length;
+        selected.push(SEASONAL_QUEST_POOL[idx]);
+    }
+
+    const entry = ensureXPEntry(username);
+    ensureDailyMissionsForEntry(entry);
+    const eventMultiplier = liveOpsState.activeEvent ? Number(liveOpsState.activeEvent.messageXpMultiplier || 1) : 1;
+
+    const quests = selected.map((template, index) => {
+        const progress = Math.max(0, Number(entry.dailyMissionProgress?.[template.metric] || 0));
+        const dynamicTarget = Math.max(
+            1,
+            Math.floor(
+                (template.baseTarget + Math.max(0, seasonNumber - 1) * template.targetGrowthPerSeason)
+                * (eventMultiplier >= 1.8 ? 0.85 : 1)
+            )
+        );
+        const completed = progress >= dynamicTarget;
+
+        return {
+            id: `${template.id}_${seasonNumber}_${weekIndex}_${index}`,
+            metric: template.metric,
+            title: template.title,
+            label: template.label,
+            progress,
+            target: dynamicTarget,
+            completed,
+            rewards: {
+                xp: template.rewardXP,
+                bananas: template.rewardBananas
+            }
+        };
+    });
+
+    const seasonStartRaw = liveOpsState?.season?.startedAt;
+    const parsedSeasonStart = Date.parse(seasonStartRaw || '');
+    const seasonStart = Number.isFinite(parsedSeasonStart) ? parsedSeasonStart : now;
+
+    return {
+        seasonNumber,
+        weekIndex,
+        rotationDays: SEASONAL_QUEST_ROTATION_DAYS,
+        generatedAt: now,
+        rotatesAt: seasonStart + (weekIndex + 1) * SEASONAL_QUEST_ROTATION_DAYS * 24 * 60 * 60 * 1000,
+        quests
+    };
+}
+
+function getRecentChannelMapByUser(maxMessagesPerChannel = 120) {
+    const usage = new Map();
+
+    Object.entries(channelHistories || {}).forEach(([channelName, messages]) => {
+        const recent = Array.isArray(messages) ? messages.slice(-maxMessagesPerChannel) : [];
+        recent.forEach((message) => {
+            if (message?.type !== 'user' || !message?.username) return;
+            const key = normalizeUsernameKey(message.username);
+            if (!key) return;
+            if (!usage.has(key)) usage.set(key, new Set());
+            usage.get(key).add(channelName);
+        });
+    });
+
+    return usage;
+}
+
+function buildSocialRecommendations(username, limit = 5) {
+    const safeUsername = String(username || '').trim();
+    if (!safeUsername) return [];
+
+    const userKey = normalizeUsernameKey(safeUsername);
+    const myData = friendships[safeUsername] || { friends: [], pending: [], requests: [] };
+    const blocked = new Set((global.blockedUsers?.[safeUsername] || []).map((u) => normalizeUsernameKey(u)));
+    const exclusion = new Set([userKey]);
+
+    (myData.friends || []).forEach((name) => exclusion.add(normalizeUsernameKey(name)));
+    (myData.pending || []).forEach((name) => exclusion.add(normalizeUsernameKey(name)));
+    (myData.requests || []).forEach((name) => exclusion.add(normalizeUsernameKey(name)));
+    blocked.forEach((k) => exclusion.add(k));
+
+    const allCandidates = new Map();
+    Object.keys(friendships || {}).forEach((name) => allCandidates.set(normalizeUsernameKey(name), name));
+    Array.from(userProfiles.keys()).forEach((name) => allCandidates.set(normalizeUsernameKey(name), name));
+    Array.from(connectedUsers.values()).forEach((u) => allCandidates.set(normalizeUsernameKey(u.username), u.username));
+
+    const myFriendsLower = new Set((myData.friends || []).map((name) => normalizeUsernameKey(name)));
+    const recentChannels = getRecentChannelMapByUser();
+    const myChannels = recentChannels.get(userKey) || new Set();
+
+    const scored = [];
+    allCandidates.forEach((candidateName, candidateKey) => {
+        if (!candidateKey || exclusion.has(candidateKey)) return;
+
+        const candidateData = friendships[candidateName] || { friends: [] };
+        const candidateFriends = new Set((candidateData.friends || []).map((name) => normalizeUsernameKey(name)));
+        let mutualFriends = 0;
+        myFriendsLower.forEach((friendKey) => {
+            if (candidateFriends.has(friendKey)) mutualFriends += 1;
+        });
+
+        const candidateChannels = recentChannels.get(candidateKey) || new Set();
+        let sharedChannels = 0;
+        myChannels.forEach((channelName) => {
+            if (candidateChannels.has(channelName)) sharedChannels += 1;
+        });
+
+        const isOnline = getSocketsForUsername(candidateName).length > 0;
+        const score = mutualFriends * 6 + sharedChannels * 4 + (isOnline ? 2 : 0);
+        if (score <= 0) return;
+
+        const reasons = [];
+        if (mutualFriends > 0) reasons.push(`${mutualFriends} ami(s) en commun`);
+        if (sharedChannels > 0) reasons.push(`${sharedChannels} salon(s) partagé(s)`);
+        if (isOnline) reasons.push('en ligne');
+
+        scored.push({
+            username: candidateName,
+            score,
+            mutualFriends,
+            sharedChannels,
+            online: isOnline,
+            reasons
+        });
+    });
+
+    return scored
+        .sort((a, b) => b.score - a.score || a.username.localeCompare(b.username))
+        .slice(0, Math.max(1, Math.min(10, Number(limit) || 5)));
+}
+
 // === FONCTIONS DE PERSISTANCE ===
 // Variable d'environnement: RESET_HISTORY=true pour effacer l'historique au démarrage
 const RESET_ON_START = process.env.RESET_HISTORY === 'true';
@@ -1109,16 +1605,17 @@ function saveFriendships() {
 function emitFriendsListTo(username) {
     const data = friendships[username] || { friends: [], pending: [], requests: [] };
     const friendsWithStatus = (data.friends || []).map(f => {
+        const friendKey = normalizeUsernameKey(f);
         let online = false;
         for (const [, u] of connectedUsers.entries()) {
-            if (u.username === f) { online = true; break; }
+            if (normalizeUsernameKey(u.username) === friendKey) { online = true; break; }
         }
         return { username: f, online };
     });
+    const wantedKey = normalizeUsernameKey(username);
     for (const [sid, u] of connectedUsers.entries()) {
-        if (u.username === username) {
+        if (normalizeUsernameKey(u.username) === wantedKey) {
             io.to(sid).emit('friends_list', { friends: friendsWithStatus, pending: data.pending, requests: data.requests });
-            break;
         }
     }
 }
@@ -1219,6 +1716,22 @@ function saveMiniGameStatsImmediate() {
     }
 }
 
+function loadProfiles() {
+    try {
+        if (fs.existsSync(PROFILES_FILE)) {
+            const data = JSON.parse(fs.readFileSync(PROFILES_FILE, 'utf8'));
+            userProfiles = new Map(Object.entries(data));
+            console.log(`✅ Profils chargés: ${userProfiles.size} utilisateurs`);
+        }
+    } catch (e) { console.error('❌ Erreur chargement profils:', e.message); userProfiles = new Map(); }
+}
+function saveProfiles() {
+    try {
+        const obj = Object.fromEntries(userProfiles);
+        fs.writeFileSync(PROFILES_FILE, JSON.stringify(obj, null, 2));
+    } catch (e) { console.error('❌ Erreur sauvegarde profils:', e.message); }
+}
+
 loadXPData();
 loadFriendships();
 loadBookmarks();
@@ -1226,6 +1739,7 @@ loadReminders();
 loadAutoMod();
 loadAccounts();
 loadMiniGameStats();
+loadProfiles();
 
 // === REMINDER CHECKER (every 10 seconds) ===
 setInterval(() => {
@@ -1421,11 +1935,14 @@ function recordMiniGameResult(username, gameType, outcome = 'played', extra = {}
         saveXPData();
     }
 
+    const missionRewards = applyMissionProgress(username, { miniGameRounds: 1 });
+
     return {
         points,
         xp,
         bananas,
         xpResult,
+        missionRewards,
         totals: {
             points: stats.points,
             played: stats.played,
@@ -1729,6 +2246,78 @@ app.get('/ADMIN', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+app.get('/api/voice/runtime-config', (req, res) => {
+    const sfuEnabled = VOICE_RUNTIME_MODE === 'sfu';
+    res.json({
+        mode: sfuEnabled ? 'sfu' : 'p2p',
+        sfuEnabled,
+        provider: VOICE_SFU_PROVIDER,
+        signalingUrl: VOICE_SFU_SIGNALING_URL,
+        publicWsUrl: VOICE_SFU_PUBLIC_WS,
+        generatedAt: Date.now()
+    });
+});
+
+app.get('/api/observability/summary', (req, res) => {
+    const mem = process.memoryUsage();
+    res.json({
+        timestamp: Date.now(),
+        uptimeSeconds: getTotalUptimeSeconds(),
+        sockets: {
+            ...observability.sockets,
+            currentTransportConnections: io.engine.clientsCount,
+            currentAuthenticatedUsers: connectedUsers.size
+        },
+        http: {
+            requestsTotal: observability.http.requestsTotal,
+            latencyMsAvg: observability.http.latencyMsAvg,
+            latencyMsP95: observability.http.latencyMsP95,
+            byStatus: observability.http.byStatus,
+            topPaths: Object.entries(observability.http.byPath)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10)
+                .map(([pathName, count]) => ({ path: pathName, count }))
+        },
+        voice: observability.voice,
+        runtime: {
+            ...observability.runtime,
+            memory: {
+                heapUsedMb: Math.round(mem.heapUsed / 1024 / 1024),
+                heapTotalMb: Math.round(mem.heapTotal / 1024 / 1024),
+                rssMb: Math.round(mem.rss / 1024 / 1024)
+            }
+        }
+    });
+});
+
+app.get('/metrics', (req, res) => {
+    const lines = [];
+    lines.push('# HELP docspace_http_requests_total Total HTTP requests');
+    lines.push('# TYPE docspace_http_requests_total counter');
+    lines.push(`docspace_http_requests_total ${observability.http.requestsTotal}`);
+    lines.push('# HELP docspace_socket_connections_total Total socket transport connections');
+    lines.push('# TYPE docspace_socket_connections_total counter');
+    lines.push(`docspace_socket_connections_total ${observability.sockets.totalConnections}`);
+    lines.push('# HELP docspace_connected_users Current authenticated users');
+    lines.push('# TYPE docspace_connected_users gauge');
+    lines.push(`docspace_connected_users ${connectedUsers.size}`);
+    lines.push('# HELP docspace_event_loop_lag_ms Event loop lag in milliseconds');
+    lines.push('# TYPE docspace_event_loop_lag_ms gauge');
+    lines.push(`docspace_event_loop_lag_ms ${observability.runtime.eventLoopLagMs}`);
+    lines.push('# HELP docspace_voice_offers_total Total WebRTC offers relayed');
+    lines.push('# TYPE docspace_voice_offers_total counter');
+    lines.push(`docspace_voice_offers_total ${observability.voice.offers}`);
+    lines.push('# HELP docspace_voice_answers_total Total WebRTC answers relayed');
+    lines.push('# TYPE docspace_voice_answers_total counter');
+    lines.push(`docspace_voice_answers_total ${observability.voice.answers}`);
+    lines.push('# HELP docspace_voice_ice_candidates_total Total ICE candidates relayed');
+    lines.push('# TYPE docspace_voice_ice_candidates_total counter');
+    lines.push(`docspace_voice_ice_candidates_total ${observability.voice.iceCandidates}`);
+
+    res.set('Content-Type', 'text/plain; version=0.0.4; charset=utf-8');
+    res.send(lines.join('\n') + '\n');
+});
+
 // Route de santé pour Render avec stats détaillées
 app.get('/health', (req, res) => {
     const uptimeSession = getSessionUptimeSeconds();
@@ -1760,6 +2349,15 @@ app.get('/health', (req, res) => {
     });
     
     res.status(200).json(healthData);
+});
+
+// === API PING ===
+app.get('/api/stats/ping', (req, res) => {
+    const start = Date.now();
+    res.json({
+        serverTime: start,
+        processingTime: Date.now() - start
+    });
 });
 
 // === API STATISTIQUES PUBLIQUES ===
@@ -1864,6 +2462,12 @@ app.get('/api/server/dashboard', (req, res) => {
 io.on('connection', (socket) => {
     const clientIp = socket.handshake.address;
     serverStats.totalConnections++;
+    observability.sockets.totalConnections++;
+    observability.sockets.currentTransportConnections = io.engine.clientsCount;
+
+    socket.onAny((eventName) => {
+        incrementCounter(observability.socketEvents, eventName, 1);
+    });
     
     logActivity('CONNECTION', `Nouvelle connexion Socket.IO`, {
         socketId: socket.id,
@@ -2442,24 +3046,19 @@ io.on('connection', (socket) => {
                     break;
                 }
 
-                if (!userXP[xpName]) userXP[xpName] = { xp: 0, level: 0, totalMessages: 0, lastXpGain: 0 };
-                userXP[xpName].xp = Math.max(0, (userXP[xpName].xp || 0) + amount);
-                const levelData = getLevelFromXP(userXP[xpName].xp);
-                userXP[xpName].level = levelData.level;
+                const entry = ensureXPEntry(xpName);
+                entry.xp = Math.max(0, (entry.xp || 0) + amount);
+                const levelData = getLevelFromXP(entry.xp);
+                entry.level = levelData.level;
                 saveXPData();
 
                 const targetSid = findSocketIdByUsername(xpName);
                 if (targetSid) {
-                    io.to(targetSid).emit('xp_data', {
-                        xp: userXP[xpName].xp,
-                        ...levelData,
-                        totalMessages: userXP[xpName].totalMessages || 0,
-                        bananaPoints: getBananaPoints(xpName)
-                    });
+                    io.to(targetSid).emit('xp_data', buildXPDataPayload(xpName));
                 }
 
-                socket.emit('admin_response', { success: true, message: `${xpName}: +${amount} XP (total ${userXP[xpName].xp})` });
-                logActivity('ADMIN', 'XP ajouté', { admin: adminName, target: xpName, amount, totalXP: userXP[xpName].xp });
+                socket.emit('admin_response', { success: true, message: `${xpName}: +${amount} XP (total ${entry.xp})` });
+                logActivity('ADMIN', 'XP ajouté', { admin: adminName, target: xpName, amount, totalXP: entry.xp });
                 break;
             }
 
@@ -2471,20 +3070,15 @@ io.on('connection', (socket) => {
                     break;
                 }
 
-                if (!userXP[xpName]) userXP[xpName] = { xp: 0, level: 0, totalMessages: 0, lastXpGain: 0 };
-                userXP[xpName].xp = amount;
-                const levelData = getLevelFromXP(userXP[xpName].xp);
-                userXP[xpName].level = levelData.level;
+                const entry = ensureXPEntry(xpName);
+                entry.xp = amount;
+                const levelData = getLevelFromXP(entry.xp);
+                entry.level = levelData.level;
                 saveXPData();
 
                 const targetSid = findSocketIdByUsername(xpName);
                 if (targetSid) {
-                    io.to(targetSid).emit('xp_data', {
-                        xp: userXP[xpName].xp,
-                        ...levelData,
-                        totalMessages: userXP[xpName].totalMessages || 0,
-                        bananaPoints: getBananaPoints(xpName)
-                    });
+                    io.to(targetSid).emit('xp_data', buildXPDataPayload(xpName));
                 }
 
                 socket.emit('admin_response', { success: true, message: `${xpName}: XP défini à ${amount}` });
@@ -3109,7 +3703,7 @@ io.on('connection', (socket) => {
     // Connexion d'un utilisateur
     socket.on('user_join', (userData) => {
         try {
-            const { username, avatar, accessCode } = userData;
+            const { username, avatar, accessCode, deviceId } = userData;
             
             // Validation
             if (!username || typeof username !== 'string' || username.trim().length === 0) {
@@ -3123,6 +3717,19 @@ io.on('connection', (socket) => {
             }
             
             const cleanUsername = username.trim().substring(0, 20);
+            const safeDeviceId = String(deviceId || '').trim().substring(0, 80) || `device_${socket.id.substring(0, 8)}`;
+
+            const existingSocketSession = connectedUsers.get(socket.id);
+            if (existingSocketSession) {
+                if (normalizeUsernameKey(existingSocketSession.username) === normalizeUsernameKey(cleanUsername)) {
+                    existingSocketSession.avatar = avatar || existingSocketSession.avatar || '';
+                    existingSocketSession.lastActivity = new Date();
+                    connectedUsers.set(socket.id, existingSocketSession);
+                    updateUsersList();
+                    return;
+                }
+                evictSocketConnection(socket.id, { skipUsersRefresh: true });
+            }
             
             // === VÉRIFICATION COMPTE PROTÉGÉ ===
             const accountKey = cleanUsername.toLowerCase();
@@ -3169,17 +3776,26 @@ io.on('connection', (socket) => {
                 }
             }
             
-            // Vérifier si le pseudo est déjà pris
-            const existingUser = Array.from(connectedUsers.values()).find(user => 
-                user.username.toLowerCase() === cleanUsername.toLowerCase()
-            );
-            
-            if (existingUser) {
+            const allowMultiDevice = !!accounts[accountKey] && authenticatedSockets.has(socket.id);
+            const hadPresenceBeforeCleanup = getSocketsForUsername(cleanUsername).length > 0;
+
+            // Reconnexion même compte/même appareil: remplace les sockets obsolètes.
+            const staleSocketIds = getSocketsForUsername(cleanUsername).filter((sid) => {
+                if (sid === socket.id) return false;
+                const existing = connectedUsers.get(sid);
+                return !!existing && existing.deviceId === safeDeviceId;
+            });
+            staleSocketIds.forEach((sid) => {
+                evictSocketConnection(sid, { skipUsersRefresh: true });
+            });
+
+            const hasAnotherActiveSocket = getSocketsForUsername(cleanUsername).length > 0;
+            if (hasAnotherActiveSocket && !allowMultiDevice) {
                 logActivity('ERROR', `Tentative d'utilisation d'un pseudo déjà pris`, {
                     socketId: socket.id,
                     username: cleanUsername,
                     ip: clientIp,
-                    existingSocketId: existingUser.id
+                    existingSocketId: getSocketsForUsername(cleanUsername)[0] || null
                 });
                 socket.emit('username_taken', { message: 'Ce pseudo est déjà pris!' });
                 return;
@@ -3190,6 +3806,7 @@ io.on('connection', (socket) => {
                 id: socket.id,
                 username: cleanUsername,
                 avatar: avatar || '',
+                deviceId: safeDeviceId,
                 joinTime: new Date(),
                 ip: clientIp,
                 lastActivity: new Date(),
@@ -3198,6 +3815,9 @@ io.on('connection', (socket) => {
             };
             
             connectedUsers.set(socket.id, userInfo);
+            registerUserSocket(cleanUsername, socket.id);
+            emitMultiDevicePresence(cleanUsername);
+            observability.sockets.currentAuthenticatedUsers = connectedUsers.size;
 
             // === DAILY XP BONUS + STREAK (simple progression) ===
             const xpEntry = ensureXPEntry(cleanUsername);
@@ -3240,7 +3860,7 @@ io.on('connection', (socket) => {
                 username: cleanUsername,
                 avatar: userInfo.avatar,
                 lastSeen: new Date(),
-                joinCount: (existingProfile.joinCount || 0) + 1,
+                joinCount: (existingProfile.joinCount || 0) + (hadPresenceBeforeCleanup ? 0 : 1),
                 totalMessages: existingProfile.totalMessages || 0,
                 totalReplies: existingProfile.totalReplies || 0
             });
@@ -3255,12 +3875,31 @@ io.on('connection', (socket) => {
             socket.emit('channel_config_update', channelConfig);
             refreshLiveOpsState();
             socket.emit('season_event_state', getLiveOpsPayload());
+            socket.emit('voice_runtime_config', {
+                mode: VOICE_RUNTIME_MODE === 'sfu' ? 'sfu' : 'p2p',
+                sfuEnabled: VOICE_RUNTIME_MODE === 'sfu',
+                provider: VOICE_SFU_PROVIDER,
+                signalingUrl: VOICE_SFU_SIGNALING_URL,
+                publicWsUrl: VOICE_SFU_PUBLIC_WS
+            });
+
+            const usernameKey = normalizeUsernameKey(cleanUsername);
+            const syncSnapshot = multiDeviceSyncState.get(usernameKey) || null;
+            if (syncSnapshot) {
+                socket.emit('sync_state_snapshot', {
+                    updatedAt: syncSnapshot.updatedAt || Date.now(),
+                    byDevice: syncSnapshot.byDevice || {}
+                });
+            }
             
             // Send new feature data
             socket.emit('xp_data', buildXPDataPayload(cleanUsername));
-            socket.emit('friends_list', friendships[cleanUsername] || { friends: [], pending: [], requests: [] });
+            emitFriendsListTo(cleanUsername);
             socket.emit('bookmarks_list', { bookmarks: userBookmarks[cleanUsername] || [] });
             socket.emit('reminders_list', { reminders: (reminders[cleanUsername] || []).filter(r => r.triggerAt > Date.now()) });
+            socket.emit('seasonal_quests_state', buildSeasonalQuestsPayload(cleanUsername));
+            socket.emit('social_recommendations', { recommendations: buildSocialRecommendations(cleanUsername, 6) });
+            socket.emit('e2ee_key_directory', { username: cleanUsername, keys: getE2EEPublicKeys(cleanUsername) });
 
             if (loginBonusAwarded) {
                 socket.emit('xp_daily_bonus', loginBonusAwarded);
@@ -3276,22 +3915,25 @@ io.on('connection', (socket) => {
                 reactionsCount: Object.keys(messageReactions).length
             });
             
-            // Message de bienvenue (APRES l'historique)
-            const joinMessage = {
-                type: 'system',
-                message: `${cleanUsername} a rejoint le chat`,
-                timestamp: new Date(),
-                id: messageId++
-            };
-            
-            addToHistory(joinMessage);
-            io.emit('system_message', joinMessage);
+            // Message de présence uniquement à la première connexion active du compte.
+            if (!hadPresenceBeforeCleanup) {
+                const joinMessage = {
+                    type: 'system',
+                    message: `${cleanUsername} a rejoint le chat`,
+                    timestamp: new Date(),
+                    id: messageId++
+                };
+                addToHistory(joinMessage);
+                io.emit('system_message', joinMessage);
+            }
             
             // Envoyer la liste des utilisateurs connectés
             updateUsersList();
             
-            // Notifier les amis que cet utilisateur est en ligne
-            notifyFriendsOfStatusChange(cleanUsername);
+            // Notifier les amis seulement lors d'une vraie transition offline -> online.
+            if (!hadPresenceBeforeCleanup) {
+                notifyFriendsOfStatusChange(cleanUsername);
+            }
             
             logActivity('CONNECTION', `Utilisateur rejoint le chat`, {
                 username: cleanUsername,
@@ -3726,6 +4368,55 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
         }
     });
 
+    // Mise à jour de la bio
+    socket.on('update_bio', (data) => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+        const bio = String(data?.bio || '').slice(0, 300).trim();
+        const profile = userProfiles.get(user.username) || {};
+        profile.bio = bio;
+        profile.lastUpdate = new Date();
+        userProfiles.set(user.username, profile);
+        saveProfiles();
+        socket.emit('bio_updated', { bio });
+    });
+
+    // Mise à jour couleur/gradient de profil
+    socket.on('update_profile_color', (data) => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+        const xpEntry = ensureXPEntry(user.username);
+        const level = getLevelFromXP(xpEntry.xp || 0).level;
+        const profile = userProfiles.get(user.username) || {};
+        const type = data?.type; // 'solid' or 'gradient'
+        if (type === 'gradient') {
+            if (level < 10) {
+                socket.emit('profile_color_error', { message: 'Niveau 10 requis pour les dégradés' });
+                return;
+            }
+            const color1 = String(data?.color1 || '#5865F2').slice(0, 7);
+            const color2 = String(data?.color2 || '#9b59b6').slice(0, 7);
+            if (!/^#[0-9a-fA-F]{6}$/.test(color1) || !/^#[0-9a-fA-F]{6}$/.test(color2)) {
+                socket.emit('profile_color_error', { message: 'Couleur invalide' });
+                return;
+            }
+            profile.profileGradient = `linear-gradient(135deg, ${color1}, ${color2})`;
+            profile.profileColor = null;
+        } else {
+            const color = String(data?.color || '#5865F2').slice(0, 7);
+            if (!/^#[0-9a-fA-F]{6}$/.test(color)) {
+                socket.emit('profile_color_error', { message: 'Couleur invalide' });
+                return;
+            }
+            profile.profileColor = color;
+            profile.profileGradient = null;
+        }
+        profile.lastUpdate = new Date();
+        userProfiles.set(user.username, profile);
+        saveProfiles();
+        socket.emit('profile_color_updated', { profileColor: profile.profileColor, profileGradient: profile.profileGradient });
+    });
+
     // Demande de la liste des utilisateurs
     socket.on('get_users', () => {
         const user = connectedUsers.get(socket.id);
@@ -3746,6 +4437,189 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
             // Log uniquement si on veut du debug très détaillé
             // logActivity('SYSTEM', `Ping reçu de ${user.username}`);
         }
+    });
+
+    socket.on('sync_state_request', () => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+        const key = normalizeUsernameKey(user.username);
+        const snapshot = multiDeviceSyncState.get(key);
+        socket.emit('sync_state_snapshot', {
+            updatedAt: snapshot?.updatedAt || Date.now(),
+            byDevice: snapshot?.byDevice || {}
+        });
+    });
+
+    socket.on('sync_state_update', (data) => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+
+        const key = normalizeUsernameKey(user.username);
+        const safeDeviceId = String(data?.deviceId || user.deviceId || '').trim().substring(0, 80) || `device_${socket.id.substring(0, 8)}`;
+        const patch = data?.patch && typeof data.patch === 'object' ? data.patch : {};
+
+        const allowedPatch = {
+            activeChannel: typeof patch.activeChannel === 'string' ? patch.activeChannel.substring(0, 64) : undefined,
+            voiceRoom: typeof patch.voiceRoom === 'string' ? patch.voiceRoom.substring(0, 64) : (patch.voiceRoom === null ? null : undefined),
+            draft: typeof patch.draft === 'string' ? patch.draft.substring(0, 800) : undefined,
+            focus: typeof patch.focus === 'string' ? patch.focus.substring(0, 32) : undefined
+        };
+
+        const current = multiDeviceSyncState.get(key) || { updatedAt: Date.now(), byDevice: {} };
+        const previousDeviceState = current.byDevice[safeDeviceId] || {};
+        const nextDeviceState = {
+            ...previousDeviceState,
+            ...Object.fromEntries(Object.entries(allowedPatch).filter(([, value]) => value !== undefined)),
+            updatedAt: Date.now()
+        };
+        current.byDevice[safeDeviceId] = nextDeviceState;
+        current.updatedAt = Date.now();
+        multiDeviceSyncState.set(key, current);
+
+        const sockets = getSocketsForUsername(user.username);
+        sockets.forEach((targetSocketId) => {
+            if (targetSocketId === socket.id) return;
+            io.to(targetSocketId).emit('sync_state_remote_update', {
+                fromSocketId: socket.id,
+                fromDeviceId: safeDeviceId,
+                patch: nextDeviceState,
+                updatedAt: current.updatedAt
+            });
+        });
+    });
+
+    socket.on('get_seasonal_quests', () => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+        socket.emit('seasonal_quests_state', buildSeasonalQuestsPayload(user.username));
+    });
+
+    socket.on('get_social_recommendations', (data) => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+        const limit = Math.max(1, Math.min(10, Number(data?.limit) || 6));
+        socket.emit('social_recommendations', {
+            recommendations: buildSocialRecommendations(user.username, limit)
+        });
+    });
+
+    // E2EE alpha: le serveur ne voit que des blobs chiffrés et relaie les envelopes.
+    socket.on('e2ee_key_publish', (data) => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+
+        const safeDeviceId = String(data?.deviceId || user.deviceId || '').trim().substring(0, 80) || `device_${socket.id.substring(0, 8)}`;
+        upsertE2EEPublicKey(user.username, safeDeviceId, {
+            fingerprint: data?.fingerprint,
+            publicKey: data?.publicKey,
+            algorithm: data?.algorithm
+        });
+
+        socket.emit('e2ee_key_directory', {
+            username: user.username,
+            keys: getE2EEPublicKeys(user.username)
+        });
+    });
+
+    socket.on('get_e2ee_keys', (data) => {
+        const requester = connectedUsers.get(socket.id);
+        if (!requester) return;
+        const wantedUsername = String(data?.username || requester.username).trim().substring(0, 40);
+        if (!wantedUsername) return;
+
+        socket.emit('e2ee_key_directory', {
+            username: wantedUsername,
+            keys: getE2EEPublicKeys(wantedUsername)
+        });
+    });
+
+    socket.on('e2ee_message', (data) => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+
+        const targetUsername = String(data?.targetUsername || '').trim().substring(0, 40);
+        const room = String(data?.room || '').trim().substring(0, 64);
+        const envelope = {
+            fromUsername: user.username,
+            fromDeviceId: user.deviceId || null,
+            targetUsername: targetUsername || null,
+            room: room || null,
+            algorithm: String(data?.algorithm || 'xchacha20poly1305').trim().substring(0, 64),
+            ciphertext: String(data?.ciphertext || '').substring(0, 12000),
+            nonce: String(data?.nonce || '').substring(0, 300),
+            keyId: String(data?.keyId || '').substring(0, 200),
+            metadata: data?.metadata && typeof data.metadata === 'object' ? data.metadata : {},
+            sentAt: Date.now()
+        };
+
+        if (!envelope.ciphertext) return;
+
+        if (targetUsername) {
+            getSocketsForUsername(targetUsername).forEach((targetSocketId) => {
+                io.to(targetSocketId).emit('e2ee_message', envelope);
+            });
+            return;
+        }
+
+        if (room && voiceRooms[room]) {
+            socket.to('voice_' + room).emit('e2ee_message', envelope);
+        }
+    });
+
+    socket.on('e2ee_file_manifest', (data) => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+
+        const targetUsername = String(data?.targetUsername || '').trim().substring(0, 40);
+        if (!targetUsername) return;
+
+        const manifest = {
+            fromUsername: user.username,
+            fromDeviceId: user.deviceId || null,
+            targetUsername,
+            fileName: String(data?.fileName || 'encrypted.bin').substring(0, 180),
+            cipherBlobPath: String(data?.cipherBlobPath || '').substring(0, 500),
+            cipherBlobSha256: String(data?.cipherBlobSha256 || '').substring(0, 128),
+            wrappedKey: String(data?.wrappedKey || '').substring(0, 10000),
+            nonce: String(data?.nonce || '').substring(0, 300),
+            algorithm: String(data?.algorithm || 'xchacha20poly1305').substring(0, 64),
+            sentAt: Date.now()
+        };
+
+        if (!manifest.cipherBlobPath || !manifest.wrappedKey) return;
+
+        getSocketsForUsername(targetUsername).forEach((targetSocketId) => {
+            io.to(targetSocketId).emit('e2ee_file_manifest', manifest);
+        });
+    });
+
+    socket.on('voice_sfu_signal', (data) => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+        observability.voice.sfuSignals += 1;
+
+        const targetId = data?.targetId;
+        const room = data?.room;
+        const payload = {
+            fromId: socket.id,
+            fromUsername: user.username,
+            type: data?.type || 'signal',
+            data: data?.data || null,
+            room: room || null
+        };
+
+        if (targetId) {
+            io.to(targetId).emit('voice_sfu_signal', payload);
+            return;
+        }
+
+        if (room && voiceRooms[room]) {
+            socket.to('voice_' + room).emit('voice_sfu_signal', payload);
+        }
+    });
+
+    socket.on('voice_reconnect_intent', () => {
+        observability.voice.reconnectIntents += 1;
     });
 
     // === VOCAL WebRTC ===
@@ -3781,7 +4655,7 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
         const otherParticipants = [];
         voiceRooms[room].participants.forEach((pData, pId) => {
             if (pId !== socket.id) {
-                otherParticipants.push({ socketId: pId, username: pData.username });
+                otherParticipants.push({ socketId: pId, username: pData.username, video: !!pData.video, screen: !!pData.screen });
             }
         });
         
@@ -3813,18 +4687,21 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
         const { targetId, offer } = data;
         const user = connectedUsers.get(socket.id);
         if (!user) return;
+        observability.voice.offers += 1;
         io.to(targetId).emit('voice_offer', { fromId: socket.id, fromUsername: user.username, offer });
     });
     
     // Signaling WebRTC - Answer
     socket.on('voice_answer', (data) => {
         const { targetId, answer } = data;
+        observability.voice.answers += 1;
         io.to(targetId).emit('voice_answer', { fromId: socket.id, answer });
     });
     
     // Signaling WebRTC - ICE Candidate
     socket.on('voice_ice_candidate', (data) => {
         const { targetId, candidate } = data;
+        observability.voice.iceCandidates += 1;
         io.to(targetId).emit('voice_ice_candidate', { fromId: socket.id, candidate });
     });
 
@@ -3891,24 +4768,6 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
                 }
             }
             
-            // Retirer de la liste des admins
-            const adminIndex = adminUsersList.indexOf(user.username);
-            if (adminIndex > -1) {
-                adminUsersList.splice(adminIndex, 1);
-                io.emit('admin_list_update', { admins: adminUsersList });
-            }
-            
-            // Message de départ
-            const leaveMessage = {
-                type: 'system',
-                message: `${user.username} a quitté le chat`,
-                timestamp: new Date(),
-                id: messageId++
-            };
-            
-            addToHistory(leaveMessage);
-            io.emit('system_message', leaveMessage);
-            
             // Mettre à jour le profil avec la dernière connexion
             const profile = userProfiles.get(user.username);
             if (profile) {
@@ -3970,10 +4829,40 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
             // Retirer l'utilisateur
             connectedUsers.delete(socket.id);
             authenticatedSockets.delete(socket.id);
+            unregisterUserSocket(user.username, socket.id);
+            removeE2EEPublicKey(user.username, user.deviceId);
+
+            const remainingForUser = getSocketsForUsername(user.username).length;
+            const isLastConnectionForUser = remainingForUser === 0;
+
+            // Retirer de la liste admin uniquement si c'est la dernière connexion active.
+            if (isLastConnectionForUser) {
+                const adminIndex = adminUsersList.indexOf(user.username);
+                if (adminIndex > -1) {
+                    adminUsersList.splice(adminIndex, 1);
+                    io.emit('admin_list_update', { admins: adminUsersList });
+                }
+            }
+
+            emitMultiDevicePresence(user.username);
+            observability.sockets.currentAuthenticatedUsers = connectedUsers.size;
+            observability.sockets.currentTransportConnections = io.engine.clientsCount;
+            observability.sockets.disconnections += 1;
             updateUsersList();
-            
-            // Notifier les amis que cet utilisateur est hors ligne
-            notifyFriendsOfStatusChange(user.username);
+
+            if (isLastConnectionForUser) {
+                const leaveMessage = {
+                    type: 'system',
+                    message: `${user.username} a quitté le chat`,
+                    timestamp: new Date(),
+                    id: messageId++
+                };
+                addToHistory(leaveMessage);
+                io.emit('system_message', leaveMessage);
+
+                // Notifier les amis uniquement lors d'une vraie transition online -> offline.
+                notifyFriendsOfStatusChange(user.username);
+            }
             
             logActivity('DISCONNECTION', `Utilisateur déconnecté`, {
                 username: user.username,
@@ -3981,9 +4870,12 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
                 sessionDuration: `${Math.floor(sessionDuration / 1000)}s`,
                 messagesInSession: user.messagesCount,
                 repliesInSession: user.repliesCount,
-                remainingUsers: connectedUsers.size
+                remainingUsers: connectedUsers.size,
+                remainingSocketsForUser: remainingForUser
             });
         } else {
+            observability.sockets.currentTransportConnections = io.engine.clientsCount;
+            observability.sockets.disconnections += 1;
             logActivity('DISCONNECTION', `Socket déconnecté sans utilisateur associé`, {
                 socketId: socket.id,
                 reason: reason
@@ -4086,13 +4978,21 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
             status = userStatuses[targetUsername]?.status || 'online';
         }
         
+        const xpEntry = userXP[targetUsername] || {};
+        const levelData = getLevelFromXP(xpEntry.xp || 0);
+        const role = getRoleForLevel(levelData.level);
         const profile = {
             username: targetUsername,
             status: status,
             bio: savedProfile.bio || '',
             joinDate: savedProfile.firstJoin || savedProfile.joinedAt,
             messageCount: savedProfile.totalMessages || 0,
-            avatar: savedProfile.avatar || (targetUser?.avatar)
+            avatar: savedProfile.avatar || (targetUser?.avatar),
+            level: levelData.level,
+            xp: xpEntry.xp || 0,
+            role: role,
+            profileColor: savedProfile.profileColor || null,
+            profileGradient: savedProfile.profileGradient || null
         };
         
         socket.emit('user_profile', profile);
@@ -4479,8 +5379,10 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
                             outcome,
                             points: reward.points,
                             xp: reward.xp,
+                            bananas: reward.bananas || 0,
                             totalMiniGamePoints: reward.totals.points
                         });
+                        emitMissionRewardsToSocket(io.to(currentSid), p.username, reward.missionRewards || []);
                     }
                     io.to(currentSid).emit('xp_data', buildXPDataPayload(p.username));
                 });
@@ -4781,6 +5683,109 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
         socket.emit('xp_data', buildXPDataPayload(user.username));
     });
 
+    socket.on('get_clicker_state', () => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+        const payload = buildXPDataPayload(user.username);
+        socket.emit('clicker_state', payload.clicker || { totalClicks: 0, sessionClicks: 0, luckyDrops: 0, cooldownMs: CLICKER_TAP_COOLDOWN_MS });
+    });
+
+    socket.on('clicker_tap', () => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+
+        const entry = ensureXPEntry(user.username);
+        const now = Date.now();
+        const lastTap = Number(entry.clicker?.lastTapAt || 0);
+        if (now - lastTap < CLICKER_TAP_COOLDOWN_MS) {
+            return;
+        }
+
+        entry.clicker.lastTapAt = now;
+        entry.clicker.totalClicks = Math.max(0, Number(entry.clicker.totalClicks || 0)) + 1;
+        entry.clicker.sessionClicks = Math.max(0, Number(entry.clicker.sessionClicks || 0)) + 1;
+        const oldLevel = getLevelFromXP(entry.xp || 0).level;
+
+        const milestoneBonus = entry.clicker.totalClicks % 50 === 0 ? 10 : 0;
+        let gainedXP = CLICKER_XP_PER_CLICK + milestoneBonus;
+        const xpResult = addRawXP(user.username, gainedXP);
+
+        let bananasWon = 0;
+        let jackpot = false;
+
+        let megaJackpot = false;
+        if (Math.random() < CLICKER_MEGA_JACKPOT_CHANCE) {
+            megaJackpot = true;
+            jackpot = true;
+            bananasWon += CLICKER_MEGA_JACKPOT_BANANAS;
+            gainedXP += CLICKER_MEGA_JACKPOT_XP;
+            addRawXP(user.username, CLICKER_MEGA_JACKPOT_XP);
+        } else if (Math.random() < CLICKER_JACKPOT_CHANCE) {
+            jackpot = true;
+            bananasWon += CLICKER_JACKPOT_BANANAS;
+            gainedXP += CLICKER_JACKPOT_XP;
+            addRawXP(user.username, CLICKER_JACKPOT_XP);
+        } else if (Math.random() < CLICKER_LUCKY_BANANA_CHANCE) {
+            bananasWon += 1;
+        }
+
+        if (bananasWon > 0) {
+            entry.bonusBananas = Math.max(0, Number(entry.bonusBananas || 0)) + bananasWon;
+            entry.clicker.luckyDrops = Math.max(0, Number(entry.clicker.luckyDrops || 0)) + bananasWon;
+        }
+
+        const missionRewards = applyMissionProgress(user.username, { clickerClicks: 1 });
+
+        const newLevel = getLevelFromXP(entry.xp || 0).level;
+        if (newLevel > oldLevel || xpResult.levelUp) {
+            io.emit('system_message', {
+                type: 'system',
+                message: `🎉 ${user.username} a atteint le niveau ${newLevel} !`,
+                timestamp: new Date(),
+                id: messageId++
+            });
+        }
+
+        emitMissionRewardsToSocket(socket, user.username, missionRewards);
+        saveXPData();
+
+        socket.emit('clicker_tap_result', {
+            gainedXP,
+            bananasWon,
+            jackpot,
+            megaJackpot,
+            totalClicks: entry.clicker.totalClicks,
+            sessionClicks: entry.clicker.sessionClicks,
+            luckyDrops: entry.clicker.luckyDrops,
+            bananaPoints: getBananaPoints(user.username)
+        });
+        socket.emit('xp_data', buildXPDataPayload(user.username));
+        if (bananasWon > 0) broadcastLeaderboard();
+    });
+
+    socket.on('convert_xp_to_banana', (data) => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+
+        const bananas = Math.max(0, Math.floor(Number(data?.bananas || 0)));
+        const result = convertXPToBananas(user.username, bananas);
+        if (!result.success) {
+            socket.emit('banana_error', { message: result.message || 'Conversion impossible' });
+            return;
+        }
+
+        saveXPData();
+        socket.emit('banana_reward', {
+            type: 'xp_converter',
+            title: '🔁 Conversion XP',
+            message: `-${result.xpSpent} XP → +${result.bananasAdded} 🍌`
+        });
+        socket.emit('banana_updated', { bananaPoints: result.bananaPoints });
+        socket.emit('xp_data', buildXPDataPayload(user.username));
+        updateUsersList();
+        broadcastLeaderboard();
+    });
+
     socket.on('set_name_effect', (data) => {
         const user = connectedUsers.get(socket.id);
         if (!user) return;
@@ -4805,7 +5810,17 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
 
     socket.on('get_leaderboard', () => {
         const leaderboard = Object.entries(userXP)
-            .map(([username, data]) => ({ username, xp: data.xp, ...getLevelFromXP(data.xp), totalMessages: data.totalMessages, bananaPoints: getBananaPoints(username) }))
+            .map(([username, data]) => {
+                const levelData = getLevelFromXP(data.xp);
+                return {
+                    username,
+                    xp: data.xp,
+                    ...levelData,
+                    role: getRoleForLevel(levelData.level),
+                    totalMessages: data.totalMessages,
+                    bananaPoints: getBananaPoints(username)
+                };
+            })
             .sort((a, b) => b.xp - a.xp)
             .slice(0, 20);
         socket.emit('leaderboard_data', { leaderboard });
@@ -4851,6 +5866,7 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
             bananas: result.bananas,
             totalMiniGamePoints: result.totals.points
         });
+        emitMissionRewardsToSocket(socket, user.username, result.missionRewards || []);
         socket.emit('xp_data', buildXPDataPayload(user.username));
     });
 
@@ -4900,7 +5916,7 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
 
         const bananas = getBananaPoints(user.username);
         if (bananas < cost) {
-            socket.emit('banana_error', { message: `Pas assez de bananes ! (${bananas}/${cost} 🍌)` });
+            socket.emit('banana_error', { message: `Pas assez de bananes ! (${bananas}/${cost} 🍌) · Utilise le convertisseur XP→🍌` });
             return;
         }
 
@@ -4981,6 +5997,7 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
         socket.emit('banana_updated', { bananaPoints: getBananaPoints(user.username) });
         socket.emit('xp_data', buildXPDataPayload(user.username));
         updateUsersList();
+        broadcastLeaderboard();
         for (const [rName, rData] of Object.entries(voiceRooms)) {
             if (rData.participants.has(socket.id)) {
                 io.emit('voice_participants_update', { room: rName, participants: getVoiceParticipants(rName) });
@@ -5181,8 +6198,10 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
                 outcome: 'win',
                 points: miniReward.points,
                 xp: miniReward.xp,
+                bananas: miniReward.bananas || 0,
                 totalMiniGamePoints: miniReward.totals.points
             });
+            emitMissionRewardsToSocket(socket, user.username, miniReward.missionRewards || []);
             socket.emit('xp_data', buildXPDataPayload(user.username));
             if (xpResult && xpResult.levelUp) {
                 io.emit('system_message', { type: 'system', message: `🎉 ${user.username} a atteint le niveau ${xpResult.newLevel} !`, timestamp: new Date(), id: messageId++ });
@@ -5195,8 +6214,10 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
                 outcome: 'loss',
                 points: miniReward.points,
                 xp: miniReward.xp,
+                bananas: miniReward.bananas || 0,
                 totalMiniGamePoints: miniReward.totals.points
             });
+            emitMissionRewardsToSocket(socket, user.username, miniReward.missionRewards || []);
             socket.emit('xp_data', buildXPDataPayload(user.username));
             socket.hangmanGame = null;
         }
@@ -5254,8 +6275,10 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
                 outcome,
                 points: miniReward.points,
                 xp: miniReward.xp,
+                bananas: miniReward.bananas || 0,
                 totalMiniGamePoints: miniReward.totals.points
             });
+            emitMissionRewardsToSocket(socket, user.username, miniReward.missionRewards || []);
             socket.emit('xp_data', buildXPDataPayload(user.username));
             if (xpResult && xpResult.levelUp) {
                 io.emit('system_message', { type: 'system', message: `🎉 ${user.username} a atteint le niveau ${xpResult.newLevel} !`, timestamp: new Date(), id: messageId++ });
@@ -5771,32 +6794,93 @@ function getChannelTypingUsers() {
 }
 
 function updateUsersList() {
-    const usersList = Array.from(connectedUsers.values()).map(user => {
-        // Récupérer le statut personnalisé s'il existe
+    const byUsername = new Map();
+
+    Array.from(connectedUsers.values()).forEach((user) => {
+        const key = normalizeUsernameKey(user.username);
+        if (!key) return;
+
+        const existing = byUsername.get(key);
+        if (!existing) {
+            byUsername.set(key, {
+                id: user.id,
+                username: user.username,
+                avatar: user.avatar,
+                joinTime: user.joinTime,
+                lastActivity: user.lastActivity,
+                messagesCount: Number(user.messagesCount || 0),
+                repliesCount: Number(user.repliesCount || 0),
+                activeDevices: 1
+            });
+            return;
+        }
+
+        existing.activeDevices += 1;
+        existing.messagesCount += Number(user.messagesCount || 0);
+        existing.repliesCount += Number(user.repliesCount || 0);
+
+        if (!existing.avatar && user.avatar) {
+            existing.avatar = user.avatar;
+        }
+        if (new Date(user.joinTime).getTime() < new Date(existing.joinTime).getTime()) {
+            existing.joinTime = user.joinTime;
+        }
+        if (new Date(user.lastActivity).getTime() > new Date(existing.lastActivity).getTime()) {
+            existing.lastActivity = user.lastActivity;
+            existing.id = user.id;
+        }
+    });
+
+    const usersList = Array.from(byUsername.values()).map((user) => {
         const savedStatus = userStatuses[user.username] || {};
+        const xpEntry = ensureXPEntry(user.username);
+        const level = getLevelFromXP(xpEntry.xp || 0).level;
+        const role = getRoleForLevel(level);
         return {
             id: user.id,
             username: user.username,
             nameEffect: getActiveNameEffect(user.username),
+            level,
+            role,
             avatar: user.avatar,
             joinTime: user.joinTime,
             lastActivity: user.lastActivity,
             messagesCount: user.messagesCount,
             repliesCount: user.repliesCount,
             status: savedStatus.status || 'online',
-            customStatus: savedStatus.customText || ''
+            customStatus: savedStatus.customText || '',
+            activeDevices: user.activeDevices
         };
     });
     
     io.emit('users_update', {
-        count: connectedUsers.size,
+        count: usersList.length,
         users: usersList
     });
     
     logActivity('SYSTEM', `Liste des utilisateurs mise à jour`, {
-        totalUsers: connectedUsers.size,
+        totalUsers: usersList.length,
+        totalSockets: connectedUsers.size,
         activeUsers: usersList.map(u => u.username)
     });
+}
+
+function broadcastLeaderboard() {
+    const leaderboard = Object.entries(userXP)
+        .map(([username, data]) => {
+            const levelData = getLevelFromXP(data.xp);
+            return {
+                username,
+                xp: data.xp,
+                ...levelData,
+                role: getRoleForLevel(levelData.level),
+                totalMessages: data.totalMessages,
+                bananaPoints: getBananaPoints(username)
+            };
+        })
+        .sort((a, b) => b.xp - a.xp)
+        .slice(0, 20);
+    io.emit('leaderboard_data', { leaderboard });
 }
 
 function updateTypingIndicator() {

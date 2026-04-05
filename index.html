@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>DocSpace V3.2.0</title>
     
     <!-- Favicon - Icône du chat -->
@@ -244,10 +244,22 @@
             -moz-osx-font-smoothing: grayscale;
         }
 
+        html, body {
+            overscroll-behavior: none;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        html {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
             background: var(--chat-bg);
             height: 100vh;
+            height: 100dvh;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -258,6 +270,7 @@
         .chat-container {
             width: 100%;
             height: 100vh;
+            height: 100dvh;
             background: var(--chat-bg);
             display: flex;
             flex-direction: column;
@@ -2737,6 +2750,27 @@
             10%, 50%, 90% { transform: translateX(-8px); }
             30%, 70% { transform: translateX(8px); }
         }
+
+        @keyframes clickerBonus {
+            0% { transform: scale(1); }
+            25% { transform: scale(1.15) rotate(-5deg); }
+            50% { transform: scale(0.95) rotate(5deg); }
+            75% { transform: scale(1.08) rotate(-2deg); }
+            100% { transform: scale(1) rotate(0deg); }
+        }
+        @keyframes clickerJackpot {
+            0% { transform: scale(1); filter: brightness(1); }
+            15% { transform: scale(1.25) rotate(-8deg); filter: brightness(1.5); }
+            30% { transform: scale(0.9) rotate(8deg); filter: brightness(1.3); }
+            45% { transform: scale(1.2) rotate(-5deg); filter: brightness(1.6); }
+            60% { transform: scale(0.95) rotate(5deg); filter: brightness(1.2); }
+            80% { transform: scale(1.1); filter: brightness(1.4); }
+            100% { transform: scale(1); filter: brightness(1); }
+        }
+        @keyframes friendPopIn {
+            from { opacity: 0; transform: translateX(60px) scale(0.9); }
+            to { opacity: 1; transform: translateX(0) scale(1); }
+        }
         
         /* Badge Admin */
         .admin-badge {
@@ -2839,6 +2873,20 @@
             font-weight: 600;
             margin-left: 4px;
             text-transform: uppercase;
+        }
+
+        .user-device-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 4px;
+            padding: 1px 5px;
+            border-radius: 10px;
+            font-size: 9px;
+            font-weight: 700;
+            color: #FFDDB5;
+            background: rgba(255, 139, 74, 0.25);
+            border: 1px solid rgba(255, 180, 120, 0.35);
         }
 
         @keyframes slideIn {
@@ -3096,8 +3144,45 @@
             }
             
             .user-profile-content {
-                width: 90vw !important;
+                width: 94vw !important;
                 max-width: 340px;
+                max-height: 85vh !important;
+                max-height: 85dvh !important;
+            }
+            .user-profile-banner {
+                height: 55px;
+            }
+            .user-profile-header {
+                margin-top: -35px;
+                padding: 0 14px 12px;
+            }
+            .user-profile-avatar {
+                width: 70px;
+                height: 70px;
+                font-size: 34px;
+                border-width: 4px;
+            }
+            .user-profile-name {
+                font-size: 18px;
+                margin-top: 8px;
+            }
+            .user-profile-body {
+                padding: 0 14px 14px;
+            }
+            .user-profile-section {
+                padding: 10px;
+                margin-bottom: 8px;
+            }
+            .user-profile-stat {
+                font-size: 12px;
+                padding: 4px 0;
+            }
+            .user-profile-actions {
+                margin-top: 10px;
+            }
+            .user-profile-actions .user-profile-btn {
+                padding: 8px 12px;
+                font-size: 12px;
             }
             
             .friends-tabs {
@@ -4111,6 +4196,156 @@
         .stat-row:last-child { border-bottom: none; }
         .stat-label { color: rgba(255,255,255,0.5); font-size: 12px; }
         .stat-value { color: #fff; font-weight: 600; font-size: 12px; }
+
+        /* Stats modal responsive */
+        .stats-modal-content {
+            max-width: 500px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .stats-card {
+            background: var(--input-bg);
+            padding: 14px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .stats-card-value {
+            font-size: 26px;
+            font-weight: 800;
+            line-height: 1.2;
+        }
+        .stats-card-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+        .stats-ping-bar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+        .stats-ping-card {
+            flex: 1;
+            background: var(--input-bg);
+            padding: 12px 10px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .stats-ping-value {
+            font-size: 22px;
+            font-weight: 800;
+            line-height: 1.2;
+        }
+        .stats-ping-label {
+            font-size: 10px;
+            color: var(--text-secondary);
+            margin-top: 3px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .stats-ping-good { color: #43B581; }
+        .stats-ping-medium { color: #faa61a; }
+        .stats-ping-bad { color: #F04747; }
+        .stats-channel-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 7px 12px;
+            background: var(--input-bg);
+            border-radius: 8px;
+            margin-bottom: 4px;
+        }
+        .stats-channel-name {
+            color: var(--text-primary);
+            font-weight: 500;
+            font-size: 13px;
+        }
+        .stats-channel-count {
+            color: var(--accent-color);
+            font-weight: 700;
+            font-size: 13px;
+        }
+        .stats-section-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+        .stats-extra-row {
+            display: flex;
+            gap: 8px;
+        }
+        .stats-extra-card {
+            flex: 1;
+            background: var(--input-bg);
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .stats-extra-value {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .stats-extra-label {
+            font-size: 10px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+        @media (max-width: 500px) {
+            .stats-modal-content {
+                max-width: 100vw;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 6px;
+            }
+            .stats-card {
+                padding: 10px 6px;
+            }
+            .stats-card-value {
+                font-size: 20px;
+            }
+            .stats-card-label {
+                font-size: 10px;
+            }
+            .stats-ping-bar {
+                gap: 6px;
+            }
+            .stats-ping-card {
+                padding: 10px 6px;
+            }
+            .stats-ping-value {
+                font-size: 18px;
+            }
+            .stats-extra-row {
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+            .stats-extra-card {
+                min-width: calc(50% - 6px);
+                padding: 8px 6px;
+            }
+        }
+        @media (max-height: 700px) {
+            .stats-card {
+                padding: 10px 8px;
+            }
+            .stats-card-value {
+                font-size: 20px;
+            }
+            .stats-ping-card {
+                padding: 8px 6px;
+            }
+            .stats-ping-value {
+                font-size: 17px;
+            }
+        }
 
         /* Screen Broadcast Overlay */
         .screen-broadcast-overlay {
@@ -6193,7 +6428,10 @@
             border-radius: 16px;
             width: 90%;
             max-width: 400px;
-            overflow: hidden;
+            max-height: 90vh;
+            max-height: 90dvh;
+            overflow-y: auto;
+            overflow-x: hidden;
             box-shadow: 0 8px 32px rgba(0,0,0,0.4);
             animation: profilePopIn 0.35s cubic-bezier(0.22, 0.61, 0.36, 1);
         }
@@ -6340,6 +6578,54 @@
             font-size: 13px;
             line-height: 1.5;
             margin: 0;
+        }
+
+        /* Petits écrans laptop (hauteur réduite) */
+        @media (max-height: 700px) {
+            .user-profile-content {
+                max-height: 88vh !important;
+            }
+            .user-profile-banner {
+                height: 50px;
+            }
+            .user-profile-header {
+                margin-top: -30px;
+                padding: 0 16px 10px;
+            }
+            .user-profile-avatar {
+                width: 64px;
+                height: 64px;
+                font-size: 30px;
+                border-width: 4px;
+            }
+            .user-profile-name {
+                font-size: 17px;
+                margin-top: 6px;
+            }
+            .user-profile-body {
+                padding: 0 16px 14px;
+            }
+            .user-profile-section {
+                padding: 8px 10px;
+                margin-bottom: 8px;
+            }
+            .user-profile-section-title {
+                font-size: 10px;
+                margin-bottom: 4px;
+            }
+            .user-profile-stat {
+                font-size: 12px;
+                padding: 3px 0;
+            }
+            .profile-status-badge {
+                padding: 3px 10px;
+                font-size: 11px;
+                margin-top: 4px;
+            }
+            .user-profile-actions {
+                margin-top: 8px;
+                gap: 6px;
+            }
         }
 
         /* ========== MESSAGES PRIVÉS (DM) ========== */
@@ -8995,7 +9281,7 @@
                     <input type="file" id="avatarInput" accept="image/*" style="display: none;">
                 </div>
 
-                <input type="text" id="serverInput" data-i18n-placeholder="server_placeholder" placeholder="IP du serveur (optionnel)" value="">
+                <input type="text" id="serverInput" data-i18n-placeholder="server_placeholder" placeholder="IP du serveur (optionnel)" value="" style="display:none;">
                 <input type="password" id="accessCodeInput" placeholder="Code d'accès (si serveur privé)" style="display: none;">
                 <button onclick="connectToChat()" id="connectBtn">Se connecter</button>
                 <div class="error-message" id="errorMessage"></div>
@@ -9942,7 +10228,7 @@
             <div class="patchnotes-header">
                 <div class="patchnotes-logo">📋</div>
                 <h2>Quoi de neuf ?</h2>
-                <span class="patchnotes-version">v<span id="patchVersion">3.2.6</span></span>
+                <span class="patchnotes-version">v<span id="patchVersion">3.2.8-alpha</span></span>
             </div>
             <div class="patchnotes-content" id="patchNotesContent">
                 <!-- Contenu dynamique -->
@@ -9959,12 +10245,12 @@
 
     <!-- Modal Statistiques Serveur -->
     <div id="statsModal" class="modal">
-        <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-content stats-modal-content">
             <div class="modal-header">
                 <h3>📊 Statistiques du Serveur</h3>
                 <span class="close" onclick="document.getElementById('statsModal').style.display='none'">&times;</span>
             </div>
-            <div id="statsContent" style="padding: 20px;">
+            <div id="statsContent" style="padding: 16px;">
                 <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
                     Chargement...
                 </div>
@@ -10056,6 +10342,12 @@
                         <div class="game-desc">Trouve les paires</div>
                         <div class="game-tags"><span class="game-tag">Mémoire</span></div>
                     </div>
+                    <div class="game-card game-card-solo" onclick="startGame('clicker')">
+                        <div class="game-icon-wrap"><div class="game-icon">🍪</div></div>
+                        <div class="game-name">Cookie Clicker XP</div>
+                        <div class="game-desc">Progression persistante</div>
+                        <div class="game-tags"><span class="game-tag">XP</span><span class="game-tag">🍌 Loot</span></div>
+                    </div>
                 </div>
             </div>
             
@@ -10117,6 +10409,7 @@
                     <div class="xp-hero-info">
                         <div class="xp-hero-title" id="myXPTitle">Guerrier Niveau 0</div>
                         <div class="xp-hero-sub" id="myXPInfo">0 XP total</div>
+                        <div id="myRoleBadge" style="margin-top:4px;font-size:11px;color:var(--text-secondary);">🛡️ Recrue</div>
                     </div>
                     <div class="xp-level-circle" id="myLevelCircle">0</div>
                 </div>
@@ -10148,7 +10441,7 @@
             <div class="xp-shop-ranking-grid">
                 <div class="xp-shop-column">
                 <h4 class="xp-panel-title">🍌 Boutique Bananes</h4>
-                <p class="xp-panel-sub">1 banane XP = 11 XP. Les tâches ajoutent des bananes bonus.</p>
+                <p class="xp-panel-sub">Les bananes sont un portefeuille séparé. Conversion XP → 🍌 disponible plus bas.</p>
                 <div class="xp-shop-actions">
                     <button onclick="useBanana('confetti')" style="flex:1;min-width:100px;padding:8px;border:none;border-radius:8px;background:rgba(var(--accent-rgb),0.15);color:var(--text-primary);cursor:pointer;font-size:12px;">🎉 Confettis<br><small style="color:var(--text-secondary);">12 🍌</small></button>
                     <button onclick="useBanana('shake')" style="flex:1;min-width:100px;padding:8px;border:none;border-radius:8px;background:rgba(var(--accent-rgb),0.15);color:var(--text-primary);cursor:pointer;font-size:12px;">💥 Tremblement<br><small style="color:var(--text-secondary);">9 🍌</small></button>
@@ -10170,13 +10463,24 @@
                     <div id="missionMessagesRow">Messages: 0/10</div>
                     <div id="missionReactionsRow">Réactions: 0/5</div>
                     <div id="missionVoiceRow">Vocal: 0/10 min</div>
+                    <div id="missionMiniGamesRow">Mini-jeux: 0/3</div>
+                    <div id="missionClickerRow">Cookie Clicker: 0/120</div>
                 </div>
                 </div>
                 <div class="banana-help-box">
                     <div class="help-title">Comment gagner des 🍌 rapidement ?</div>
                     <div class="help-line">1. Finis les missions quotidiennes (bonus bananes + XP).</div>
                     <div class="help-line">2. Gagne en mini-jeux (victoire = bonus bananes).</div>
-                    <div class="help-line">3. Discute régulièrement pour accumuler des bananes via XP.</div>
+                    <div class="help-line">3. Utilise Cookie Clicker pour loot des 🍌 bonus.</div>
+                </div>
+                <div class="banana-help-box" style="border-style:solid;background:rgba(88,101,242,0.12);">
+                    <div class="help-title">🔁 Convertisseur XP → 🍌</div>
+                    <div class="help-line" style="margin-bottom:8px;">Ton XP ne baisse que si tu convertis manuellement.</div>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <input id="xpConvertBananaInput" type="number" min="1" max="200" value="5" oninput="updateConvertPreview()" style="flex:1;padding:8px 10px;border-radius:8px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--text-primary);font-size:12px;" placeholder="Bananes à créer">
+                        <button onclick="convertXPToBananas()" style="padding:8px 12px;border:none;border-radius:8px;background:var(--accent-color);color:white;cursor:pointer;font-size:12px;font-weight:700;">Convertir</button>
+                    </div>
+                    <div id="xpConvertHint" class="help-line" style="margin-top:6px;">1 🍌 = 11 XP · Coût: <strong>55 XP</strong> pour 5 🍌</div>
                 </div>
             </div>
                 <div class="xp-ranking-column">
@@ -10364,7 +10668,7 @@
     </div>
 
     <!-- Indicateur de version avec accès admin secret -->
-    <div class="version-info">V3.2.6<span id="versionAdminBadge" class="admin-badge" style="display:none;margin-left:8px;cursor:pointer;" onclick="showAdminLogin()">ADMIN</span></div>
+    <div class="version-info">V3.2.8-alpha<span id="versionAdminBadge" class="admin-badge" style="display:none;margin-left:8px;cursor:pointer;" onclick="showAdminLogin()">ADMIN</span></div>
 
     <!-- Container pour notifications empilées -->
     <div class="notification-container pos-right" id="notificationContainer"></div>
@@ -10400,16 +10704,25 @@
     <div class="user-profile-modal" id="userProfileModal">
         <div class="user-profile-content">
             <button class="user-profile-close" onclick="closeUserProfile()">×</button>
-            <div class="user-profile-banner"></div>
+            <div class="user-profile-banner" id="profileBanner"></div>
             <div class="user-profile-header">
                 <div class="user-profile-avatar" id="profileAvatar">👤</div>
                 <div class="user-profile-name" id="profileName">Utilisateur</div>
                 <span class="profile-status-badge" id="profileStatusBadge">🟢 En ligne</span>
+                <div id="profileRoleBadge" style="margin-top:6px;padding:4px 12px;border-radius:12px;background:rgba(var(--accent-rgb),0.15);border:1px solid rgba(var(--accent-rgb),0.3);font-size:12px;font-weight:700;color:var(--text-primary);display:none;"></div>
             </div>
             <div class="user-profile-body">
                 <div class="user-profile-section">
                     <div class="user-profile-section-title">À propos</div>
                     <p class="user-profile-bio" id="profileBio">Aucune bio définie</p>
+                    <div id="profileBioEditArea" style="display:none;margin-top:8px;">
+                        <textarea id="profileBioInput" maxlength="300" rows="3" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--text-primary);font-size:12px;resize:vertical;font-family:inherit;" placeholder="Écris ta bio (300 car. max)"></textarea>
+                        <div style="display:flex;gap:6px;margin-top:6px;">
+                            <button onclick="saveProfileBio()" style="flex:1;padding:6px;border:none;border-radius:8px;background:var(--accent-color);color:white;cursor:pointer;font-size:12px;font-weight:700;">Sauvegarder</button>
+                            <button onclick="cancelBioEdit()" style="flex:1;padding:6px;border:none;border-radius:8px;background:var(--input-bg);color:var(--text-primary);cursor:pointer;font-size:12px;">Annuler</button>
+                        </div>
+                    </div>
+                    <button id="profileBioEditBtn" onclick="startBioEdit()" style="display:none;margin-top:6px;padding:4px 10px;border:none;border-radius:6px;background:rgba(var(--accent-rgb),0.12);color:var(--accent-color);cursor:pointer;font-size:11px;">✏️ Modifier bio</button>
                 </div>
                 <div class="user-profile-section">
                     <div class="user-profile-section-title">Statistiques</div>
@@ -10420,6 +10733,33 @@
                     <div class="user-profile-stat">
                         <span class="user-profile-stat-label">📅 Membre depuis</span>
                         <span class="user-profile-stat-value" id="profileJoinDate">-</span>
+                    </div>
+                    <div class="user-profile-stat">
+                        <span class="user-profile-stat-label">⭐ Niveau</span>
+                        <span class="user-profile-stat-value" id="profileLevel">0</span>
+                    </div>
+                    <div class="user-profile-stat">
+                        <span class="user-profile-stat-label">✨ XP Total</span>
+                        <span class="user-profile-stat-value" id="profileXP">0</span>
+                    </div>
+                </div>
+                <!-- Profile color customization (own profile only) -->
+                <div id="profileColorSection" class="user-profile-section" style="display:none;">
+                    <div class="user-profile-section-title">🎨 Couleur de profil</div>
+                    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                        <label style="font-size:12px;color:var(--text-secondary);">Couleur:</label>
+                        <input type="color" id="profileColorPicker1" value="#5865F2" style="width:36px;height:28px;border:none;cursor:pointer;border-radius:4px;">
+                        <div id="profileGradientArea" style="display:none;align-items:center;gap:6px;">
+                            <span style="font-size:12px;color:var(--text-secondary);">→</span>
+                            <input type="color" id="profileColorPicker2" value="#9b59b6" style="width:36px;height:28px;border:none;cursor:pointer;border-radius:4px;">
+                        </div>
+                        <button onclick="applyProfileColor()" style="padding:5px 10px;border:none;border-radius:6px;background:var(--accent-color);color:white;cursor:pointer;font-size:11px;font-weight:700;">Appliquer</button>
+                    </div>
+                    <div style="margin-top:6px;display:flex;gap:8px;align-items:center;">
+                        <label style="font-size:11px;color:var(--text-secondary);">
+                            <input type="checkbox" id="profileGradientToggle" onchange="toggleProfileGradient()" style="margin-right:4px;">
+                            Dégradé <span id="profileGradientLock" style="font-size:10px;color:var(--danger-color);">(Niveau 10+)</span>
+                        </label>
                     </div>
                 </div>
                 <div class="user-profile-actions">
@@ -10495,7 +10835,7 @@
             <button class="admin-close" onclick="closeAdminPanel()">×</button>
             <div class="admin-header-bar">
                 <h2>🔐 Panneau Admin</h2>
-                <span class="admin-version-badge">v3.2.6</span>
+                <span class="admin-version-badge">v3.2.8-alpha</span>
             </div>
             
             <!-- Login -->
@@ -10937,6 +11277,21 @@
     </div>
     
     <script>
+        // Bloquer le pull-to-refresh et le bounce sur mobile
+        document.addEventListener('touchmove', function(e) {
+            // Autoriser le scroll dans les éléments scrollables
+            let target = e.target;
+            while (target && target !== document.body) {
+                const style = window.getComputedStyle(target);
+                const overflowY = style.getPropertyValue('overflow-y');
+                if (overflowY === 'auto' || overflowY === 'scroll') {
+                    if (target.scrollHeight > target.clientHeight) return;
+                }
+                target = target.parentElement;
+            }
+            e.preventDefault();
+        }, { passive: false });
+
         // Système de traduction
         const translations = {
             fr: {
@@ -12297,7 +12652,7 @@
             // Si pas d'IP spécifiée, utiliser le serveur par défaut
             if (!serverUrl) {
                 if (window.location.protocol === 'file:' || window.location.protocol === 'capacitor:' || window.location.hostname === '') {
-                    serverUrl = 'https://chatroom-server-llw4.onrender.com';
+                    serverUrl = 'https://docspace-kdbo.onrender.com';
                 } else {
                     serverUrl = window.location.origin;
                 }
@@ -12368,6 +12723,7 @@
                 setupGameSocketHandlers();
                 setupAdminSocketListeners();
                 setupVoiceSocketListeners();
+                setupRealtimeSyncSocketListeners();
                 setupNewFeatureListeners();
                 // Les patch notes s'ouvrent uniquement à la demande via le bouton 📋.
             }
@@ -13020,8 +13376,29 @@
             // === HANDLERS PROFILS ===
             socket.on('user_profile', (profile) => {
                 if (currentProfileUser && profile.username === currentProfileUser) {
-                    document.getElementById('profileJoinDate').textContent = profile.joinDate ? new Date(profile.joinDate).toLocaleDateString('fr-FR') : 'Inconnu';
+                    document.getElementById('profileJoinDate').textContent = profile.joinDate ? new Date(profile.joinDate).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Inconnu';
                     document.getElementById('profileMessageCount').textContent = profile.messageCount || 0;
+                    document.getElementById('profileLevel').textContent = profile.level || 0;
+                    document.getElementById('profileXP').textContent = (profile.xp || 0).toLocaleString();
+                    
+                    // Role badge
+                    const roleBadge = document.getElementById('profileRoleBadge');
+                    if (profile.role) {
+                        roleBadge.textContent = `${profile.role.icon || '🛡️'} ${profile.role.label || 'Recrue'} · Nv. ${profile.level || 0}`;
+                        roleBadge.style.display = 'inline-block';
+                    } else {
+                        roleBadge.style.display = 'none';
+                    }
+                    
+                    // Banner color
+                    const banner = document.getElementById('profileBanner');
+                    if (profile.profileGradient) {
+                        banner.style.background = profile.profileGradient;
+                    } else if (profile.profileColor) {
+                        banner.style.background = profile.profileColor;
+                    } else {
+                        banner.style.background = 'linear-gradient(135deg, var(--accent-color), #9b59b6)';
+                    }
                     
                     // Status
                     const statusBadge = document.getElementById('profileStatusBadge');
@@ -13038,6 +13415,24 @@
                     
                     // Bio
                     document.getElementById('profileBio').textContent = profile.bio || 'Aucune bio définie';
+                    
+                    // Show edit button + color section only for own profile
+                    const isOwnProfile = profile.username === currentUsername;
+                    document.getElementById('profileBioEditBtn').style.display = isOwnProfile ? 'inline-block' : 'none';
+                    document.getElementById('profileColorSection').style.display = isOwnProfile ? 'block' : 'none';
+                    
+                    // Gradient lock
+                    const gradientToggle = document.getElementById('profileGradientToggle');
+                    const gradientLock = document.getElementById('profileGradientLock');
+                    if (isOwnProfile && (profile.level || 0) >= 10) {
+                        gradientToggle.disabled = false;
+                        gradientLock.style.display = 'none';
+                    } else {
+                        gradientToggle.disabled = true;
+                        gradientToggle.checked = false;
+                        gradientLock.style.display = 'inline';
+                        document.getElementById('profileGradientArea').style.display = 'none';
+                    }
                 }
             });
             
@@ -13257,6 +13652,11 @@
             if (window.innerWidth <= 768) {
                 toggleChannelsSidebar();
             }
+
+            emitSyncStatePatch({
+                activeChannel: channelName,
+                voiceRoom: currentVoiceRoom || null
+            });
             
             console.log(`📺 Salon changé: ${oldChannel} → ${channelName}`);
         }
@@ -14493,20 +14893,49 @@ window.addEmojiReaction = addEmojiReaction;
             const usersListElement = document.getElementById('usersList');
             const usersTitleElement = document.getElementById('usersTitle');
             const onlineCountElement = document.getElementById('onlineCount');
+
+            const incomingUsers = Array.isArray(users) ? users : [];
+            const byUsername = new Map();
+            incomingUsers.forEach((user) => {
+                const username = String(user?.username || '').trim();
+                if (!username) return;
+                const key = username.toLowerCase();
+                const activeDevices = Math.max(1, Number(user?.activeDevices || 1));
+
+                if (!byUsername.has(key)) {
+                    byUsername.set(key, {
+                        ...user,
+                        username,
+                        activeDevices
+                    });
+                    return;
+                }
+
+                const current = byUsername.get(key);
+                current.activeDevices = Math.max(1, Number(current.activeDevices || 1)) + activeDevices;
+                if (!current.avatar && user.avatar) current.avatar = user.avatar;
+                if (new Date(user.lastActivity || 0).getTime() > new Date(current.lastActivity || 0).getTime()) {
+                    current.lastActivity = user.lastActivity;
+                    current.id = user.id;
+                }
+            });
+            const normalizedUsers = Array.from(byUsername.values());
             
             // Stocker les utilisateurs connectés pour les mentions
-            connectedUsers = users;
+            connectedUsers = normalizedUsers;
             
             // Mettre à jour la liste admin aussi
             if (isAdmin) {
                 updateAdminUsersList();
             }
+
+            const uniqueCount = normalizedUsers.length;
             
-            usersTitleElement.textContent = `${translateText('users_title')} (${count})`;
-            onlineCountElement.textContent = `${count} ${count > 1 ? 'utilisateurs' : 'utilisateur'} en ligne`;
+            usersTitleElement.textContent = `${translateText('users_title')} (${uniqueCount})`;
+            onlineCountElement.textContent = `${uniqueCount} ${uniqueCount > 1 ? 'utilisateurs' : 'utilisateur'} en ligne`;
             
             usersListElement.innerHTML = '';
-            users.forEach(user => {
+            normalizedUsers.forEach(user => {
                 rememberUserNameEffect(user.username, user.nameEffect);
                 const userDiv = document.createElement('div');
                 userDiv.className = `user-item ${user.username === currentUsername ? 'current' : ''}`;
@@ -14527,6 +14956,8 @@ window.addEmojiReaction = addEmojiReaction;
                 // Badge admin si l'utilisateur est admin (sera mis à jour via socket)
                 const userIsAdmin = adminUsers.includes(user.username);
                 const adminBadgeHtml = userIsAdmin ? '<span class="user-admin-badge">ADMIN</span>' : '';
+                const devicesCount = Math.max(1, Number(user.activeDevices || 1));
+                const devicesBadgeHtml = devicesCount > 1 ? `<span class="user-device-badge" title="${devicesCount} appareils actifs">x${devicesCount}</span>` : '';
                 const userNameHtml = getStyledUsernameHtml(user.username, user.nameEffect);
                 const voiceRoom = voiceUserRoomsByUsername[user.username];
                 const voiceBadgeHtml = voiceRoom
@@ -14537,7 +14968,7 @@ window.addEmojiReaction = addEmojiReaction;
                     ${avatarHtml}
                     <div class="status-indicator status-${statusClass}"></div>
                     <div style="flex:1; cursor: pointer;" onclick="openUserProfile('${escapeHtml(user.username)}')">
-                        <span class="user-name">${userNameHtml}${adminBadgeHtml}</span>
+                        <span class="user-name">${userNameHtml}${adminBadgeHtml}${devicesBadgeHtml}</span>
                         ${statusHtml}
                     </div>
                     ${voiceBadgeHtml}
@@ -15328,6 +15759,85 @@ window.addEmojiReaction = addEmojiReaction;
             if (form) form.style.display = '';
             updateSidebarIdentityPanel();
             tryRestoreAdminSession();
+            setupRealtimeSyncBridge();
+            fetchVoiceRuntimeConfig();
+        }
+
+        function fetchVoiceRuntimeConfig() {
+            fetch('/api/voice/runtime-config', { cache: 'no-store' })
+                .then((res) => res.json())
+                .then((cfg) => {
+                    voiceRuntimeConfig = {
+                        mode: cfg?.mode || 'p2p',
+                        sfuEnabled: !!cfg?.sfuEnabled,
+                        provider: cfg?.provider || '',
+                        signalingUrl: cfg?.signalingUrl || '',
+                        publicWsUrl: cfg?.publicWsUrl || ''
+                    };
+                    if (voiceRuntimeConfig.sfuEnabled) {
+                        showNotification('🛰️', `Mode voix SFU activé (${voiceRuntimeConfig.provider || 'custom'})`, 'info');
+                    }
+                })
+                .catch(() => {
+                    voiceRuntimeConfig = { mode: 'p2p', sfuEnabled: false, provider: '', signalingUrl: '', publicWsUrl: '' };
+                });
+        }
+
+        function emitSyncStatePatch(patch) {
+            if (!socket || !socket.connected || !currentUsername || suppressSyncEmission) return;
+            socket.emit('sync_state_update', {
+                deviceId: generateDeviceId(),
+                patch
+            });
+        }
+
+        function applyRemoteSyncPatch(payload) {
+            const patch = payload?.patch;
+            if (!patch || typeof patch !== 'object') return;
+
+            suppressSyncEmission = true;
+            try {
+                if (patch.activeChannel && patch.activeChannel !== currentChannel) {
+                    switchChannel(patch.activeChannel);
+                }
+
+                if (Object.prototype.hasOwnProperty.call(patch, 'draft')) {
+                    const input = document.getElementById('messageInput');
+                    if (input && document.activeElement !== input) {
+                        input.value = String(patch.draft || '');
+                    }
+                }
+
+                if (Object.prototype.hasOwnProperty.call(patch, 'voiceRoom') && patch.voiceRoom !== currentVoiceRoom) {
+                    if (patch.voiceRoom) {
+                        showNotification('🔁', `Autre appareil en vocal: ${patch.voiceRoom}`, 'info');
+                    }
+                }
+            } finally {
+                suppressSyncEmission = false;
+            }
+        }
+
+        function setupRealtimeSyncBridge() {
+            if (multiDeviceSyncBound) return;
+
+            const input = document.getElementById('messageInput');
+            let draftTimer = null;
+            if (input) {
+                input.addEventListener('input', () => {
+                    if (draftTimer) clearTimeout(draftTimer);
+                    draftTimer = setTimeout(() => {
+                        emitSyncStatePatch({
+                            draft: input.value,
+                            activeChannel: currentChannel,
+                            voiceRoom: currentVoiceRoom || null,
+                            focus: 'composer'
+                        });
+                    }, 180);
+                });
+            }
+
+            multiDeviceSyncBound = true;
         }
         
         function attemptReconnect() {
@@ -16302,55 +16812,76 @@ window.addEmojiReaction = addEmojiReaction;
             document.getElementById('statsModal').style.display = 'block';
             document.getElementById('statsContent').innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">Chargement...</div>';
             
-            fetch('/api/stats')
-                .then(res => res.json())
-                .then(stats => {
+            // Mesurer le ping (3 requêtes pour moyenne)
+            const pingPromise = measurePing(3);
+            const statsPromise = fetch('/api/stats').then(r => r.json());
+            
+            Promise.all([statsPromise, pingPromise])
+                .then(([stats, pingData]) => {
                     const channelRows = Object.entries(stats.channels || {})
                         .sort((a, b) => b[1] - a[1])
                         .map(([ch, count]) => `
-                            <div style="display: flex; justify-content: space-between; padding: 8px 12px; background: var(--input-bg); border-radius: 8px; margin-bottom: 4px;">
-                                <span style="color: var(--text-primary); font-weight: 500;">#${ch}</span>
-                                <span style="color: var(--accent-color); font-weight: 700;">${count}</span>
+                            <div class="stats-channel-row">
+                                <span class="stats-channel-name">#${ch}</span>
+                                <span class="stats-channel-count">${count}</span>
                             </div>
                         `).join('');
                     
+                    const pingColor = pingData.avg < 80 ? 'stats-ping-good' : pingData.avg < 200 ? 'stats-ping-medium' : 'stats-ping-bad';
+                    const serverPingColor = pingData.serverProcessing < 30 ? 'stats-ping-good' : pingData.serverProcessing < 100 ? 'stats-ping-medium' : 'stats-ping-bad';
+                    
                     document.getElementById('statsContent').innerHTML = `
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
-                            <div style="background: var(--input-bg); padding: 16px; border-radius: 12px; text-align: center;">
-                                <div style="font-size: 28px; font-weight: 800; color: var(--accent-color);">${stats.online || 0}</div>
-                                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">En ligne</div>
+                        <div class="stats-ping-bar">
+                            <div class="stats-ping-card">
+                                <div class="stats-ping-value ${pingColor}">${pingData.avg}ms</div>
+                                <div class="stats-ping-label">🏓 Votre Ping</div>
                             </div>
-                            <div style="background: var(--input-bg); padding: 16px; border-radius: 12px; text-align: center;">
-                                <div style="font-size: 28px; font-weight: 800; color: var(--success-color);">${stats.totalMessages || 0}</div>
-                                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Messages envoyés</div>
+                            <div class="stats-ping-card">
+                                <div class="stats-ping-value ${serverPingColor}">${pingData.serverProcessing}ms</div>
+                                <div class="stats-ping-label">🖥️ Serveur</div>
                             </div>
-                            <div style="background: var(--input-bg); padding: 16px; border-radius: 12px; text-align: center;">
-                                <div style="font-size: 28px; font-weight: 800; color: var(--text-primary);">${stats.totalUploads || 0}</div>
-                                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Fichiers uploadés</div>
+                            <div class="stats-ping-card">
+                                <div class="stats-ping-value" style="color:var(--text-primary);">${pingData.jitter}ms</div>
+                                <div class="stats-ping-label">📶 Jitter</div>
                             </div>
-                            <div style="background: var(--input-bg); padding: 16px; border-radius: 12px; text-align: center;">
-                                <div style="font-size: 28px; font-weight: 800; color: var(--text-primary);">${stats.uptime || '0m'}</div>
-                                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Uptime</div>
+                        </div>
+
+                        <div class="stats-grid" style="margin-bottom: 14px;">
+                            <div class="stats-card">
+                                <div class="stats-card-value" style="color: var(--accent-color);">${stats.online || 0}</div>
+                                <div class="stats-card-label">En ligne</div>
+                            </div>
+                            <div class="stats-card">
+                                <div class="stats-card-value" style="color: var(--success-color);">${stats.totalMessages || 0}</div>
+                                <div class="stats-card-label">Messages envoyés</div>
+                            </div>
+                            <div class="stats-card">
+                                <div class="stats-card-value" style="color: var(--text-primary);">${stats.totalUploads || 0}</div>
+                                <div class="stats-card-label">Fichiers uploadés</div>
+                            </div>
+                            <div class="stats-card">
+                                <div class="stats-card-value" style="color: var(--text-primary);">${stats.uptime || '0m'}</div>
+                                <div class="stats-card-label">Uptime</div>
                             </div>
                         </div>
                         
-                        <div style="margin-bottom: 16px;">
-                            <div style="font-size: 13px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Messages par salon</div>
+                        <div style="margin-bottom: 14px;">
+                            <div class="stats-section-title">Messages par salon</div>
                             ${channelRows}
                         </div>
                         
-                        <div style="display: flex; gap: 10px;">
-                            <div style="flex: 1; background: var(--input-bg); padding: 12px; border-radius: 10px; text-align: center;">
-                                <div style="font-size: 18px; font-weight: 700; color: var(--text-primary);">${stats.dmConversations || 0}</div>
-                                <div style="font-size: 11px; color: var(--text-secondary);">Conversations DM</div>
+                        <div class="stats-extra-row">
+                            <div class="stats-extra-card">
+                                <div class="stats-extra-value">${stats.dmConversations || 0}</div>
+                                <div class="stats-extra-label">Conversations DM</div>
                             </div>
-                            <div style="flex: 1; background: var(--input-bg); padding: 12px; border-radius: 10px; text-align: center;">
-                                <div style="font-size: 18px; font-weight: 700; color: var(--text-primary);">${stats.activePolls || 0}</div>
-                                <div style="font-size: 11px; color: var(--text-secondary);">Sondages actifs</div>
+                            <div class="stats-extra-card">
+                                <div class="stats-extra-value">${stats.activePolls || 0}</div>
+                                <div class="stats-extra-label">Sondages actifs</div>
                             </div>
-                            <div style="flex: 1; background: var(--input-bg); padding: 12px; border-radius: 10px; text-align: center;">
-                                <div style="font-size: 18px; font-weight: 700; color: var(--text-primary);">${stats.totalConnectionsEver || 0}</div>
-                                <div style="font-size: 11px; color: var(--text-secondary);">Connexions totales</div>
+                            <div class="stats-extra-card">
+                                <div class="stats-extra-value">${stats.totalConnectionsEver || 0}</div>
+                                <div class="stats-extra-label">Connexions totales</div>
                             </div>
                         </div>
                     `;
@@ -16358,6 +16889,29 @@ window.addEmojiReaction = addEmojiReaction;
                 .catch(() => {
                     document.getElementById('statsContent').innerHTML = '<div style="text-align: center; padding: 40px; color: var(--danger-color);">Erreur de chargement</div>';
                 });
+        }
+        
+        async function measurePing(samples) {
+            const results = [];
+            for (let i = 0; i < samples; i++) {
+                const start = performance.now();
+                try {
+                    const res = await fetch('/api/stats/ping', { method: 'GET', cache: 'no-store' });
+                    const data = await res.json();
+                    const end = performance.now();
+                    const roundTrip = Math.round(end - start);
+                    results.push({ roundTrip, serverTime: data.serverTime || 0, processingTime: data.processingTime || 0 });
+                } catch (e) {
+                    results.push({ roundTrip: -1, serverTime: 0, processingTime: 0 });
+                }
+            }
+            const valid = results.filter(r => r.roundTrip >= 0);
+            if (valid.length === 0) return { avg: '?', serverProcessing: '?', jitter: '?' };
+            const avg = Math.round(valid.reduce((s, r) => s + r.roundTrip, 0) / valid.length);
+            const serverProcessing = Math.round(valid.reduce((s, r) => s + r.processingTime, 0) / valid.length);
+            const sortedPings = valid.map(r => r.roundTrip).sort((a, b) => a - b);
+            const jitter = valid.length > 1 ? Math.round(sortedPings[sortedPings.length - 1] - sortedPings[0]) : 0;
+            return { avg, serverProcessing, jitter };
         }
 
         // ============== MINI-JEUX ==============
@@ -16440,10 +16994,73 @@ window.addEmojiReaction = addEmojiReaction;
                 case 'memory':
                     initMemory(gameBoard, gameControls, gameTitle, gameStatus);
                     break;
+                case 'clicker':
+                    initXPClicker(gameBoard, gameControls, gameTitle, gameStatus);
+                    break;
                 case 'arena2d':
                     initArena2DSolo(gameBoard, gameControls, gameTitle, gameStatus);
                     break;
             }
+        }
+
+        function initXPClicker(board, controls, title, status) {
+            title.textContent = '🍪 Cookie Clicker XP';
+            status.textContent = '';
+            gameState = {
+                totalClicks: Number(myXP?.clicker?.totalClicks || 0),
+                sessionClicks: Number(myXP?.clicker?.sessionClicks || 0),
+                luckyDrops: Number(myXP?.clicker?.luckyDrops || 0),
+                lastGainXP: 0,
+                lastGainBananas: 0,
+                tapping: false
+            };
+
+            board.innerHTML = `
+                <div style="max-width:400px;margin:0 auto;text-align:center;">
+                    <div style="display:flex;justify-content:center;gap:16px;margin-bottom:10px;font-size:11px;color:var(--text-secondary);">
+                        <span>🖱️ <strong id="clickerTotalClicks" style="color:var(--text-primary);">${gameState.totalClicks}</strong></span>
+                        <span>⏱️ <strong id="clickerSessionClicks" style="color:var(--text-primary);">${gameState.sessionClicks}</strong></span>
+                        <span>🍌 <strong id="clickerLuckyDrops" style="color:var(--text-primary);">${gameState.luckyDrops}</strong></span>
+                    </div>
+                    <div style="position:relative;display:inline-block;">
+                        <button id="xpClickerButton" onclick="tapXPClicker()" style="width:180px;height:180px;border:none;border-radius:50%;background:radial-gradient(circle at 30% 30%, #ffd166, #f59e0b);color:#4b2e05;font-size:72px;cursor:pointer;box-shadow:0 8px 25px rgba(0,0,0,.3), inset 0 2px 6px rgba(255,255,255,.3);transition:transform .06s ease;user-select:none;-webkit-user-select:none;">🍪</button>
+                        <div id="clickerLastGain" style="margin-top:8px;font-size:12px;color:var(--text-secondary);min-height:18px;">Prêt</div>
+                    </div>
+                </div>
+            `;
+
+            controls.innerHTML = `
+                <button class="game-btn secondary" onclick="backToGamesMenu()">← Retour</button>
+            `;
+
+            if (socket) socket.emit('get_clicker_state');
+        }
+
+        function tapXPClicker() {
+            if (!socket || currentGame !== 'clicker') return;
+            socket.emit('clicker_tap');
+            const btn = document.getElementById('xpClickerButton');
+            if (btn) {
+                btn.style.transform = 'scale(0.92)';
+                btn.style.filter = 'brightness(1.15)';
+                setTimeout(() => { btn.style.transform = ''; btn.style.filter = ''; }, 60);
+            }
+        }
+
+        function showClickerFloatingText(text, isJackpot) {
+            const btn = document.getElementById('xpClickerButton');
+            if (!btn) return;
+            const rect = btn.getBoundingClientRect();
+            const floater = document.createElement('div');
+            floater.textContent = text;
+            floater.style.cssText = `position:fixed;left:${rect.left + rect.width / 2}px;top:${rect.top - 10}px;transform:translateX(-50%);z-index:99999;pointer-events:none;font-weight:900;font-size:${isJackpot ? '22px' : '16px'};color:${isJackpot ? '#ffd700' : '#43B581'};text-shadow:${isJackpot ? '0 0 16px rgba(255,215,0,0.7), 0 2px 4px rgba(0,0,0,0.5)' : '0 0 10px rgba(67,181,129,0.5), 0 2px 4px rgba(0,0,0,0.4)'};white-space:nowrap;`;
+            document.body.appendChild(floater);
+            floater.animate([
+                { opacity: 1, transform: 'translateX(-50%) translateY(0) scale(1)' },
+                { opacity: 1, transform: 'translateX(-50%) translateY(-40px) scale(1.15)', offset: 0.3 },
+                { opacity: 0, transform: 'translateX(-50%) translateY(-100px) scale(0.8)' }
+            ], { duration: isJackpot ? 4000 : 2500, easing: 'ease-out' });
+            setTimeout(() => floater.remove(), isJackpot ? 4000 : 2500);
         }
         
         // ===== MORPION (Tic-Tac-Toe) =====
@@ -19339,7 +19956,46 @@ window.addEmojiReaction = addEmojiReaction;
 
         function closeUserProfile() {
             document.getElementById('userProfileModal').style.display = 'none';
+            document.getElementById('profileBioEditArea').style.display = 'none';
             currentProfileUser = null;
+        }
+
+        function startBioEdit() {
+            const bioText = document.getElementById('profileBio').textContent;
+            document.getElementById('profileBioInput').value = bioText === 'Aucune bio définie' ? '' : bioText;
+            document.getElementById('profileBioEditArea').style.display = 'block';
+            document.getElementById('profileBioEditBtn').style.display = 'none';
+            document.getElementById('profileBioInput').focus();
+        }
+        function cancelBioEdit() {
+            document.getElementById('profileBioEditArea').style.display = 'none';
+            document.getElementById('profileBioEditBtn').style.display = 'inline-block';
+        }
+        function saveProfileBio() {
+            const bio = document.getElementById('profileBioInput').value.trim().slice(0, 300);
+            socket.emit('update_bio', { bio });
+            document.getElementById('profileBio').textContent = bio || 'Aucune bio définie';
+            cancelBioEdit();
+            showNotification('✅', 'Bio mise à jour !', 'success');
+        }
+
+        function toggleProfileGradient() {
+            const checked = document.getElementById('profileGradientToggle').checked;
+            document.getElementById('profileGradientArea').style.display = checked ? 'flex' : 'none';
+        }
+        function applyProfileColor() {
+            const isGradient = document.getElementById('profileGradientToggle').checked;
+            if (isGradient) {
+                const color1 = document.getElementById('profileColorPicker1').value;
+                const color2 = document.getElementById('profileColorPicker2').value;
+                socket.emit('update_profile_color', { type: 'gradient', color1, color2 });
+                document.getElementById('profileBanner').style.background = `linear-gradient(135deg, ${color1}, ${color2})`;
+            } else {
+                const color = document.getElementById('profileColorPicker1').value;
+                socket.emit('update_profile_color', { type: 'solid', color });
+                document.getElementById('profileBanner').style.background = color;
+            }
+            showNotification('🎨', 'Couleur de profil mise à jour !', 'success');
         }
 
         function mentionUserFromProfile() {
@@ -21004,6 +21660,17 @@ window.addEmojiReaction = addEmojiReaction;
         let voiceManualFocusUntil = 0;
         let voiceRtcStatsInterval = null;
         let voiceRtcLastInboundBytes = {};
+        let voiceRuntimeConfig = {
+            mode: 'p2p',
+            sfuEnabled: false,
+            provider: '',
+            signalingUrl: '',
+            publicWsUrl: ''
+        };
+        let voicePeerRecoveryTimers = {}; // peerId -> timeoutId
+        let voicePeerRecoveryAttempts = {}; // peerId -> attempts
+        let multiDeviceSyncBound = false;
+        let suppressSyncEmission = false;
 
         // Affiche la vue vocale et masque le chat
         function showVoiceView(room) {
@@ -21963,6 +22630,17 @@ window.addEmojiReaction = addEmojiReaction;
                 voiceStartTime = Date.now();
                 
                 socket.emit('voice_join', { room });
+                if (voiceRuntimeConfig.sfuEnabled) {
+                    socket.emit('voice_sfu_signal', {
+                        room,
+                        type: 'join',
+                        data: {
+                            deviceId: generateDeviceId(),
+                            mode: voiceRuntimeConfig.mode,
+                            provider: voiceRuntimeConfig.provider
+                        }
+                    });
+                }
                 
                 // Afficher la vue vocale (masque le chat)
                 showVoiceView(room);
@@ -21988,6 +22666,7 @@ window.addEmojiReaction = addEmojiReaction;
                 startSpeakingDetection();
                 await startVoiceClipCapture();
                 showSidebarVoiceBar(room);
+                emitSyncStatePatch({ voiceRoom: room, activeChannel: currentChannel });
                 
                 showNotification('🔊', `Connecté à ${room}`, 'success');
             } catch (err) {
@@ -22003,6 +22682,7 @@ window.addEmojiReaction = addEmojiReaction;
             
             // Fermer toutes les connexions peer
             for (const [peerId, pc] of Object.entries(voicePeerConnections)) {
+                clearVoicePeerRecovery(peerId);
                 pc.close();
             }
             voicePeerConnections = {};
@@ -22021,6 +22701,13 @@ window.addEmojiReaction = addEmojiReaction;
                 localScreenStream = null;
             }
             
+            if (voiceRuntimeConfig.sfuEnabled) {
+                socket.emit('voice_sfu_signal', {
+                    room: currentVoiceRoom,
+                    type: 'leave',
+                    data: { deviceId: generateDeviceId() }
+                });
+            }
             socket.emit('voice_leave');
             
             stopSpeakingDetection();
@@ -22052,17 +22739,70 @@ window.addEmojiReaction = addEmojiReaction;
             
             // Retirer les éléments audio distants
             document.querySelectorAll('.remote-audio').forEach(el => el.remove());
+
+            emitSyncStatePatch({ voiceRoom: null, activeChannel: currentChannel });
             
             if (!silent) showNotification('🔇', 'Déconnecté du vocal', 'info');
+        }
+
+        function clearVoicePeerRecovery(peerId) {
+            if (voicePeerRecoveryTimers[peerId]) {
+                clearTimeout(voicePeerRecoveryTimers[peerId]);
+                delete voicePeerRecoveryTimers[peerId];
+            }
+            delete voicePeerRecoveryAttempts[peerId];
+        }
+
+        function scheduleVoicePeerRecovery(peerId, reason) {
+            if (!peerId || !voicePeerConnections[peerId] || !currentVoiceRoom) return;
+            if (voicePeerRecoveryTimers[peerId]) return;
+
+            const attempt = (voicePeerRecoveryAttempts[peerId] || 0) + 1;
+            voicePeerRecoveryAttempts[peerId] = attempt;
+            if (attempt > 5) {
+                delete voicePeerRecoveryTimers[peerId];
+                return;
+            }
+
+            const delayMs = Math.min(700 * Math.pow(2, attempt - 1), 8000);
+            voicePeerRecoveryTimers[peerId] = setTimeout(async () => {
+                delete voicePeerRecoveryTimers[peerId];
+                const pc = voicePeerConnections[peerId];
+                if (!pc || !currentVoiceRoom) return;
+
+                try {
+                    if (pc.connectionState === 'connected') {
+                        clearVoicePeerRecovery(peerId);
+                        return;
+                    }
+                    socket?.emit('voice_reconnect_intent', {
+                        peerId,
+                        reason: reason || pc.connectionState || pc.iceConnectionState || 'unknown',
+                        attempt
+                    });
+                    if (typeof pc.restartIce === 'function') {
+                        pc.restartIce();
+                    }
+                    await renegotiate(peerId, pc, { iceRestart: true });
+                    if (pc.connectionState !== 'connected') {
+                        scheduleVoicePeerRecovery(peerId, reason);
+                    }
+                } catch (error) {
+                    console.warn('Voice recovery failed for peer', peerId, error);
+                    scheduleVoicePeerRecovery(peerId, reason);
+                }
+            }, delayMs);
         }
 
         function createPeerConnection(peerId, peerUsername, isInitiator) {
             if (voicePeerConnections[peerId]) {
                 voicePeerConnections[peerId].close();
             }
+            clearVoicePeerRecovery(peerId);
             
             const pc = new RTCPeerConnection(ICE_SERVERS);
             pc.__peerId = peerId;
+            pc.__peerUsername = peerUsername;
             voicePeerConnections[peerId] = pc;
             
             // Ajouter les pistes audio locales
@@ -22162,13 +22902,30 @@ window.addEmojiReaction = addEmojiReaction;
             pc.onconnectionstatechange = () => {
                 if (pc.connectionState === 'failed') {
                     removeVideoTile(peerId);
+                    scheduleVoicePeerRecovery(peerId, 'connection_failed');
+                } else if (pc.connectionState === 'disconnected') {
+                    scheduleVoicePeerRecovery(peerId, 'connection_disconnected');
+                } else if (pc.connectionState === 'connecting') {
+                    scheduleVoicePeerRecovery(peerId, 'connection_connecting_timeout');
                 } else if (pc.connectionState === 'connected') {
+                    clearVoicePeerRecovery(peerId);
                     // Connexion établie — vérifier s'il y a des tracks vidéo à afficher
                     pc.getReceivers().forEach(r => {
                         if (r.track && r.track.kind === 'video' && !r.track.muted) {
                             addVideoTile(peerId, peerUsername, new MediaStream([r.track]), r.track);
                         }
                     });
+                } else if (pc.connectionState === 'completed') {
+                    clearVoicePeerRecovery(peerId);
+                }
+            };
+
+            pc.oniceconnectionstatechange = () => {
+                if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
+                    scheduleVoicePeerRecovery(peerId, `ice_${pc.iceConnectionState}`);
+                }
+                if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
+                    clearVoicePeerRecovery(peerId);
                 }
             };
             
@@ -22507,9 +23264,11 @@ window.addEmojiReaction = addEmojiReaction;
             updateVoiceControlUI();
         }
 
-        async function renegotiate(peerId, pc) {
+        async function renegotiate(peerId, pc, options = {}) {
             try {
-                const offer = await pc.createOffer();
+                if (!pc || pc.signalingState === 'closed') return;
+                if (pc.signalingState !== 'stable' && !options.force) return;
+                const offer = await pc.createOffer({ iceRestart: !!options.iceRestart });
                 await pc.setLocalDescription(offer);
                 socket.emit('voice_offer', { targetId: peerId, offer: pc.localDescription });
             } catch (err) {
@@ -22845,13 +23604,61 @@ window.addEmojiReaction = addEmojiReaction;
             }
         }
 
+        function setupRealtimeSyncSocketListeners() {
+            if (!socket) return;
+
+            socket.off('sync_state_snapshot');
+            socket.off('sync_state_remote_update');
+            socket.off('multi_device_presence');
+            socket.off('voice_runtime_config');
+
+            socket.on('sync_state_snapshot', (snapshot) => {
+                if (!snapshot || !snapshot.byDevice) return;
+                const myDeviceId = generateDeviceId();
+                const entries = Object.entries(snapshot.byDevice)
+                    .filter(([deviceId]) => deviceId !== myDeviceId)
+                    .sort((a, b) => (b[1]?.updatedAt || 0) - (a[1]?.updatedAt || 0));
+                if (entries.length > 0) {
+                    applyRemoteSyncPatch({ patch: entries[0][1] || {} });
+                }
+            });
+
+            socket.on('sync_state_remote_update', (payload) => {
+                if (!payload) return;
+                if (payload.fromDeviceId === generateDeviceId()) return;
+                applyRemoteSyncPatch(payload);
+            });
+
+            socket.on('multi_device_presence', (payload) => {
+                if (!payload || !payload.activeDevices) return;
+                if (Number(payload.activeDevices) > 1) {
+                    showNotification('📱', `${payload.activeDevices} appareils actifs sur ce compte`, 'info');
+                }
+            });
+
+            socket.on('voice_runtime_config', (cfg) => {
+                voiceRuntimeConfig = {
+                    mode: cfg?.mode || 'p2p',
+                    sfuEnabled: !!cfg?.sfuEnabled,
+                    provider: cfg?.provider || '',
+                    signalingUrl: cfg?.signalingUrl || '',
+                    publicWsUrl: cfg?.publicWsUrl || ''
+                };
+            });
+
+            socket.emit('sync_state_request');
+        }
+
         function setupVoiceSocketListeners() {
             if (!socket) return;
             
             // Quand on rejoint un salon vocal - créer les connexions avec les participants existants
             socket.on('voice_joined', (data) => {
+                // Stocker le statut vidéo/écran des peers pour la synchro
+                const peersWithMedia = [];
                 data.participants.forEach(p => {
                     createPeerConnection(p.socketId, p.username, true);
+                    if (p.video || p.screen) peersWithMedia.push(p.socketId);
                 });
                 // Première renégociation rapide pour l'audio
                 setTimeout(() => {
@@ -22866,7 +23673,23 @@ window.addEmojiReaction = addEmojiReaction;
                             renegotiate(peerId, pc);
                         }
                     });
-                }, 2500);
+                }, 2000);
+                // Troisième pass spécifique aux peers ayant vidéo/écran actif
+                if (peersWithMedia.length > 0) {
+                    setTimeout(() => {
+                        peersWithMedia.forEach(peerId => {
+                            const pc = voicePeerConnections[peerId];
+                            if (pc && (pc.connectionState === 'connected' || pc.connectionState === 'completed')) {
+                                // Vérifier si on a bien reçu les tracks vidéo
+                                const receivers = pc.getReceivers();
+                                const hasVideoReceiver = receivers.some(r => r.track && r.track.kind === 'video' && !r.track.muted);
+                                if (!hasVideoReceiver) {
+                                    renegotiate(peerId, pc);
+                                }
+                            }
+                        });
+                    }, 4000);
+                }
             });
             
             // Mise à jour des participants vocaux (sidebar + vue principale)
@@ -22878,11 +23701,22 @@ window.addEmojiReaction = addEmojiReaction;
                 if (!data || !data.room || !data.socketId) return;
                 applyVoiceSpeakingUpdate(data.room, data.socketId, !!data.speaking);
             });
+
+            socket.on('voice_sfu_signal', (payload) => {
+                if (!voiceRuntimeConfig.sfuEnabled || !payload) return;
+                if (payload.type === 'request-offer' && payload.fromId) {
+                    const pc = voicePeerConnections[payload.fromId];
+                    if (pc) {
+                        renegotiate(payload.fromId, pc, { force: true, iceRestart: !!payload.data?.iceRestart });
+                    }
+                }
+            });
             
             // Un peer a quitté
             socket.on('voice_peer_left', (data) => {
                 const pc = voicePeerConnections[data.socketId];
                 if (pc) {
+                    clearVoicePeerRecovery(data.socketId);
                     pc.close();
                     delete voicePeerConnections[data.socketId];
                 }
@@ -22899,6 +23733,11 @@ window.addEmojiReaction = addEmojiReaction;
                     pc = createPeerConnection(fromId, fromUsername, false);
                 }
                 try {
+                    // Gérer le cas de "glare" (offres simultanées)
+                    if (pc.signalingState === 'have-local-offer') {
+                        // Annuler notre offre et accepter celle du pair
+                        await pc.setLocalDescription({ type: 'rollback' });
+                    }
                     await pc.setRemoteDescription(new RTCSessionDescription(offer));
                     const answer = await pc.createAnswer();
                     await pc.setLocalDescription(answer);
@@ -23316,6 +24155,33 @@ window.addEmojiReaction = addEmojiReaction;
             if (socket) socket.emit('send_friend_request', { username });
         }
 
+        function showFriendRequestPopup(from, avatar) {
+            // Remove existing popup if any
+            const existing = document.getElementById('friendRequestPopup');
+            if (existing) existing.remove();
+            const safeFrom = escapeHtml(from);
+            const popup = document.createElement('div');
+            popup.id = 'friendRequestPopup';
+            popup.style.cssText = 'position:fixed;top:20px;right:20px;z-index:99999;background:var(--sidebar-bg);border:1px solid var(--border-color);border-radius:16px;padding:16px 20px;box-shadow:0 8px 32px rgba(0,0,0,0.4);min-width:280px;max-width:340px;animation:friendPopIn 0.4s cubic-bezier(0.22,0.61,0.36,1);';
+            const avatarHtml = avatar ? `<img src="${avatar}" style="width:42px;height:42px;border-radius:50%;object-fit:cover;">` : '<div style="width:42px;height:42px;border-radius:50%;background:var(--input-bg);display:flex;align-items:center;justify-content:center;font-size:22px;">👤</div>';
+            popup.innerHTML = `
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+                    ${avatarHtml}
+                    <div>
+                        <div style="font-size:14px;font-weight:700;color:var(--text-primary);">👥 Demande d'ami</div>
+                        <div style="font-size:13px;color:var(--text-secondary);margin-top:2px;">${safeFrom} veut être votre ami !</div>
+                    </div>
+                </div>
+                <div style="display:flex;gap:8px;">
+                    <button onclick="acceptFriend('${safeFrom}');this.closest('#friendRequestPopup').remove();" style="flex:1;padding:8px;border:none;border-radius:10px;background:var(--success-color);color:white;cursor:pointer;font-size:13px;font-weight:700;">✅ Accepter</button>
+                    <button onclick="rejectFriend('${safeFrom}');this.closest('#friendRequestPopup').remove();" style="flex:1;padding:8px;border:none;border-radius:10px;background:var(--danger-color);color:white;cursor:pointer;font-size:13px;font-weight:700;">❌ Refuser</button>
+                </div>
+            `;
+            document.body.appendChild(popup);
+            // Auto-dismiss after 15 seconds
+            setTimeout(() => { if (document.getElementById('friendRequestPopup')) popup.remove(); }, 15000);
+        }
+
         function acceptFriend(username) {
             if (socket) socket.emit('accept_friend', { username });
         }
@@ -23351,7 +24217,15 @@ window.addEmojiReaction = addEmojiReaction;
         // ===========================================================
         // === XP / LEADERBOARD ===
         // ===========================================================
-        let myXP = { xp: 0, level: 0, currentXP: 0, neededXP: 100 };
+        let myXP = {
+            xp: 0,
+            level: 0,
+            currentXP: 0,
+            neededXP: 100,
+            bananaPoints: 0,
+            role: { icon: '🛡️', label: 'Recrue' },
+            clicker: { totalClicks: 0, sessionClicks: 0, luckyDrops: 0 }
+        };
 
         function openLeaderboard() {
             document.getElementById('leaderboardModal').style.display = 'block';
@@ -23368,10 +24242,13 @@ window.addEmojiReaction = addEmojiReaction;
             const pct = data.neededXP > 0 ? Math.min(100, (data.currentXP / data.neededXP) * 100) : 0;
             const levelTitles = ['Recrue', 'Apprenti', 'Guerrier', 'Vétéran', 'Champion', 'Héros', 'Légende', 'Mythique', 'Divin', 'Immortel'];
             const title = levelTitles[Math.min(data.level, levelTitles.length - 1)] || 'Immortel';
+            const role = data.role || { icon: '🛡️', label: title };
             const titleEl = document.getElementById('myXPTitle');
-            if (titleEl) titleEl.textContent = `${title} — Niveau ${data.level}`;
+            if (titleEl) titleEl.textContent = `${role.icon || '🛡️'} ${role.label || title} — Niveau ${data.level}`;
             const infoEl = document.getElementById('myXPInfo');
             if (infoEl) infoEl.textContent = `${data.xp} XP total accumulé`;
+            const roleBadge = document.getElementById('myRoleBadge');
+            if (roleBadge) roleBadge.textContent = `${role.icon || '🛡️'} Rôle XP: ${role.label || title}`;
             const circleEl = document.getElementById('myLevelCircle');
             if (circleEl) circleEl.textContent = data.level;
             const barEl = document.getElementById('myXPBar');
@@ -23385,13 +24262,17 @@ window.addEmojiReaction = addEmojiReaction;
             const neededEl = document.getElementById('myNeededXP');
             if (neededEl) neededEl.textContent = data.neededXP;
             const bananaEl = document.getElementById('myBananaPoints');
-            if (bananaEl) bananaEl.textContent = data.bananaPoints || Math.floor(data.xp / 11);
+            if (bananaEl) bananaEl.textContent = Number(data.bananaPoints || 0);
             const bananaBreakdownEl = document.getElementById('bananaBreakdownText');
             if (bananaBreakdownEl) {
-                const fromXp = Number(data?.bananaBreakdown?.fromXP || Math.floor((data.xp || 0) / 11));
-                const fromTasks = Number(data?.bananaBreakdown?.fromTasks || 0);
+                const fromWallet = Number(data?.bananaBreakdown?.fromWallet || data?.bananaBreakdown?.fromTasks || 0);
+                const convertible = Number(data?.bananaBreakdown?.convertibleFromXP || Math.floor((data.xp || 0) / 11));
                 const ratio = Number(data?.bananaBreakdown?.ratioXP || 11);
-                bananaBreakdownEl.textContent = `🍌 ${data.bananaPoints || 0} total = ${fromXp} (XP) + ${fromTasks} (tâches) · ${ratio} XP / banane`;
+                bananaBreakdownEl.textContent = `🍌 Portefeuille: ${data.bananaPoints || 0} · Convertible depuis XP: ${convertible} (ratio ${ratio} XP/🍌)`;
+                const convertHint = document.getElementById('xpConvertHint');
+                if (convertHint) {
+                    convertHint.textContent = `1 🍌 = ${ratio} XP · Convertible maintenant: ${convertible} 🍌`;
+                }
             }
             const metaEl = document.getElementById('myXPMeta');
             if (metaEl) {
@@ -23453,6 +24334,41 @@ window.addEmojiReaction = addEmojiReaction;
                 const rewardBananas = Number(missions?.rewards?.voiceMinutes?.bananas || 0);
                 voiceRow.textContent = `${completed.voiceMinutes ? '✅' : '🟨'} Vocal: ${Math.min(cur, target)}/${target} min · +${rewardXP} XP · +${rewardBananas} 🍌`;
             }
+
+            const miniRow = document.getElementById('missionMiniGamesRow');
+            if (miniRow) {
+                const cur = Number(progress.miniGameRounds || 0);
+                const target = Number(targets.miniGameRounds || 3);
+                const rewardXP = Number(missions?.rewards?.miniGameRounds?.xp || 0);
+                const rewardBananas = Number(missions?.rewards?.miniGameRounds?.bananas || 0);
+                miniRow.textContent = `${completed.miniGameRounds ? '✅' : '🟨'} Mini-jeux: ${Math.min(cur, target)}/${target} · +${rewardXP} XP · +${rewardBananas} 🍌`;
+            }
+
+            const clickerRow = document.getElementById('missionClickerRow');
+            if (clickerRow) {
+                const cur = Number(progress.clickerClicks || 0);
+                const target = Number(targets.clickerClicks || 120);
+                const rewardXP = Number(missions?.rewards?.clickerClicks?.xp || 0);
+                const rewardBananas = Number(missions?.rewards?.clickerClicks?.bananas || 0);
+                clickerRow.textContent = `${completed.clickerClicks ? '✅' : '🟨'} Cookie Clicker: ${Math.min(cur, target)}/${target} · +${rewardXP} XP · +${rewardBananas} 🍌`;
+            }
+
+            if (currentGame === 'clicker') {
+                const cState = data.clicker || {};
+                const totalEl = document.getElementById('clickerTotalClicks');
+                if (totalEl) totalEl.textContent = Number(cState.totalClicks || 0);
+                const sessionEl = document.getElementById('clickerSessionClicks');
+                if (sessionEl) sessionEl.textContent = Number(cState.sessionClicks || 0);
+                const dropsEl = document.getElementById('clickerLuckyDrops');
+                if (dropsEl) dropsEl.textContent = Number(cState.luckyDrops || 0);
+            }
+        }
+
+        function formatXP(xp) {
+            if (xp >= 1000000) return (xp / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+            if (xp >= 10000) return (xp / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+            if (xp >= 1000) return (xp / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+            return String(xp);
         }
 
         function renderLeaderboard(data) {
@@ -23469,8 +24385,8 @@ window.addEmojiReaction = addEmojiReaction;
                     <div class="leaderboard-name">${escapeHtml(u.username)}</div>
                     <div class="level-badge">Nv. ${u.level}</div>
                     <div class="leaderboard-xp">
-                        ${u.xp} XP · ${u.bananaPoints || Math.floor(u.xp/11)} 🍌
-                        <span class="leaderboard-xp-sub">${levelTitles[Math.min(u.level, levelTitles.length - 1)] || 'Immortel'}</span>
+                        ${formatXP(u.xp)} XP · ${formatXP(Number(u.bananaPoints || 0))} 🍌
+                        <span class="leaderboard-xp-sub">${u?.role?.icon || '🛡️'} ${u?.role?.label || levelTitles[Math.min(u.level, levelTitles.length - 1)] || 'Immortel'}</span>
                     </div>
                 </div>
             `).join('');
@@ -23511,6 +24427,25 @@ window.addEmojiReaction = addEmojiReaction;
         function useBanana(effect) {
             if (!socket) return;
             socket.emit('banana_use', { effect });
+        }
+
+        function convertXPToBananas() {
+            if (!socket) return;
+            const input = document.getElementById('xpConvertBananaInput');
+            const amount = Math.max(0, Math.floor(Number(input?.value || 0)));
+            if (!amount) {
+                showNotification('🔁 Conversion XP', 'Entrez un nombre de bananes valide.', 'warning');
+                return;
+            }
+            socket.emit('convert_xp_to_banana', { bananas: amount });
+        }
+
+        function updateConvertPreview() {
+            const input = document.getElementById('xpConvertBananaInput');
+            const hint = document.getElementById('xpConvertHint');
+            const amount = Math.max(0, Math.floor(Number(input?.value || 0)));
+            const cost = amount * 11;
+            hint.innerHTML = `1 🍌 = 11 XP · Coût: <strong>${cost} XP</strong> pour ${amount} 🍌`;
         }
 
         function setNameEffect(effect) {
@@ -24204,7 +25139,7 @@ window.addEmojiReaction = addEmojiReaction;
                 myFriends.blocked = data.blocked || [];
             });
             socket.on('friend_request_received', (data) => {
-                showNotification('👥 Demande d\'ami', `${data.from} veut être votre ami !`, 'info');
+                showFriendRequestPopup(data.from, data.avatar);
                 socket.emit('get_friends');
             });
             socket.on('friend_request_sent', () => showNotification('✅', 'Demande envoyée !', 'success'));
@@ -24214,6 +25149,11 @@ window.addEmojiReaction = addEmojiReaction;
             });
             socket.on('friend_removed', () => socket.emit('get_friends'));
             socket.on('friend_error', (data) => showNotification('⚠️', data.message, 'warning'));
+
+            // Profile updates
+            socket.on('bio_updated', (data) => showNotification('✅', 'Bio sauvegardée', 'success'));
+            socket.on('profile_color_updated', () => {});
+            socket.on('profile_color_error', (data) => showNotification('⚠️', data.message, 'warning'));
 
             // XP
             socket.on('xp_data', updateMyXPDisplay);
@@ -24253,6 +25193,61 @@ window.addEmojiReaction = addEmojiReaction;
                 const bananas = Number(data.bananas || 0);
                 showNotification('🎮 Récompense Mini-Jeu', `${game}: +${points} pts · +${xp} XP · +${bananas} 🍌`, 'success');
                 socket.emit('get_minigames_leaderboard');
+            });
+            socket.on('clicker_state', (data) => {
+                if (!data) return;
+                if (currentGame !== 'clicker') return;
+                const totalEl = document.getElementById('clickerTotalClicks');
+                if (totalEl) totalEl.textContent = Number(data.totalClicks || 0);
+                const sessionEl = document.getElementById('clickerSessionClicks');
+                if (sessionEl) sessionEl.textContent = Number(data.sessionClicks || 0);
+                const dropsEl = document.getElementById('clickerLuckyDrops');
+                if (dropsEl) dropsEl.textContent = Number(data.luckyDrops || 0);
+            });
+            socket.on('clicker_tap_result', (data) => {
+                if (!data) return;
+                if (currentGame !== 'clicker') return;
+                const totalEl = document.getElementById('clickerTotalClicks');
+                if (totalEl) totalEl.textContent = Number(data.totalClicks || 0);
+                const sessionEl = document.getElementById('clickerSessionClicks');
+                if (sessionEl) sessionEl.textContent = Number(data.sessionClicks || 0);
+                const dropsEl = document.getElementById('clickerLuckyDrops');
+                if (dropsEl) dropsEl.textContent = Number(data.luckyDrops || 0);
+                const gainEl = document.getElementById('clickerLastGain');
+                if (gainEl) {
+                    const xp = Number(data.gainedXP || 0);
+                    const bananas = Number(data.bananasWon || 0);
+                    const jackpot = !!data.jackpot;
+                    const mega = !!data.megaJackpot;
+                    if (mega) {
+                        gainEl.textContent = `💎 MEGA JACKPOT! +${xp} XP +${bananas} 🍌`;
+                    } else if (jackpot) {
+                        gainEl.textContent = `🎁 JACKPOT! +${xp} XP +${bananas} 🍌`;
+                    } else {
+                        gainEl.textContent = `+${xp} XP${bananas > 0 ? ` +${bananas} 🍌` : ''}`;
+                    }
+                    // Animated bonus
+                    if (mega || jackpot || bananas > 0) {
+                        gainEl.style.transition = 'none';
+                        gainEl.style.color = mega ? '#e040fb' : jackpot ? '#ffd700' : '#43B581';
+                        gainEl.style.fontSize = mega ? '16px' : jackpot ? '15px' : '13px';
+                        gainEl.style.fontWeight = '800';
+                        gainEl.style.textShadow = mega ? '0 0 18px rgba(224,64,251,0.7)' : jackpot ? '0 0 10px rgba(255,215,0,0.5)' : '';
+                        const btn = document.getElementById('xpClickerButton');
+                        if (btn && (mega || jackpot)) {
+                            btn.style.animation = mega ? 'clickerJackpot 0.8s ease' : 'clickerJackpot 0.5s ease';
+                            setTimeout(() => { btn.style.animation = ''; }, mega ? 800 : 500);
+                        }
+                        if (mega || jackpot) showClickerFloatingText(mega ? `💎 MEGA +${xp} XP +${bananas} 🍌` : `🎁 +${xp} XP +${bananas} 🍌`, mega || jackpot);
+                        clearTimeout(gainEl._bonusTimer);
+                        gainEl._bonusTimer = setTimeout(() => {
+                            gainEl.style.color = 'var(--text-secondary)';
+                            gainEl.style.fontSize = '12px';
+                            gainEl.style.fontWeight = '';
+                            gainEl.style.textShadow = '';
+                        }, mega ? 6000 : jackpot ? 4000 : 2000);
+                    }
+                }
             });
 
             // Reminders

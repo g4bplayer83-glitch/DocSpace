@@ -1,7 +1,82 @@
 {
-  "currentVersion": "3.2.6",
-  "lastUpdate": "2026-04-01",
+  "currentVersion": "3.2.8-alpha",
+  "lastUpdate": "2026-04-05",
   "versions": [
+    {
+      "version": "3.2.8-alpha",
+      "date": "2026-04-05",
+      "title": "🧪 3.2.8-alpha - Reconnexion propre, quêtes saisonnières & social",
+      "changes": [
+        "🛠️ Fix majeur reconnexion: plus de doublons du même compte dans la liste utilisateurs",
+        "🛠️ Reconnexion même appareil: remplacement automatique de la socket stale",
+        "🛠️ Présence améliorée: messages join/leave uniquement sur vraie transition online/offline",
+        "📱 Sidebar utilisateurs dédoublonnée + badge multi-appareils (x2, x3, ...)",
+        "🧩 Moteur de quêtes saisonnières dynamique (rotation hebdo, objectifs ajustés par saison/event)",
+        "🔐 E2EE alpha ajouté: annuaire de clés publiques + relais d'enveloppes chiffrées messages/fichiers",
+        "🤝 Moteur de recommandations sociales: score par amis communs + salons partagés + présence en ligne",
+        "🛰️ Base SFU conservée (mode runtime P2P/SFU configurable)",
+        "📊 Observabilité conservée: /api/observability/summary et /metrics"
+      ]
+    },
+    {
+      "version": "3.2.8",
+      "date": "2026-04-05",
+      "title": "🔧 3.2.8 - Stats, Ping, Mobile & Sync Vocal",
+      "changes": [
+        "📊 Statistiques serveur refaites: interface propre avec grille responsive, lisible sur petit écran",
+        "🏓 Nouveau: mesure du ping en temps réel (3 échantillons) avec affichage coloré (vert/orange/rouge)",
+        "🖥️ Latence serveur affichée séparément du ping réseau dans les stats",
+        "📶 Indicateur de jitter (stabilité de connexion) ajouté aux stats",
+        "📱 Mobile: plus de scroll qui dépasse le site (overscroll-behavior, position fixed, 100dvh)",
+        "📱 Blocage du pull-to-refresh sur mobile tout en gardant le scroll dans le chat",
+        "📱 Viewport amélioré: maximum-scale + viewport-fit=cover pour iOS",
+        "👤 Profil optimisé petit écran: modal scrollable, avatar/bannière réduits sur laptop et mobile",
+        "👤 Media query @max-height:700px pour les petits écrans de PC portables",
+        "🎥 Sync caméra/écran améliorée: le serveur envoie le statut vidéo/écran à la connexion",
+        "🎥 Gestion du glare WebRTC (rollback quand 2 peers envoient une offre en même temps)",
+        "🎥 3ème pass de renégociation ciblée pour les peers avec vidéo/écran actif",
+        "⭐ XP boosté: messages 18 XP (+3), réactions 8 XP (+3), vocal passif 5 XP/min (+2)",
+        "🎁 Login bonus augmenté: 60 XP de base, streak +15/jour (max +90)",
+        "🎯 Missions quotidiennes boostées: meilleurs rewards, clicker réduit à 100 clics",
+        "⏱️ Cooldown message réduit: 25s au lieu de 30s"
+      ]
+    },
+    {
+      "version": "3.2.7-beta",
+      "date": "2026-04-02",
+      "title": "🧪 3.2.7 Bêta - Profils, Clicker amélioré & Notifications sociales",
+      "changes": [
+        "⚠️ Version bêta — sera officialisée après correction des bugs restants",
+        "🍪 Cookie Clicker amélioré: animations de bonus (shake, glow, texte flottant) visibles 3-5s",
+        "🎁 Jackpot Clicker plus rare mais plus généreux: 50 XP + 5 🍌 par jackpot",
+        "🍌 Bonus bananes cookie plus rares (6% au lieu de 12%) pour plus de valeur",
+        "📊 Classement mis à jour en temps réel quand les bananes changent (gain, dépense, conversion)",
+        "🔁 Convertisseur XP → 🍌 amélioré: aperçu en direct du coût XP pendant la saisie",
+        "👤 Rôles XP déplacés du pseudo vers le profil utilisateur (plus lisible dans la liste)",
+        "🏅 Badge de rôle + niveau affiché directement sur le profil de chaque utilisateur",
+        "📅 Date \"Membre depuis\" affichée avec le mois complet en français sur les profils",
+        "✏️ Bio modifiable: chaque utilisateur peut écrire et sauvegarder sa propre bio (300 car.)",
+        "🎨 Couleur de bannière de profil personnalisable (couleur fixe ou dégradé pour niveau 10+)",
+        "⭐ Niveau et XP total visibles sur le profil de chaque utilisateur",
+        "👥 Notification de demande d'ami style jeu: popup avec boutons Accepter / Refuser",
+        "💾 Profils sauvegardés sur le serveur (bio, couleurs persistantes entre sessions)"
+      ]
+    },
+    {
+      "version": "3.2.7",
+      "date": "2026-04-02",
+      "title": "🚀 3.2.7 - Quêtes+, Cookie Clicker & rôles XP",
+      "changes": [
+        "🎯 Quêtes quotidiennes enrichies dans le système XP: Mini-jeux du jour + Cookie Clicker",
+        "🍪 Nouveau mini-jeu Cookie Clicker persistant par compte (clics sauvegardés serveur)",
+        "✨ Cookie Clicker récompense en XP à chaque clic avec drops aléatoires de bananes",
+        "🏅 Rôles XP style Discord ajoutés (Recrue, Bronze, Argent, Or, Platine, Diamant, Éternel)",
+        "🍌 Économie revue: dépenser des bananes ne retire plus d'XP automatiquement",
+        "🔁 Ajout d'un convertisseur XP → bananes manuel pour garder le contrôle propre de la progression",
+        "📊 Modal XP améliorée: affichage du rôle, quêtes supplémentaires et breakdown portefeuille/convertible",
+        "🔄 Synchronisation serveur renforcée pour XP, quêtes, rôles et progression clicker en temps réel"
+      ]
+    },
     {
       "version": "3.2.6",
       "date": "2026-04-01",

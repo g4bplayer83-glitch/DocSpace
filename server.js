@@ -7409,8 +7409,8 @@ setInterval(() => {
     saveServerRuntimeStats({ includeCurrentSession: true });
 }, 30000);
 
-// Démarrage du serveur
-const PORT = process.env.PORT || 3000;
+// Démarrer le serveur
+const PORT = process.env.PORT || 8080;
 const HOST = process.env.HOST || '0.0.0.0';
 
 server.listen(PORT, HOST, () => {

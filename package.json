@@ -17,8 +17,9 @@
   },
   "dependencies": {
     "express": "^4.18.2",
-    "socket.io": "^4.7.5",
-    "multer": "^1.4.5-lts.1"
+    "firebase-admin": "^12.7.0",
+    "multer": "^1.4.5-lts.1",
+    "socket.io": "^4.7.5"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
@@ -29,7 +30,7 @@
   },
   "keywords": [
     "chat",
-    "socket.io", 
+    "socket.io",
     "realtime",
     "multiplatform",
     "file-sharing",
@@ -37,7 +38,8 @@
     "websocket",
     "nodejs",
     "express",
-    "render"
+    "fly.io",
+    "firebase"
   ],
   "author": {
     "name": "g4bplayer83",
@@ -49,7 +51,7 @@
   },
   "homepage": "https://github.com/g4bplayer83-glitch/chatroom-server#readme",
   "config": {
-    "port": "3000",
+    "port": "8080",
     "host": "0.0.0.0",
     "maxFileSize": "100MB",
     "maxAvatarSize": "10MB",

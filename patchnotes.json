@@ -1,7 +1,24 @@
 {
-  "currentVersion": "3.2.8-alpha",
-  "lastUpdate": "2026-04-05",
+  "currentVersion": "3.2.9",
+  "lastUpdate": "2026-04-07",
   "versions": [
+    {
+      "version": "3.2.9",
+      "date": "2026-04-07",
+      "title": "🎨 3.2.9 - Thèmes corrigés, historique de présence amélioré & animations",
+      "changes": [
+        "🎨 Thème Bleu Nuit: refait en mode sombre, plus lumineux/clair",
+        "🔴 Thème Rouge: vraies couleurs rouges au lieu de vert/bleu néon",
+        "🟡 Thème Jaune: vrai jaune doré au lieu d'orange",
+        "🩷 Thème Rose: version sombre ajoutée + version claire conservée (Rose Clair)",
+        "🟠 Thème Orange: vrai orange sombre au lieu de vert menthe",
+        "🎨 Thème personnalisé amélioré: couleurs de texte, accent et messages configurables",
+        "📋 Historique de présence: vert pour rejoindre, rouge pour quitter, meilleure lisibilité",
+        "🕚 Icône historique de présence changée",
+        "🎬 Animations de messages: correction du système pour que le changement d'animation fonctionne",
+        "📌 Version officielle 3.2.9"
+      ]
+    },
     {
       "version": "3.2.8-alpha",
       "date": "2026-04-05",

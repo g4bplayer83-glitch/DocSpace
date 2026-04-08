@@ -9,6 +9,72 @@ const PACKAGE_INFO = require('./package.json');
 const SERVER_NAME = 'DocSpace Server';
 const SERVER_VERSION = PACKAGE_INFO.version || '3.2.8-alpha';
 
+// === FIREBASE REALTIME DATABASE ===
+let firebaseDb = null;
+let useFirebase = false;
+
+function initFirebase() {
+    try {
+        const credentialsJson = process.env.FIREBASE_CREDENTIALS;
+        if (!credentialsJson) {
+            console.log('ℹ️ FIREBASE_CREDENTIALS non défini — mode fichiers locaux');
+            return;
+        }
+        const admin = require('firebase-admin');
+        const serviceAccount = JSON.parse(credentialsJson);
+        admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount),
+            databaseURL: `https://${serviceAccount.project_id}-default-rtdb.firebaseio.com`
+        });
+        firebaseDb = admin.database();
+        useFirebase = true;
+        console.log('✅ Firebase Realtime Database connecté');
+    } catch (error) {
+        console.error('❌ Erreur Firebase init:', error.message);
+        console.log('⚠️ Fallback vers fichiers locaux');
+        useFirebase = false;
+    }
+}
+initFirebase();
+
+// Firebase helpers — lecture/écriture avec fallback fichiers locaux
+async function fbLoad(key) {
+    if (!useFirebase || !firebaseDb) return null;
+    try {
+        const snapshot = await firebaseDb.ref(key).once('value');
+        return snapshot.val();
+    } catch (e) {
+        console.error(`❌ Firebase load [${key}]:`, e.message);
+        return null;
+    }
+}
+
+function fbSave(key, data) {
+    if (!useFirebase || !firebaseDb) return;
+    firebaseDb.ref(key).set(data).catch(e => {
+        console.error(`❌ Firebase save [${key}]:`, e.message);
+    });
+}
+
+// Debounced Firebase save — prevents flooding the DB
+const _fbSaveTimers = {};
+function fbSaveDebounced(key, dataFn, delayMs = 2000) {
+    if (!useFirebase || !firebaseDb) return;
+    if (_fbSaveTimers[key]) clearTimeout(_fbSaveTimers[key]);
+    _fbSaveTimers[key] = setTimeout(() => {
+        _fbSaveTimers[key] = null;
+        fbSave(key, dataFn());
+    }, delayMs);
+}
+
+function fbSaveImmediate(key, data) {
+    if (_fbSaveTimers[key]) {
+        clearTimeout(_fbSaveTimers[key]);
+        _fbSaveTimers[key] = null;
+    }
+    fbSave(key, data);
+}
+
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
@@ -291,6 +357,9 @@ const CLICKER_JACKPOT_BANANAS = 5;
 const CLICKER_MEGA_JACKPOT_CHANCE = 0.0005;
 const CLICKER_MEGA_JACKPOT_XP = 200;
 const CLICKER_MEGA_JACKPOT_BANANAS = 20;
+const CLICKER_AUTOCLICKER_COST = 1000;
+const CLICKER_AUTOCLICKER_INTERVAL_MS = 1000; // 1 click per second
+const CLICKER_AUTOCLICKER_XP_PER_TICK = 1; // reduced XP for auto clicks
 const NAME_EFFECT_ITEMS = {
     name_glow: { cost: 24, label: 'Halo lumineux' },
     name_gradient: { cost: 29, label: 'Dégradé arc-en-ciel' },
@@ -636,7 +705,11 @@ function buildXPDataPayload(username) {
             progress: missionProgress,
             completed: missionCompleted
         },
-        seasonalQuests: buildSeasonalQuestsPayload(username)
+        seasonalQuests: buildSeasonalQuestsPayload(username),
+        customThemeUnlocked: !!data.customThemeUnlocked,
+        customTheme: data.customTheme || null,
+        autoClickerUnlocked: !!data.autoClickerUnlocked,
+        serverEnv: SERVER_ENV
     };
 }
 
@@ -771,9 +844,9 @@ let dmHistory = {}; // "user1:user2" (trié) -> [messages]
 let accounts = {}; // username_lower -> { username, passwordHash, salt, createdAt, lastLogin }
 
 // === FICHIERS DE SAUVEGARDE POUR PERSISTANCE ===
-// Pour render.com: créer un Disk persistant et définir RENDER_DISK_PATH=/var/data
-// Sinon utilise le dossier local 'data'
-const DATA_DIR = process.env.RENDER_DISK_PATH || path.join(__dirname, 'data');
+// Sur Fly.io les données sont persistées via Firebase
+// En local, utilise le dossier 'data'
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const HISTORY_FILE = path.join(DATA_DIR, 'chat_history.json');
 const REACTIONS_FILE = path.join(DATA_DIR, 'reactions.json');
 const CHANNELS_FILE = path.join(DATA_DIR, 'channel_histories.json');
@@ -791,6 +864,72 @@ const CHANNEL_CONFIG_FILE = path.join(DATA_DIR, 'channel_config.json');
 const SERVER_RUNTIME_FILE = path.join(DATA_DIR, 'server_runtime_stats.json');
 const LIVE_EVENTS_FILE = path.join(DATA_DIR, 'live_events_state.json');
 const PROFILES_FILE = path.join(DATA_DIR, 'profiles.json');
+const PRESENCE_HISTORY_FILE = path.join(DATA_DIR, 'presence_history.json');
+
+// === PRESENCE HISTORY (join/leave log) ===
+let presenceHistory = []; // [{ username, action: 'join'|'leave', timestamp }]
+const MAX_PRESENCE_HISTORY = 500;
+function loadPresenceHistory() {
+    try {
+        if (fs.existsSync(PRESENCE_HISTORY_FILE)) {
+            presenceHistory = JSON.parse(fs.readFileSync(PRESENCE_HISTORY_FILE, 'utf8'));
+            console.log(`✅ Historique de présence chargé: ${presenceHistory.length} entrées`);
+        }
+    } catch (e) { console.error('❌ Erreur chargement historique présence:', e.message); presenceHistory = []; }
+}
+async function loadPresenceHistoryFromFirebase() {
+    const data = await fbLoad('presenceHistory');
+    if (data) { presenceHistory = Array.isArray(data) ? data : []; console.log(`✅ [FB] Présence chargée: ${presenceHistory.length}`); return true; }
+    return false;
+}
+function savePresenceHistory() {
+    try { fs.writeFileSync(PRESENCE_HISTORY_FILE, JSON.stringify(presenceHistory, null, 2)); } catch (e) { console.error('❌ Erreur sauvegarde présence:', e.message); }
+    fbSaveDebounced('presenceHistory', () => presenceHistory);
+}
+function addPresenceEntry(username, action) {
+    const entry = { username, action, timestamp: new Date().toISOString() };
+    presenceHistory.push(entry);
+    if (presenceHistory.length > MAX_PRESENCE_HISTORY) {
+        presenceHistory = presenceHistory.slice(-MAX_PRESENCE_HISTORY);
+    }
+    savePresenceHistory();
+    io.emit('presence_history_append', entry);
+}
+
+// === SERVER ENVIRONMENT DETECTION ===
+const IS_FLY = !!(process.env.FLY_APP_NAME || process.env.FLY_REGION);
+const IS_RENDER = !!(process.env.RENDER || process.env.RENDER_EXTERNAL_URL);
+const IS_CLOUD = IS_FLY || IS_RENDER;
+const SERVER_ENV = IS_FLY ? 'fly' : IS_RENDER ? 'render' : 'local';
+const PERF_CONFIG = IS_CLOUD ? {
+    maxHistory: 800,
+    saveDebounceMs: 3000,
+    keepAliveIntervalMs: 4 * 60 * 1000,
+    maxPresenceHistory: 300,
+    pingIntervalMs: 30000,
+    pingTimeoutMs: 60000
+} : {
+    maxHistory: 2000,
+    saveDebounceMs: 1200,
+    keepAliveIntervalMs: 10 * 60 * 1000,
+    maxPresenceHistory: 500,
+    pingIntervalMs: 25000,
+    pingTimeoutMs: 60000
+};
+
+// === SHOP PROMOTIONS ===
+let shopPromotion = {
+    active: false,
+    discount: 0,
+    itemFilter: null, // null = all items, or array of item keys
+    label: '',
+    endsAt: 0,
+    autoMode: false,
+    autoIntervalMinutes: 120,
+    autoDurationMinutes: 30,
+    autoDiscountPercent: 20,
+    nextAutoAt: 0
+};
 
 // Charger ou initialiser la config des salons
 let channelConfig = { channels: [...DEFAULT_CHANNELS], voiceChannels: [...DEFAULT_VOICE_CHANNELS], categories: ['💬 Discussion', '🎮 Loisirs', '💡 Autres', '🤖 Intelligence Artificielle'] };
@@ -803,8 +942,14 @@ function loadChannelConfig() {
         }
     } catch (e) { console.error('❌ Erreur chargement config salons:', e.message); }
 }
+async function loadChannelConfigFromFirebase() {
+    const data = await fbLoad('channelConfig');
+    if (data && data.channels && data.channels.length > 0) { channelConfig = data; console.log(`✅ [FB] Config salons chargée: ${channelConfig.channels.length}`); return true; }
+    return false;
+}
 function saveChannelConfig() {
     try { fs.writeFileSync(CHANNEL_CONFIG_FILE, JSON.stringify(channelConfig, null, 2)); } catch (e) { console.error('❌ Erreur sauvegarde config salons:', e.message); }
+    fbSave('channelConfig', channelConfig);
 }
 loadChannelConfig();
 
@@ -999,6 +1144,7 @@ function saveServerRuntimeStats(options = {}) {
         }
         payload.updatedAt = new Date().toISOString();
         fs.writeFileSync(SERVER_RUNTIME_FILE, JSON.stringify(payload, null, 2));
+        fbSaveDebounced('serverRuntime', () => payload, 10000);
     } catch (error) {
         console.error('❌ Erreur sauvegarde runtime serveur:', error.message);
     }
@@ -1136,6 +1282,7 @@ function saveLiveOpsState() {
     try {
         liveOpsState.updatedAt = new Date().toISOString();
         fs.writeFileSync(LIVE_EVENTS_FILE, JSON.stringify(liveOpsState, null, 2));
+        fbSave('liveOpsState', liveOpsState);
     } catch (error) {
         console.error('❌ Erreur sauvegarde live events:', error.message);
     }
@@ -1465,6 +1612,7 @@ function loadPinnedMessages() {
 function savePinnedMessages() {
     try {
         fs.writeFileSync(PINNED_FILE, JSON.stringify(pinnedMessages, null, 2));
+        fbSave('pinnedMessages', pinnedMessages);
     } catch (error) {
         console.error('❌ Erreur sauvegarde messages épinglés:', error.message);
     }
@@ -1542,6 +1690,7 @@ function saveHistory() {
             savedAt: new Date().toISOString()
         };
         fs.writeFileSync(HISTORY_FILE, JSON.stringify(data, null, 2));
+        fbSaveDebounced('chatHistory', () => data);
     } catch (error) {
         console.error('❌ Erreur sauvegarde historique:', error.message);
     }
@@ -1554,6 +1703,7 @@ function saveChannelHistories() {
             savedAt: new Date().toISOString()
         };
         fs.writeFileSync(CHANNELS_FILE, JSON.stringify(data, null, 2));
+        fbSaveDebounced('channelHistories', () => data);
     } catch (error) {
         console.error('❌ Erreur sauvegarde salons:', error.message);
     }
@@ -1562,6 +1712,7 @@ function saveChannelHistories() {
 function saveReactions() {
     try {
         fs.writeFileSync(REACTIONS_FILE, JSON.stringify(messageReactions, null, 2));
+        fbSaveDebounced('messageReactions', () => messageReactions);
     } catch (error) {
         console.error('❌ Erreur sauvegarde réactions:', error.message);
     }
@@ -1571,6 +1722,7 @@ function saveReactions() {
 function saveDMs() {
     try {
         fs.writeFileSync(DM_FILE, JSON.stringify(dmHistory, null, 2));
+        fbSaveDebounced('dmHistory', () => dmHistory);
     } catch (error) {
         console.error('❌ Erreur sauvegarde DMs:', error.message);
     }
@@ -1591,13 +1743,10 @@ function loadDMs() {
 }
 
 // Charger les DMs au démarrage
-loadDMs();
+// (Moved to async loadAllData below)
 
 // Charger les données au démarrage
-loadPersistedData();
-loadPinnedMessages();
-loadLiveOpsState();
-refreshLiveOpsState();
+// (Moved to async loadAllData below)
 
 // === CHARGEMENT DES NOUVELLES DONNÉES ===
 function loadXPData() {
@@ -1615,6 +1764,7 @@ let xpSaveTimer = null;
 function writeXPDataNow() {
     try {
         fs.writeFileSync(XP_FILE, JSON.stringify(userXP, null, 2));
+        fbSave('userXP', userXP);
     } catch (e) {
         console.error('❌ Erreur sauvegarde XP:', e.message);
     }
@@ -1644,7 +1794,7 @@ function loadFriendships() {
     } catch (e) { console.error('❌ Erreur chargement amitiés:', e.message); friendships = {}; }
 }
 function saveFriendships() {
-    try { fs.writeFileSync(FRIENDS_FILE, JSON.stringify(friendships, null, 2)); } catch (e) { console.error('❌ Erreur sauvegarde amitiés:', e.message); }
+    try { fs.writeFileSync(FRIENDS_FILE, JSON.stringify(friendships, null, 2)); fbSaveDebounced('friendships', () => friendships); } catch (e) { console.error('❌ Erreur sauvegarde amitiés:', e.message); }
 }
 
 // Envoyer la liste d'amis mise à jour à un utilisateur connecté (par username)
@@ -1683,7 +1833,7 @@ function loadBookmarks() {
     } catch (e) { console.error('❌ Erreur chargement bookmarks:', e.message); userBookmarks = {}; }
 }
 function saveBookmarks() {
-    try { fs.writeFileSync(BOOKMARKS_FILE, JSON.stringify(userBookmarks, null, 2)); } catch (e) { console.error('❌ Erreur sauvegarde bookmarks:', e.message); }
+    try { fs.writeFileSync(BOOKMARKS_FILE, JSON.stringify(userBookmarks, null, 2)); fbSaveDebounced('bookmarks', () => userBookmarks); } catch (e) { console.error('❌ Erreur sauvegarde bookmarks:', e.message); }
 }
 function loadReminders() {
     try {
@@ -1696,7 +1846,7 @@ function loadReminders() {
     } catch (e) { console.error('❌ Erreur chargement rappels:', e.message); reminders = []; }
 }
 function saveReminders() {
-    try { fs.writeFileSync(REMINDERS_FILE, JSON.stringify({ reminders, lastId: reminderIdCounter }, null, 2)); } catch (e) { console.error('❌ Erreur sauvegarde rappels:', e.message); }
+    try { fs.writeFileSync(REMINDERS_FILE, JSON.stringify({ reminders, lastId: reminderIdCounter }, null, 2)); fbSaveDebounced('reminders', () => ({ reminders, lastId: reminderIdCounter })); } catch (e) { console.error('❌ Erreur sauvegarde rappels:', e.message); }
 }
 function loadAutoMod() {
     try {
@@ -1707,7 +1857,7 @@ function loadAutoMod() {
     } catch (e) { console.error('❌ Erreur chargement AutoMod:', e.message); }
 }
 function saveAutoMod() {
-    try { fs.writeFileSync(AUTOMOD_FILE, JSON.stringify(autoModConfig, null, 2)); } catch (e) { console.error('❌ Erreur sauvegarde AutoMod:', e.message); }
+    try { fs.writeFileSync(AUTOMOD_FILE, JSON.stringify(autoModConfig, null, 2)); fbSave('autoModConfig', autoModConfig); } catch (e) { console.error('❌ Erreur sauvegarde AutoMod:', e.message); }
 }
 
 // === COMPTES ===
@@ -1723,7 +1873,7 @@ function loadAccounts() {
     } catch (e) { console.error('❌ Erreur chargement comptes:', e.message); accounts = {}; }
 }
 function saveAccounts() {
-    try { fs.writeFileSync(ACCOUNTS_FILE, JSON.stringify(accounts, null, 2)); } catch (e) { console.error('❌ Erreur sauvegarde comptes:', e.message); }
+    try { fs.writeFileSync(ACCOUNTS_FILE, JSON.stringify(accounts, null, 2)); fbSave('accounts', accounts); } catch (e) { console.error('❌ Erreur sauvegarde comptes:', e.message); }
 }
 
 function loadMiniGameStats() {
@@ -1744,6 +1894,7 @@ function saveMiniGameStats() {
         saveMiniGameStats._timer = null;
         try {
             fs.writeFileSync(MINIGAMES_FILE, JSON.stringify(miniGameStats, null, 2));
+            fbSave('miniGameStats', miniGameStats);
         } catch (e) {
             console.error('❌ Erreur sauvegarde stats mini-jeux:', e.message);
         }
@@ -1757,6 +1908,7 @@ function saveMiniGameStatsImmediate() {
     }
     try {
         fs.writeFileSync(MINIGAMES_FILE, JSON.stringify(miniGameStats, null, 2));
+        fbSaveImmediate('miniGameStats', miniGameStats);
     } catch (e) {
         console.error('❌ Erreur sauvegarde stats mini-jeux:', e.message);
     }
@@ -1775,17 +1927,131 @@ function saveProfiles() {
     try {
         const obj = Object.fromEntries(userProfiles);
         fs.writeFileSync(PROFILES_FILE, JSON.stringify(obj, null, 2));
+        fbSaveDebounced('profiles', () => Object.fromEntries(userProfiles));
     } catch (e) { console.error('❌ Erreur sauvegarde profils:', e.message); }
 }
 
-loadXPData();
-loadFriendships();
-loadBookmarks();
-loadReminders();
-loadAutoMod();
-loadAccounts();
-loadMiniGameStats();
-loadProfiles();
+// === CHARGEMENT ASYNC DEPUIS FIREBASE + FALLBACK LOCAL ===
+async function loadAllData() {
+    console.log('📦 Chargement des données...');
+    const fbStart = Date.now();
+
+    if (useFirebase) {
+        console.log('☁️ Tentative de chargement depuis Firebase...');
+        try {
+            // Load all data from Firebase in parallel
+            const [
+                fbAccounts, fbXP, fbFriends, fbBookmarks, fbReminders,
+                fbAutoMod, fbMiniGames, fbProfiles, fbDMs, fbHistory,
+                fbChannels, fbReactions, fbPinned, fbPresence, fbChannelCfg
+            ] = await Promise.all([
+                fbLoad('accounts'),
+                fbLoad('userXP'),
+                fbLoad('friendships'),
+                fbLoad('bookmarks'),
+                fbLoad('reminders'),
+                fbLoad('autoModConfig'),
+                fbLoad('miniGameStats'),
+                fbLoad('profiles'),
+                fbLoad('dmHistory'),
+                fbLoad('chatHistory'),
+                fbLoad('channelHistories'),
+                fbLoad('messageReactions'),
+                fbLoad('pinnedMessages'),
+                fbLoad('presenceHistory'),
+                fbLoad('channelConfig')
+            ]);
+
+            let fbCount = 0;
+
+            if (fbAccounts && Object.keys(fbAccounts).length > 0) { accounts = fbAccounts; fbCount++; console.log(`  ✅ [FB] Comptes: ${Object.keys(accounts).length}`); }
+            if (fbXP && Object.keys(fbXP).length > 0) { userXP = fbXP; fbCount++; console.log(`  ✅ [FB] XP: ${Object.keys(userXP).length}`); }
+            if (fbFriends && Object.keys(fbFriends).length > 0) { friendships = fbFriends; fbCount++; console.log(`  ✅ [FB] Amitiés: ${Object.keys(friendships).length}`); }
+            if (fbBookmarks && Object.keys(fbBookmarks).length > 0) { userBookmarks = fbBookmarks; fbCount++; }
+            if (fbReminders) { reminders = fbReminders.reminders || []; reminderIdCounter = fbReminders.lastId || 1; fbCount++; }
+            if (fbAutoMod) { autoModConfig = { ...autoModConfig, ...fbAutoMod }; fbCount++; }
+            if (fbMiniGames && Object.keys(fbMiniGames).length > 0) { miniGameStats = fbMiniGames; fbCount++; }
+            if (fbProfiles && Object.keys(fbProfiles).length > 0) { userProfiles = new Map(Object.entries(fbProfiles)); fbCount++; }
+            if (fbDMs && Object.keys(fbDMs).length > 0) { dmHistory = fbDMs; fbCount++; }
+            if (fbHistory) {
+                chatHistory = fbHistory.messages || [];
+                messageId = fbHistory.lastMessageId || 1;
+                fbCount++;
+                console.log(`  ✅ [FB] Historique: ${chatHistory.length} messages`);
+            }
+            if (fbChannels && fbChannels.histories) {
+                channelHistories = fbChannels.histories;
+                AVAILABLE_CHANNELS.forEach(ch => { if (!channelHistories[ch]) channelHistories[ch] = []; });
+                fbCount++;
+            }
+            if (fbReactions && Object.keys(fbReactions).length > 0) { messageReactions = fbReactions; fbCount++; }
+            if (fbPinned) { pinnedMessages = Array.isArray(fbPinned) ? fbPinned : []; fbCount++; }
+            if (fbPresence) { presenceHistory = Array.isArray(fbPresence) ? fbPresence : []; fbCount++; }
+            if (fbChannelCfg && fbChannelCfg.channels && fbChannelCfg.channels.length > 0) { channelConfig = fbChannelCfg; fbCount++; }
+
+            console.log(`☁️ Firebase: ${fbCount}/15 collections chargées en ${Date.now() - fbStart}ms`);
+
+            // If Firebase had data, skip local file loading for loaded collections
+            if (fbCount > 5) {
+                console.log('☁️ Données Firebase utilisées comme source principale');
+                loadLiveOpsState();
+                refreshLiveOpsState();
+                return;
+            }
+        } catch (e) {
+            console.error('❌ Erreur chargement Firebase, fallback local:', e.message);
+        }
+    }
+
+    // Fallback: load from local files
+    console.log('💾 Chargement depuis fichiers locaux...');
+    loadDMs();
+    loadPersistedData();
+    loadPinnedMessages();
+    loadLiveOpsState();
+    refreshLiveOpsState();
+    loadPresenceHistory();
+    loadXPData();
+    loadFriendships();
+    loadBookmarks();
+    loadReminders();
+    loadAutoMod();
+    loadAccounts();
+    loadMiniGameStats();
+    loadProfiles();
+
+    // If Firebase is available but had no data, seed it from local files
+    if (useFirebase) {
+        console.log('☁️ Synchronisation initiale local → Firebase...');
+        fbSave('accounts', accounts);
+        fbSave('userXP', userXP);
+        fbSave('friendships', friendships);
+        fbSave('bookmarks', userBookmarks);
+        fbSave('reminders', { reminders, lastId: reminderIdCounter });
+        fbSave('autoModConfig', autoModConfig);
+        fbSave('miniGameStats', miniGameStats);
+        fbSave('profiles', Object.fromEntries(userProfiles));
+        fbSave('dmHistory', dmHistory);
+        fbSave('chatHistory', { messages: chatHistory, lastMessageId: messageId });
+        fbSave('channelHistories', { histories: channelHistories });
+        fbSave('messageReactions', messageReactions);
+        fbSave('pinnedMessages', pinnedMessages);
+        fbSave('presenceHistory', presenceHistory);
+        fbSave('channelConfig', channelConfig);
+        console.log('☁️ Sync initial terminé');
+    }
+}
+
+// Lancement async du chargement
+loadAllData().then(() => {
+    console.log('✅ Toutes les données chargées');
+}).catch(e => {
+    console.error('❌ Erreur fatale chargement données:', e.message);
+    // Fallback local d'urgence
+    loadDMs(); loadPersistedData(); loadPinnedMessages(); loadLiveOpsState(); refreshLiveOpsState();
+    loadPresenceHistory(); loadXPData(); loadFriendships(); loadBookmarks(); loadReminders();
+    loadAutoMod(); loadAccounts(); loadMiniGameStats(); loadProfiles();
+});
 
 // === REMINDER CHECKER (every 10 seconds) ===
 setInterval(() => {
@@ -2162,7 +2428,7 @@ app.get('/download/:filename', (req, res) => {
 
 // === ROUTE ADMIN POUR RESET L'HISTORIQUE ===
 // Utiliser avec: /admin/reset?key=VOTRE_CLE_SECRETE
-// Définir ADMIN_KEY dans les variables d'environnement de render.com
+// Définir ADMIN_KEY dans les variables d'environnement de Fly.io
 app.get('/admin/reset', (req, res) => {
     const adminKey = process.env.ADMIN_KEY || 'docspace2024';
     
@@ -2364,7 +2630,7 @@ app.get('/metrics', (req, res) => {
     res.send(lines.join('\n') + '\n');
 });
 
-// Route de santé pour Render avec stats détaillées
+// Route de santé pour Fly.io avec stats détaillées
 app.get('/health', (req, res) => {
     const uptimeSession = getSessionUptimeSeconds();
     const uptimeTotal = getTotalUptimeSeconds();
@@ -2382,6 +2648,8 @@ app.get('/health', (req, res) => {
         totalConnections: serverStats.totalConnections,
         serverName: SERVER_NAME,
         serverVersion: SERVER_VERSION,
+        serverEnv: SERVER_ENV,
+        perfProfile: IS_CLOUD ? 'cloud-optimized' : 'local-full',
         memory: {
             used: `${Math.round(memUsage.heapUsed / 1024 / 1024)}MB`,
             total: `${Math.round(memUsage.heapTotal / 1024 / 1024)}MB`
@@ -2395,6 +2663,70 @@ app.get('/health', (req, res) => {
     });
     
     res.status(200).json(healthData);
+});
+
+// === API CLOUD STATS (Fly.io + Firebase) ===
+app.get('/api/cloud-stats', (req, res) => {
+    const memUsage = process.memoryUsage();
+    const osInfo = {
+        platform: process.platform,
+        arch: process.arch,
+        nodeVersion: process.version,
+        pid: process.pid
+    };
+
+    // Fly.io environment info
+    const flyInfo = {
+        appName: process.env.FLY_APP_NAME || null,
+        region: process.env.FLY_REGION || null,
+        allocId: process.env.FLY_ALLOC_ID || null,
+        machineId: process.env.FLY_MACHINE_ID || null,
+        publicIp: process.env.FLY_PUBLIC_IP || null,
+        isCloud: IS_CLOUD,
+        environment: SERVER_ENV
+    };
+
+    // Memory usage
+    const memory = {
+        heapUsedMB: Math.round(memUsage.heapUsed / 1024 / 1024 * 100) / 100,
+        heapTotalMB: Math.round(memUsage.heapTotal / 1024 / 1024 * 100) / 100,
+        rssMB: Math.round(memUsage.rss / 1024 / 1024 * 100) / 100,
+        externalMB: Math.round((memUsage.external || 0) / 1024 / 1024 * 100) / 100,
+        heapPercent: Math.round(memUsage.heapUsed / memUsage.heapTotal * 100)
+    };
+
+    // Firebase status
+    const firebase = {
+        connected: useFirebase,
+        projectId: useFirebase ? ((() => { try { return JSON.parse(process.env.FIREBASE_CREDENTIALS || '{}').project_id; } catch(e) { return null; } })()) : null
+    };
+
+    // Data sizes (approximate)
+    const dataSizes = {
+        accounts: Object.keys(accounts).length,
+        users: Object.keys(userXP).length,
+        channels: Object.keys(channelHistories).length,
+        totalMessages: Object.values(channelHistories).reduce((s, a) => s + a.length, 0),
+        dms: Object.keys(dmHistory).length,
+        friendships: Object.keys(friendships).length,
+        miniGamePlayers: Object.keys(miniGameStats).length,
+        profiles: userProfiles.size,
+        presenceEntries: presenceHistory.length
+    };
+
+    res.json({
+        fly: flyInfo,
+        memory,
+        firebase,
+        dataSizes,
+        os: osInfo,
+        uptime: {
+            session: getSessionUptimeSeconds(),
+            total: getTotalUptimeSeconds(),
+            sessionFormatted: formatDurationShort(getSessionUptimeSeconds()),
+            totalFormatted: formatDurationShort(getTotalUptimeSeconds())
+        }
+    });
 });
 
 // === API PING ===
@@ -3257,6 +3589,45 @@ io.on('connection', (socket) => {
                 logActivity('ADMIN', 'Event live termine', { admin: adminName });
                 break;
             }
+
+            case 'shop_promotion_set': {
+                const promo = value || {};
+                shopPromotion.active = true;
+                shopPromotion.discount = Math.min(80, Math.max(5, parseInt(promo.discount) || 20));
+                shopPromotion.label = String(promo.label || `🔥 Promo -${shopPromotion.discount}%`).slice(0, 100);
+                shopPromotion.itemFilter = promo.itemFilter || null;
+                shopPromotion.endsAt = Date.now() + (parseInt(promo.durationMinutes) || 30) * 60 * 1000;
+                io.emit('shop_promotion_state', shopPromotion);
+                socket.emit('admin_response', { success: true, message: `Promo boutique active: -${shopPromotion.discount}% pendant ${promo.durationMinutes || 30} min` });
+                logActivity('ADMIN', 'Promotion boutique lancée', { admin: adminName, discount: shopPromotion.discount });
+                break;
+            }
+
+            case 'shop_promotion_end': {
+                shopPromotion.active = false;
+                shopPromotion.discount = 0;
+                shopPromotion.endsAt = 0;
+                shopPromotion.label = '';
+                io.emit('shop_promotion_state', shopPromotion);
+                socket.emit('admin_response', { success: true, message: 'Promotion boutique terminée' });
+                logActivity('ADMIN', 'Promotion boutique terminée', { admin: adminName });
+                break;
+            }
+
+            case 'shop_promotion_auto': {
+                const autoConf = value || {};
+                shopPromotion.autoMode = !!autoConf.enabled;
+                shopPromotion.autoIntervalMinutes = Math.max(30, parseInt(autoConf.intervalMinutes) || 120);
+                shopPromotion.autoDurationMinutes = Math.max(5, parseInt(autoConf.durationMinutes) || 30);
+                shopPromotion.autoDiscountPercent = Math.min(80, Math.max(5, parseInt(autoConf.discountPercent) || 20));
+                if (shopPromotion.autoMode) {
+                    shopPromotion.nextAutoAt = Date.now() + shopPromotion.autoIntervalMinutes * 60 * 1000;
+                }
+                io.emit('shop_promotion_state', shopPromotion);
+                socket.emit('admin_response', { success: true, message: shopPromotion.autoMode ? `Promos auto activées: -${shopPromotion.autoDiscountPercent}% toutes les ${shopPromotion.autoIntervalMinutes}min` : 'Promos auto désactivées' });
+                logActivity('ADMIN', `Promo auto: ${shopPromotion.autoMode ? 'ON' : 'OFF'}`, { admin: adminName });
+                break;
+            }
             
             // === NOUVELLES ACTIONS ADMIN ===
             case 'set_private':
@@ -3358,7 +3729,7 @@ io.on('connection', (socket) => {
                 commitRuntimeSession();
                 
                 setTimeout(() => {
-                    process.exit(0); // render.com redémarrera automatiquement
+                    process.exit(0); // Fly.io redémarrera automatiquement
                 }, 2000);
                 break;
             
@@ -4000,16 +4371,19 @@ io.on('connection', (socket) => {
             });
             
             // Message de présence uniquement à la première connexion active du compte.
+            // On enregistre dans l'historique de présence (pas dans le chat).
             if (!hadPresenceBeforeCleanup) {
-                const joinMessage = {
-                    type: 'system',
-                    message: `${cleanUsername} a rejoint le chat`,
-                    timestamp: new Date(),
-                    id: messageId++
-                };
-                addToHistory(joinMessage);
-                io.emit('system_message', joinMessage);
+                addPresenceEntry(cleanUsername, 'join');
             }
+            
+            // Envoyer l'historique de présence au nouvel utilisateur
+            socket.emit('presence_history_sync', presenceHistory);
+            
+            // Envoyer l'état des promotions shop
+            socket.emit('shop_promotion_state', shopPromotion);
+            
+            // Signal que le join est complet
+            socket.emit('user_join_ready', { username: cleanUsername });
             
             // Envoyer la liste des utilisateurs connectés
             updateUsersList();
@@ -4839,6 +5213,11 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
 
     // Déconnexion
     socket.on('disconnect', (reason) => {
+        // Clear auto-clicker interval if active
+        if (socket._autoClickerInterval) {
+            clearInterval(socket._autoClickerInterval);
+            socket._autoClickerInterval = null;
+        }
         const user = connectedUsers.get(socket.id);
         if (user) {
             const sessionDuration = Date.now() - user.joinTime.getTime();
@@ -4935,14 +5314,7 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
             updateUsersList();
 
             if (isLastConnectionForUser) {
-                const leaveMessage = {
-                    type: 'system',
-                    message: `${user.username} a quitté le chat`,
-                    timestamp: new Date(),
-                    id: messageId++
-                };
-                addToHistory(leaveMessage);
-                io.emit('system_message', leaveMessage);
+                addPresenceEntry(user.username, 'leave');
 
                 // Notifier les amis uniquement lors d'une vraie transition online -> offline.
                 notifyFriendsOfStatusChange(user.username);
@@ -5892,6 +6264,145 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
         }
     });
 
+    // === ACHAT THÈME CUSTOM (200 bananes) ===
+    socket.on('buy_custom_theme', (data) => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+
+        const xpEntry = ensureXPEntry(user.username);
+        if (xpEntry.customThemeUnlocked) {
+            socket.emit('banana_reward', { type: 'custom_theme', title: '🎨 Thème custom', message: 'Déjà débloqué !' });
+            return;
+        }
+
+        const cost = 200;
+        const bananas = getBananaPoints(user.username);
+        if (bananas < cost) {
+            socket.emit('banana_error', { message: `Pas assez de bananes ! (${bananas}/${cost} 🍌)` });
+            return;
+        }
+
+        const ok = spendBananas(user.username, cost);
+        if (!ok) { socket.emit('banana_error', { message: 'Erreur lors du paiement' }); return; }
+
+        xpEntry.customThemeUnlocked = true;
+        xpEntry.customTheme = data?.theme || { colors: ['#5865F2', '#4752C4'], opacity: 0.9 };
+        saveXPData();
+        socket.emit('banana_reward', { type: 'custom_theme', title: '🎨 Thème custom débloqué !', message: 'Tu peux maintenant créer ton propre thème dégradé !' });
+        socket.emit('banana_updated', { bananaPoints: getBananaPoints(user.username) });
+        socket.emit('xp_data', buildXPDataPayload(user.username));
+        logActivity('SHOP', 'Thème custom acheté', { username: user.username, cost });
+    });
+
+    // === ACHAT AUTO-CLICKER (1000 bananes) ===
+    socket.on('buy_autoclicker', () => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+
+        const xpEntry = ensureXPEntry(user.username);
+        if (xpEntry.autoClickerUnlocked) {
+            socket.emit('banana_reward', { type: 'autoclicker', title: '🤖 Auto-Clicker', message: 'Déjà débloqué !' });
+            return;
+        }
+
+        const cost = CLICKER_AUTOCLICKER_COST;
+        const bananas = getBananaPoints(user.username);
+        if (bananas < cost) {
+            socket.emit('banana_error', { message: `Pas assez de bananes ! (${bananas}/${cost} 🍌)` });
+            return;
+        }
+
+        const ok = spendBananas(user.username, cost);
+        if (!ok) { socket.emit('banana_error', { message: 'Erreur lors du paiement' }); return; }
+
+        xpEntry.autoClickerUnlocked = true;
+        saveXPData();
+        socket.emit('banana_reward', { type: 'autoclicker', title: '🤖 Auto-Clicker débloqué !', message: 'Active-le dans le Cookie Clicker pour gagner du XP automatiquement !' });
+        socket.emit('banana_updated', { bananaPoints: getBananaPoints(user.username) });
+        socket.emit('xp_data', buildXPDataPayload(user.username));
+        logActivity('SHOP', 'Auto-clicker acheté', { username: user.username, cost });
+    });
+
+    // === AUTO-CLICKER TOGGLE ===
+    socket.on('autoclicker_toggle', (data) => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+
+        const xpEntry = ensureXPEntry(user.username);
+        if (!xpEntry.autoClickerUnlocked) {
+            socket.emit('banana_error', { message: 'Auto-clicker non débloqué' });
+            return;
+        }
+
+        const enable = !!data?.enable;
+
+        // Clear existing interval if any
+        if (socket._autoClickerInterval) {
+            clearInterval(socket._autoClickerInterval);
+            socket._autoClickerInterval = null;
+        }
+
+        if (enable) {
+            socket._autoClickerInterval = setInterval(() => {
+                const u = connectedUsers.get(socket.id);
+                if (!u) { clearInterval(socket._autoClickerInterval); socket._autoClickerInterval = null; return; }
+
+                const entry = ensureXPEntry(u.username);
+                entry.clicker.totalClicks = Math.max(0, Number(entry.clicker.totalClicks || 0)) + 1;
+                entry.clicker.sessionClicks = Math.max(0, Number(entry.clicker.sessionClicks || 0)) + 1;
+
+                const gainedXP = CLICKER_AUTOCLICKER_XP_PER_TICK;
+                addRawXP(u.username, gainedXP);
+
+                // Reduced lucky chance for auto-clicks (halved)
+                let bananasWon = 0;
+                let jackpot = false;
+                let megaJackpot = false;
+                if (Math.random() < CLICKER_LUCKY_BANANA_CHANCE * 0.5) {
+                    bananasWon = 1;
+                }
+                if (bananasWon > 0) {
+                    entry.bonusBananas = Math.max(0, Number(entry.bonusBananas || 0)) + bananasWon;
+                    entry.clicker.luckyDrops = Math.max(0, Number(entry.clicker.luckyDrops || 0)) + bananasWon;
+                }
+
+                applyMissionProgress(u.username, { clickerClicks: 1 });
+
+                socket.emit('clicker_tap_result', {
+                    gainedXP,
+                    bananasWon,
+                    jackpot: false,
+                    megaJackpot: false,
+                    totalClicks: entry.clicker.totalClicks,
+                    sessionClicks: entry.clicker.sessionClicks,
+                    luckyDrops: entry.clicker.luckyDrops,
+                    bananaPoints: getBananaPoints(u.username),
+                    autoClick: true
+                });
+            }, CLICKER_AUTOCLICKER_INTERVAL_MS);
+        }
+
+        socket.emit('autoclicker_state', { active: enable, unlocked: true });
+    });
+
+    // === SAUVEGARDER THÈME CUSTOM ===
+    socket.on('save_custom_theme', (data) => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+
+        const xpEntry = ensureXPEntry(user.username);
+        if (!xpEntry.customThemeUnlocked) {
+            socket.emit('banana_error', { message: 'Thème custom non débloqué' });
+            return;
+        }
+
+        const colors = Array.isArray(data?.colors) ? data.colors.slice(0, 5).map(c => String(c).slice(0, 9)) : ['#5865F2'];
+        const opacity = Math.min(1, Math.max(0.1, parseFloat(data?.opacity) || 0.9));
+        xpEntry.customTheme = { colors, opacity };
+        saveXPData();
+        socket.emit('custom_theme_saved', { colors, opacity });
+    });
+
     socket.on('get_leaderboard', () => {
         const leaderboard = Object.entries(userXP)
             .map(([username, data]) => {
@@ -5973,10 +6484,18 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
             name_neon: NAME_EFFECT_ITEMS.name_neon.cost
         };
         const effect = data.effect;
-        const cost = costs[effect];
+        let cost = costs[effect];
         if (!cost) {
             socket.emit('banana_error', { message: 'Objet banane inconnu' });
             return;
+        }
+
+        // Appliquer la réduction promo si active
+        if (shopPromotion.active && shopPromotion.endsAt > Date.now()) {
+            const eligible = !shopPromotion.itemFilter || shopPromotion.itemFilter.includes(effect);
+            if (eligible && shopPromotion.discount > 0) {
+                cost = Math.max(1, Math.round(cost * (1 - shopPromotion.discount / 100)));
+            }
         }
 
         const xpEntry = ensureXPEntry(user.username);
@@ -7535,10 +8054,34 @@ setInterval(() => {
     }
 }, 2000);
 
-// === KEEP-ALIVE AMÉLIORÉ POUR RENDER.COM ===
-// Render.com éteint les serveurs inactifs après 15 minutes
+// === AUTO PROMOTIONS BOUTIQUE ===
+setInterval(() => {
+    const now = Date.now();
+    // Expirer la promo active
+    if (shopPromotion.active && shopPromotion.endsAt > 0 && now >= shopPromotion.endsAt) {
+        shopPromotion.active = false;
+        shopPromotion.discount = 0;
+        shopPromotion.endsAt = 0;
+        shopPromotion.label = '';
+        io.emit('shop_promotion_state', shopPromotion);
+        logActivity('SYSTEM', 'Promotion boutique expirée automatiquement');
+    }
+    // Lancer une auto-promo si configurée
+    if (shopPromotion.autoMode && !shopPromotion.active && shopPromotion.nextAutoAt > 0 && now >= shopPromotion.nextAutoAt) {
+        shopPromotion.active = true;
+        shopPromotion.discount = shopPromotion.autoDiscountPercent;
+        shopPromotion.label = `🔥 Promo auto -${shopPromotion.discount}%`;
+        shopPromotion.endsAt = now + shopPromotion.autoDurationMinutes * 60 * 1000;
+        shopPromotion.nextAutoAt = shopPromotion.endsAt + shopPromotion.autoIntervalMinutes * 60 * 1000;
+        io.emit('shop_promotion_state', shopPromotion);
+        logActivity('SYSTEM', `Promotion auto lancée: -${shopPromotion.discount}%`);
+    }
+}, 30000);
+
+// === KEEP-ALIVE POUR FLY.IO ===
+// Fly.io peut arrêter les machines inactives
 // On fait des pings réguliers pour maintenir le serveur actif
-const KEEP_ALIVE_INTERVAL = 4 * 60 * 1000; // 4 minutes (plus fréquent)
+const KEEP_ALIVE_INTERVAL = PERF_CONFIG.keepAliveIntervalMs;
 let keepAliveCount = 0;
 
 // Créer une route /health-lite dédiée au ping interne
@@ -7564,18 +8107,18 @@ function keepAlive() {
         console.log(`[${now}] 💓 Keep-alive #${keepAliveCount} - ${connectedUsers.size} utilisateurs connectés`);
     }
     
-    // Sur Render, utiliser l'URL publique si disponible
-    const renderUrl = process.env.RENDER_EXTERNAL_URL;
-    if (renderUrl) {
-        const protocol = renderUrl.startsWith('https') ? https : require('http');
-        protocol.get(`${renderUrl}/health`, (res) => {
+    // Sur Fly.io ou Render, utiliser l'URL publique si disponible
+    const publicUrl = process.env.FLY_APP_NAME ? `https://${process.env.FLY_APP_NAME}.fly.dev` : process.env.RENDER_EXTERNAL_URL;
+    if (publicUrl) {
+        const protocol = publicUrl.startsWith('https') ? https : require('http');
+        protocol.get(`${publicUrl}/health`, (res) => {
             // Ping réussi
         }).on('error', (err) => {
             // Ignorer les erreurs silencieusement
         });
     } else {
         // En local, ping localhost
-        const PORT = process.env.PORT || 3000;
+        const PORT = process.env.PORT || 8080;
         require('http').get(`http://localhost:${PORT}/health`, (res) => {
             // Ping réussi
         }).on('error', (err) => {

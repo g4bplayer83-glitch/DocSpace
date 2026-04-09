@@ -357,9 +357,14 @@ const CLICKER_JACKPOT_BANANAS = 5;
 const CLICKER_MEGA_JACKPOT_CHANCE = 0.0005;
 const CLICKER_MEGA_JACKPOT_XP = 200;
 const CLICKER_MEGA_JACKPOT_BANANAS = 20;
-const CLICKER_AUTOCLICKER_COST = 1000;
+const CLICKER_AUTOCLICKER_COST = 560;
 const CLICKER_AUTOCLICKER_INTERVAL_MS = 1000; // 1 click per second
 const CLICKER_AUTOCLICKER_XP_PER_TICK = 1; // reduced XP for auto clicks
+const CLICKER_UPGRADES = {
+    efficiency: { baseCost: 20, costMultiplier: 1.8, maxLevel: 10, label: '⚡ Efficacité', desc: '+1 XP/clic par niveau' },
+    luck:       { baseCost: 30, costMultiplier: 2.0, maxLevel: 10, label: '🍀 Chance', desc: '+1% drop 🍌 par niveau' },
+    speed:      { baseCost: 40, costMultiplier: 2.2, maxLevel: 8, label: '💨 Vitesse', desc: 'Auto-click plus rapide' }
+};
 const NAME_EFFECT_ITEMS = {
     name_glow: { cost: 24, label: 'Halo lumineux' },
     name_gradient: { cost: 29, label: 'Dégradé arc-en-ciel' },
@@ -3464,6 +3469,26 @@ io.on('connection', (socket) => {
                 break;
             }
 
+            case 'banana_add': {
+                const bName = resolveXPUsername(target);
+                const amount = parseInt(data.amount, 10);
+                if (!bName || !Number.isFinite(amount) || amount <= 0 || amount > 1000000) {
+                    socket.emit('admin_response', { success: false, message: 'Paramètres bananes invalides' });
+                    break;
+                }
+                const entry = ensureXPEntry(bName);
+                entry.bonusBananas = Math.max(0, Number(entry.bonusBananas || 0)) + amount;
+                saveXPData();
+                const targetSid = findSocketIdByUsername(bName);
+                if (targetSid) {
+                    io.to(targetSid).emit('banana_updated', { bananaPoints: getBananaPoints(bName) });
+                    io.to(targetSid).emit('xp_data', buildXPDataPayload(bName));
+                }
+                socket.emit('admin_response', { success: true, message: `${bName}: +${amount} 🍌 (total ${getBananaPoints(bName)})` });
+                logActivity('ADMIN', 'Bananes ajoutées', { admin: adminName, target: bName, amount, total: getBananaPoints(bName) });
+                break;
+            }
+
             case 'live_ops_get': {
                 refreshLiveOpsState();
                 socket.emit('season_event_state', getLiveOpsPayload());
@@ -3595,11 +3620,18 @@ io.on('connection', (socket) => {
                 shopPromotion.active = true;
                 shopPromotion.discount = Math.min(80, Math.max(5, parseInt(promo.discount) || 20));
                 shopPromotion.label = String(promo.label || `🔥 Promo -${shopPromotion.discount}%`).slice(0, 100);
-                shopPromotion.itemFilter = promo.itemFilter || null;
+                // Auto-select random items (max 5) if no filter specified
+                if (promo.itemFilter) {
+                    shopPromotion.itemFilter = promo.itemFilter;
+                } else {
+                    const allItems = ['confetti', 'shake', 'flash', 'rain', 'fireworks', 'xp_boost', 'streak_shield', 'reaction_boost', 'cooldown_reducer', 'name_glow', 'name_gradient', 'name_neon'];
+                    const shuffled = allItems.sort(() => Math.random() - 0.5);
+                    shopPromotion.itemFilter = shuffled.slice(0, Math.min(5, Math.max(2, Math.floor(Math.random() * 4) + 2)));
+                }
                 shopPromotion.endsAt = Date.now() + (parseInt(promo.durationMinutes) || 30) * 60 * 1000;
                 io.emit('shop_promotion_state', shopPromotion);
-                socket.emit('admin_response', { success: true, message: `Promo boutique active: -${shopPromotion.discount}% pendant ${promo.durationMinutes || 30} min` });
-                logActivity('ADMIN', 'Promotion boutique lancée', { admin: adminName, discount: shopPromotion.discount });
+                socket.emit('admin_response', { success: true, message: `Promo boutique active: -${shopPromotion.discount}% sur ${shopPromotion.itemFilter.length} items pendant ${promo.durationMinutes || 30} min` });
+                logActivity('ADMIN', 'Promotion boutique lancée', { admin: adminName, discount: shopPromotion.discount, items: shopPromotion.itemFilter });
                 break;
             }
 
@@ -6163,12 +6195,15 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
         const oldLevel = getLevelFromXP(entry.xp || 0).level;
 
         const milestoneBonus = entry.clicker.totalClicks % 50 === 0 ? 10 : 0;
-        let gainedXP = CLICKER_XP_PER_CLICK + milestoneBonus;
+        const efficiencyLvl = entry.clickerUpgrades?.efficiency || 0;
+        const luckLvl = entry.clickerUpgrades?.luck || 0;
+        let gainedXP = CLICKER_XP_PER_CLICK + milestoneBonus + efficiencyLvl;
         const xpResult = addRawXP(user.username, gainedXP);
 
         let bananasWon = 0;
         let jackpot = false;
 
+        const luckBonus = luckLvl * 0.01;
         let megaJackpot = false;
         if (Math.random() < CLICKER_MEGA_JACKPOT_CHANCE) {
             megaJackpot = true;
@@ -6181,7 +6216,7 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
             bananasWon += CLICKER_JACKPOT_BANANAS;
             gainedXP += CLICKER_JACKPOT_XP;
             addRawXP(user.username, CLICKER_JACKPOT_XP);
-        } else if (Math.random() < CLICKER_LUCKY_BANANA_CHANCE) {
+        } else if (Math.random() < CLICKER_LUCKY_BANANA_CHANCE + luckBonus) {
             bananasWon += 1;
         }
 
@@ -6343,6 +6378,8 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
         }
 
         if (enable) {
+            const speedLvl = xpEntry.clickerUpgrades?.speed || 0;
+            const intervalMs = Math.max(300, CLICKER_AUTOCLICKER_INTERVAL_MS - speedLvl * 80);
             socket._autoClickerInterval = setInterval(() => {
                 const u = connectedUsers.get(socket.id);
                 if (!u) { clearInterval(socket._autoClickerInterval); socket._autoClickerInterval = null; return; }
@@ -6351,14 +6388,16 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
                 entry.clicker.totalClicks = Math.max(0, Number(entry.clicker.totalClicks || 0)) + 1;
                 entry.clicker.sessionClicks = Math.max(0, Number(entry.clicker.sessionClicks || 0)) + 1;
 
-                const gainedXP = CLICKER_AUTOCLICKER_XP_PER_TICK;
+                const effLvl = entry.clickerUpgrades?.efficiency || 0;
+                const gainedXP = CLICKER_AUTOCLICKER_XP_PER_TICK + Math.floor(effLvl / 2);
                 addRawXP(u.username, gainedXP);
 
-                // Reduced lucky chance for auto-clicks (halved)
+                // Reduced lucky chance for auto-clicks (halved) + luck bonus
+                const luckLvl = entry.clickerUpgrades?.luck || 0;
                 let bananasWon = 0;
                 let jackpot = false;
                 let megaJackpot = false;
-                if (Math.random() < CLICKER_LUCKY_BANANA_CHANCE * 0.5) {
+                if (Math.random() < (CLICKER_LUCKY_BANANA_CHANCE + luckLvl * 0.01) * 0.5) {
                     bananasWon = 1;
                 }
                 if (bananasWon > 0) {
@@ -6379,10 +6418,93 @@ Tu restes respectueux, utile, et plutôt court (max 200 mots). Tu peux utiliser 
                     bananaPoints: getBananaPoints(u.username),
                     autoClick: true
                 });
-            }, CLICKER_AUTOCLICKER_INTERVAL_MS);
+            }, intervalMs);
         }
 
         socket.emit('autoclicker_state', { active: enable, unlocked: true });
+    });
+
+    // === CASINO ===
+    socket.on('casino_spin', (data) => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+        const bet = Math.max(1, Math.min(10000, parseInt(data?.bet) || 10));
+        const bananas = getBananaPoints(user.username);
+        if (bananas < bet) {
+            socket.emit('banana_error', { message: `Pas assez de bananes ! (${bananas}/${bet} 🍌)` });
+            return;
+        }
+        const ok = spendBananas(user.username, bet);
+        if (!ok) { socket.emit('banana_error', { message: 'Erreur paiement' }); return; }
+
+        const casinoSymbols = ['🍒', '🍋', '🍇', '🔔', '⭐', '💎', '7️⃣'];
+        const s1 = casinoSymbols[Math.floor(Math.random() * casinoSymbols.length)];
+        const s2 = casinoSymbols[Math.floor(Math.random() * casinoSymbols.length)];
+        const s3 = casinoSymbols[Math.floor(Math.random() * casinoSymbols.length)];
+
+        let multiplier = 0;
+        if (s1 === s2 && s2 === s3) {
+            // Triple
+            if (s1 === '💎') multiplier = 10;
+            else if (s1 === '7️⃣') multiplier = 8;
+            else if (s1 === '🍒') multiplier = 5;
+            else if (s1 === '🍇') multiplier = 4;
+            else if (s1 === '🍋') multiplier = 3;
+            else multiplier = 3;
+        } else if (s1 === s2 || s2 === s3 || s1 === s3) {
+            multiplier = 2;
+        }
+
+        const win = multiplier > 0;
+        const gain = win ? bet * multiplier : 0;
+        if (win) {
+            const entry = ensureXPEntry(user.username);
+            entry.bonusBananas = (entry.bonusBananas || 0) + gain;
+            saveXPData();
+        }
+
+        const newBalance = getBananaPoints(user.username);
+        socket.emit('casino_result', { symbols: [s1, s2, s3], win, multiplier, gain, bet, newBalance });
+        socket.emit('banana_updated', { bananaPoints: newBalance });
+        if (win) {
+            logActivity('CASINO', `Gain casino`, { username: user.username, bet, gain, multiplier, symbols: [s1, s2, s3].join('') });
+        }
+    });
+
+    // === CLICKER UPGRADES ===
+    socket.on('buy_clicker_upgrade', (data) => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+        const upgradeKey = data?.upgrade;
+        const upgradeDef = CLICKER_UPGRADES[upgradeKey];
+        if (!upgradeDef) { socket.emit('banana_error', { message: 'Amélioration inconnue' }); return; }
+
+        const xpEntry = ensureXPEntry(user.username);
+        if (!xpEntry.clickerUpgrades) xpEntry.clickerUpgrades = {};
+        const currentLevel = xpEntry.clickerUpgrades[upgradeKey] || 0;
+        if (currentLevel >= upgradeDef.maxLevel) { socket.emit('banana_error', { message: 'Niveau max atteint !' }); return; }
+
+        const cost = Math.round(upgradeDef.baseCost * Math.pow(upgradeDef.costMultiplier, currentLevel));
+        const bananas = getBananaPoints(user.username);
+        if (bananas < cost) { socket.emit('banana_error', { message: `Pas assez de bananes ! (${bananas}/${cost} 🍌)` }); return; }
+
+        const ok = spendBananas(user.username, cost);
+        if (!ok) { socket.emit('banana_error', { message: 'Erreur paiement' }); return; }
+
+        xpEntry.clickerUpgrades[upgradeKey] = currentLevel + 1;
+        saveXPData();
+
+        socket.emit('banana_reward', { type: 'clicker_upgrade', title: `${upgradeDef.label} Niv.${currentLevel + 1}`, message: upgradeDef.desc });
+        socket.emit('banana_updated', { bananaPoints: getBananaPoints(user.username) });
+        socket.emit('clicker_upgrades_state', { upgrades: xpEntry.clickerUpgrades });
+        logActivity('SHOP', 'Clicker upgrade', { username: user.username, upgrade: upgradeKey, level: currentLevel + 1, cost });
+    });
+
+    socket.on('get_clicker_upgrades', () => {
+        const user = connectedUsers.get(socket.id);
+        if (!user) return;
+        const xpEntry = ensureXPEntry(user.username);
+        socket.emit('clicker_upgrades_state', { upgrades: xpEntry.clickerUpgrades || {} });
     });
 
     // === SAUVEGARDER THÈME CUSTOM ===
@@ -8071,10 +8193,14 @@ setInterval(() => {
         shopPromotion.active = true;
         shopPromotion.discount = shopPromotion.autoDiscountPercent;
         shopPromotion.label = `🔥 Promo auto -${shopPromotion.discount}%`;
+        // Random 2-5 items for auto promo
+        const allItems = ['confetti', 'shake', 'flash', 'rain', 'fireworks', 'xp_boost', 'streak_shield', 'reaction_boost', 'cooldown_reducer', 'name_glow', 'name_gradient', 'name_neon'];
+        const shuffled = allItems.sort(() => Math.random() - 0.5);
+        shopPromotion.itemFilter = shuffled.slice(0, Math.min(5, Math.max(2, Math.floor(Math.random() * 4) + 2)));
         shopPromotion.endsAt = now + shopPromotion.autoDurationMinutes * 60 * 1000;
         shopPromotion.nextAutoAt = shopPromotion.endsAt + shopPromotion.autoIntervalMinutes * 60 * 1000;
         io.emit('shop_promotion_state', shopPromotion);
-        logActivity('SYSTEM', `Promotion auto lancée: -${shopPromotion.discount}%`);
+        logActivity('SYSTEM', `Promotion auto lancée: -${shopPromotion.discount}%`, { items: shopPromotion.itemFilter });
     }
 }, 30000);
 

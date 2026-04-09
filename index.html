@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
@@ -8446,26 +8446,35 @@
         /* ====== MINI-JEUX STYLES ====== */
         .games-modal {
             width: 90%;
-            max-width: 650px;
+            max-width: 680px;
             max-height: 85vh;
             overflow-y: auto;
         }
 
         .games-modal-header {
-            background: linear-gradient(135deg, rgba(var(--accent-rgb, 88,101,242), 0.15), transparent);
+            background: linear-gradient(135deg, rgba(var(--accent-rgb, 88,101,242), 0.18), rgba(var(--accent-rgb, 88,101,242), 0.04));
         }
 
         .games-menu {
-            padding: 16px 20px;
+            padding: 18px 22px;
         }
 
         .games-category-label {
-            font-size: 12px;
-            font-weight: 700;
+            font-size: 11px;
+            font-weight: 800;
             text-transform: uppercase;
             color: var(--text-secondary);
-            letter-spacing: 0.5px;
-            margin: 16px 0 8px 4px;
+            letter-spacing: 1.2px;
+            margin: 20px 0 10px 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .games-category-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, var(--border-color), transparent);
         }
         .games-category-label:first-child {
             margin-top: 0;
@@ -8474,7 +8483,7 @@
         .games-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
+            gap: 12px;
         }
 
         @media (max-width: 600px) {
@@ -8484,11 +8493,11 @@
         .game-card {
             background: var(--input-bg);
             border: 2px solid var(--border-color);
-            border-radius: 16px;
-            padding: 16px 12px 12px;
+            border-radius: 18px;
+            padding: 18px 12px 14px;
             text-align: center;
             cursor: pointer;
-            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
             position: relative;
             overflow: hidden;
         }
@@ -8500,20 +8509,53 @@
             left: 0;
             right: 0;
             height: 3px;
-            border-radius: 16px 16px 0 0;
+            border-radius: 18px 18px 0 0;
             opacity: 0;
-            transition: opacity 0.2s;
+            transition: opacity 0.25s;
+        }
+
+        .game-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 18px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
         }
 
         .game-card:hover::before { opacity: 1; }
+        .game-card:hover::after { opacity: 1; }
+        .game-card:active { transform: translateY(-1px) scale(0.97); }
         .game-card-multi::before { background: linear-gradient(90deg, #ef4444, #f97316); }
+        .game-card-multi::after { background: radial-gradient(circle at 50% 0%, rgba(239,68,68,0.08), transparent 70%); }
         .game-card-brain::before { background: linear-gradient(90deg, #8b5cf6, #6366f1); }
+        .game-card-brain::after { background: radial-gradient(circle at 50% 0%, rgba(139,92,246,0.08), transparent 70%); }
         .game-card-solo::before { background: linear-gradient(90deg, #22c55e, #14b8a6); }
+        .game-card-solo::after { background: radial-gradient(circle at 50% 0%, rgba(34,197,94,0.08), transparent 70%); }
+        .game-card-casino::before { background: linear-gradient(90deg, #f59e0b, #ef4444); }
+        .game-card-casino::after { background: radial-gradient(circle at 50% 0%, rgba(245,158,11,0.1), transparent 70%); }
+
+        .casino-slot {
+            width: 64px; height: 64px; background: rgba(0,0,0,0.3); border-radius: 12px;
+            display: flex; align-items: center; justify-content: center; font-size: 36px;
+            border: 2px solid rgba(var(--accent-rgb),0.2); transition: all 0.3s;
+        }
+        .casino-slot.spinning { animation: casinoSlotSpin 0.15s linear infinite; }
+        @keyframes casinoSlotSpin { 0% { transform: translateY(-2px); } 50% { transform: translateY(2px); } 100% { transform: translateY(-2px); } }
+        .casino-bet-btn {
+            padding: 6px 14px; border: 2px solid var(--border-color); border-radius: 8px;
+            background: var(--input-bg); color: var(--text-primary); font-weight: 700; font-size: 13px;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .casino-bet-btn:hover, .casino-bet-btn.active {
+            border-color: #f59e0b; background: rgba(245,158,11,0.15); color: #f59e0b;
+        }
 
         .game-card:hover {
             border-color: var(--accent-color);
-            transform: translateY(-4px) scale(1.02);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+            transform: translateY(-6px) scale(1.03);
+            box-shadow: 0 12px 35px rgba(0,0,0,0.3), 0 0 0 1px rgba(var(--accent-rgb),0.1);
         }
 
         .game-card-badge {
@@ -8524,24 +8566,30 @@
             font-weight: 800;
             background: var(--accent-color);
             color: white;
-            padding: 2px 6px;
+            padding: 3px 7px;
             border-radius: 6px;
             letter-spacing: 0.5px;
+            box-shadow: 0 2px 8px rgba(var(--accent-rgb),0.3);
         }
 
         .game-icon-wrap {
-            width: 52px;
-            height: 52px;
-            margin: 0 auto 8px;
+            width: 56px;
+            height: 56px;
+            margin: 0 auto 10px;
             background: rgba(var(--accent-rgb, 88,101,242), 0.1);
-            border-radius: 14px;
+            border-radius: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .game-card:hover .game-icon-wrap {
+            transform: scale(1.1) rotate(-3deg);
         }
 
         .game-icon {
-            font-size: 28px;
+            font-size: 30px;
         }
 
         .game-name {
@@ -9567,7 +9615,7 @@
                     <!-- Stats & outils -->
                     <button class="header-more-item" onclick="openLeaderboard()" title="Classement XP" data-i18n-text="btn_leaderboard">🏆</button>
                     <button class="header-more-item" onclick="openServerStats()" title="Statistiques" data-i18n-text="btn_stats">📊</button>
-                    <button class="header-more-item" onclick="openPresenceHistory()" title="Historique de présence">�</button>
+                    <button class="header-more-item" onclick="openPresenceHistory()" title="Historique de présence">👁‍🗨</button>
                     </div>
                     <button class="header-btn" onclick="showPatchNotes(true)" title="Nouveautés" data-i18n-title="btn_patchnotes">📋</button>
                     <button class="header-btn" onclick="openSettings()" title="Paramètres" data-i18n-title="btn_settings">⚙️</button>
@@ -10606,20 +10654,7 @@
                         <div class="game-desc">Stratégie • Bot ou Joueur</div>
                         <div class="game-tags"><span class="game-tag">Stratégie</span><span class="game-tag">Réflexion</span></div>
                     </div>
-                    <div class="game-card game-card-multi" onclick="startGame('rps')">
-                        <div class="game-card-badge">VS</div>
-                        <div class="game-icon-wrap"><div class="game-icon">✊</div></div>
-                        <div class="game-name">Pierre-Papier-Ciseaux</div>
-                        <div class="game-desc">Rapide • VS Bot</div>
-                        <div class="game-tags"><span class="game-tag">Rapide</span><span class="game-tag">Chance</span></div>
-                    </div>
-                    <div class="game-card game-card-multi" onclick="showArena2DModeSelector()">
-                        <div class="game-card-badge">NEW</div>
-                        <div class="game-icon-wrap"><div class="game-icon">🕹️</div></div>
-                        <div class="game-name">Arena 2D</div>
-                        <div class="game-desc">Collecte • Duel en direct</div>
-                        <div class="game-tags"><span class="game-tag">Arcade</span><span class="game-tag">Multi</span></div>
-                    </div>
+
                 </div>
                 
                 <div class="games-category-label">🧠 Culture & Quiz</div>
@@ -10644,25 +10679,20 @@
                     </div>
                 </div>
                 
-                <div class="games-category-label">🎲 Solo</div>
+                <div class="games-category-label">🎲 Solo & Casino</div>
                 <div class="games-grid">
-                    <div class="game-card game-card-solo" onclick="startGame('guess')">
-                        <div class="game-icon-wrap"><div class="game-icon">🔢</div></div>
-                        <div class="game-name">Devine le Nombre</div>
-                        <div class="game-desc">1-100 • 7 essais</div>
-                        <div class="game-tags"><span class="game-tag">Réflexion</span></div>
-                    </div>
-                    <div class="game-card game-card-solo" onclick="startGame('memory')">
-                        <div class="game-icon-wrap"><div class="game-icon">🃏</div></div>
-                        <div class="game-name">Memory</div>
-                        <div class="game-desc">Trouve les paires</div>
-                        <div class="game-tags"><span class="game-tag">Mémoire</span></div>
-                    </div>
                     <div class="game-card game-card-solo" onclick="startGame('clicker')">
                         <div class="game-icon-wrap"><div class="game-icon">🍪</div></div>
                         <div class="game-name">Cookie Clicker XP</div>
                         <div class="game-desc">Progression persistante</div>
                         <div class="game-tags"><span class="game-tag">XP</span><span class="game-tag">🍌 Loot</span></div>
+                    </div>
+                    <div class="game-card game-card-casino" onclick="startGame('casino')">
+                        <div class="game-card-badge">NEW</div>
+                        <div class="game-icon-wrap"><div class="game-icon">🎰</div></div>
+                        <div class="game-name">Casino</div>
+                        <div class="game-desc">Mise tes 🍌 et tente ta chance</div>
+                        <div class="game-tags"><span class="game-tag">Gambling</span><span class="game-tag">🍌</span></div>
                     </div>
                 </div>
             </div>
@@ -10769,7 +10799,7 @@
                     <button onclick="useBanana('streak_shield')" style="flex:1;min-width:100px;padding:8px;border:none;border-radius:8px;background:rgba(88,101,242,0.22);color:var(--text-primary);cursor:pointer;font-size:12px;">🛡️ Protège série<br><small style="color:var(--text-secondary);">1 charge · 18 🍌</small></button>
                     <button onclick="useBanana('reaction_boost')" style="flex:1;min-width:100px;padding:8px;border:none;border-radius:8px;background:rgba(255,193,7,0.22);color:var(--text-primary);cursor:pointer;font-size:12px;">✨ Boost réactions<br><small style="color:var(--text-secondary);">x2 · 15 min · 13 🍌</small></button>
                     <button onclick="useBanana('cooldown_reducer')" style="flex:1;min-width:100px;padding:8px;border:none;border-radius:8px;background:rgba(0,200,255,0.22);color:var(--text-primary);cursor:pointer;font-size:12px;">⚡ Cadence XP<br><small style="color:var(--text-secondary);">cooldown 20s · 15 min · 12 🍌</small></button>
-                    <button onclick="buyAutoClicker()" style="flex:1;min-width:100px;padding:8px;border:none;border-radius:8px;background:rgba(245,158,11,0.22);color:var(--text-primary);cursor:pointer;font-size:12px;">🤖 Auto-Clicker<br><small style="color:var(--text-secondary);">Permanent · 1000 🍌</small></button>
+                    <button onclick="buyAutoClicker()" style="flex:1;min-width:100px;padding:8px;border:none;border-radius:8px;background:rgba(245,158,11,0.22);color:var(--text-primary);cursor:pointer;font-size:12px;">🤖 Auto-Clicker<br><small style="color:var(--text-secondary);">Permanent · 560 🍌</small></button>
                     <button onclick="useBanana('name_glow')" style="flex:1;min-width:100px;padding:8px;border:none;border-radius:8px;background:rgba(255,220,120,0.22);color:var(--text-primary);cursor:pointer;font-size:12px;">✨ Pseudo glow<br><small style="color:var(--text-secondary);">Permanent · 24 🍌</small></button>
                     <button onclick="useBanana('name_gradient')" style="flex:1;min-width:100px;padding:8px;border:none;border-radius:8px;background:rgba(156,127,255,0.22);color:var(--text-primary);cursor:pointer;font-size:12px;">🌈 Pseudo gradient<br><small style="color:var(--text-secondary);">Permanent · 29 🍌</small></button>
                     <button onclick="useBanana('name_neon')" style="flex:1;min-width:100px;padding:8px;border:none;border-radius:8px;background:rgba(107,255,209,0.22);color:var(--text-primary);cursor:pointer;font-size:12px;">💡 Pseudo néon<br><small style="color:var(--text-secondary);">Permanent · 34 🍌</small></button>
@@ -11427,6 +11457,8 @@
                             <input type="number" id="adminXpAmountInput" class="admin-input" min="1" step="1" value="250" placeholder="XP">
                             <button class="admin-btn" onclick="adminGrantXPFromInput()">⭐ Ajouter XP</button>
                             <button class="admin-btn" onclick="adminSetXPFromInput()">🎯 Définir XP</button>
+                            <input type="number" id="adminBananaAmountInput" class="admin-input" min="1" step="1" value="100" placeholder="🍌">
+                            <button class="admin-btn" onclick="adminGrantBananasFromInput()" style="background:rgba(245,158,11,0.2);color:#f59e0b;">🍌 Donner Bananes</button>
                         </div>
                     </div>
                     <div class="admin-card">
@@ -11674,7 +11706,7 @@
     <div class="presence-history-modal" id="presenceHistoryModal" onclick="if(event.target===this)closePresenceHistory()">
         <div class="presence-history-content">
             <div class="presence-history-header">
-                <h3>🕚 Historique de présence</h3>
+                <h3>�‍🗨 Historique de présence</h3>
                 <button onclick="closePresenceHistory()" style="background:none;border:none;color:var(--text-secondary);font-size:20px;cursor:pointer;">×</button>
             </div>
             <div class="presence-history-list" id="presenceHistoryList">
@@ -13042,7 +13074,6 @@
 
         // === PRESENCE HISTORY ===
         function openPresenceHistory() {
-            closeHeaderMore();
             const modal = document.getElementById('presenceHistoryModal');
             modal.classList.add('open');
             renderPresenceHistory();
@@ -13081,11 +13112,46 @@
             if (!banner) return;
             if (currentShopPromo.active && currentShopPromo.endsAt > Date.now()) {
                 const remaining = Math.ceil((currentShopPromo.endsAt - Date.now()) / 60000);
-                banner.textContent = `${currentShopPromo.label || '🔥 PROMO'} · -${currentShopPromo.discount}% · ${remaining} min restantes`;
+                const itemCount = currentShopPromo.itemFilter ? currentShopPromo.itemFilter.length : 'tous les';
+                banner.textContent = `${currentShopPromo.label || '🔥 PROMO'} · -${currentShopPromo.discount}% sur ${itemCount} items · ${remaining} min restantes`;
                 banner.classList.add('active');
             } else {
                 banner.classList.remove('active');
             }
+        }
+
+        function updateShopPromosPrices() {
+            const shopItems = {
+                confetti: 12, shake: 9, flash: 100, rain: 16, fireworks: 23,
+                xp_boost: 15, streak_shield: 18, reaction_boost: 13, cooldown_reducer: 12,
+                name_glow: 24, name_gradient: 29, name_neon: 34
+            };
+            const isActive = currentShopPromo.active && currentShopPromo.endsAt > Date.now() && currentShopPromo.discount > 0;
+            const shopBtns = document.querySelectorAll('.xp-shop-actions button');
+            shopBtns.forEach(btn => {
+                const onclick = btn.getAttribute('onclick') || '';
+                const match = onclick.match(/useBanana\('(\w+)'\)/);
+                if (!match) return;
+                const itemKey = match[1];
+                const basePrice = shopItems[itemKey];
+                if (!basePrice) return;
+                const small = btn.querySelector('small');
+                if (!small) return;
+                // Store original text once
+                if (!small.dataset.origText) small.dataset.origText = small.textContent;
+                const eligible = isActive && (!currentShopPromo.itemFilter || currentShopPromo.itemFilter.includes(itemKey));
+                if (eligible) {
+                    const newPrice = Math.max(1, Math.round(basePrice * (1 - currentShopPromo.discount / 100)));
+                    const origText = small.dataset.origText;
+                    small.innerHTML = origText.replace(/(\d+)\s*🍌/, `<span style="text-decoration:line-through;opacity:0.5;">$1</span> <span style="color:#22c55e;font-weight:800;">${newPrice} 🍌</span>`);
+                    btn.style.outline = '2px solid rgba(34,197,94,0.4)';
+                    btn.style.outlineOffset = '-2px';
+                } else {
+                    small.textContent = small.dataset.origText || small.textContent;
+                    btn.style.outline = '';
+                    btn.style.outlineOffset = '';
+                }
+            });
         }
 
         // Admin studio promotion functions
@@ -17820,23 +17886,14 @@ window.addEmojiReaction = addEmojiReaction;
                 case 'connect4':
                     initConnect4(gameBoard, gameControls, gameTitle, gameStatus);
                     break;
-                case 'rps':
-                    initRPS(gameBoard, gameControls, gameTitle, gameStatus);
-                    break;
                 case 'quiz':
                     initQuiz(gameBoard, gameControls, gameTitle, gameStatus);
-                    break;
-                case 'guess':
-                    initGuessNumber(gameBoard, gameControls, gameTitle, gameStatus);
-                    break;
-                case 'memory':
-                    initMemory(gameBoard, gameControls, gameTitle, gameStatus);
                     break;
                 case 'clicker':
                     initXPClicker(gameBoard, gameControls, gameTitle, gameStatus);
                     break;
-                case 'arena2d':
-                    initArena2DSolo(gameBoard, gameControls, gameTitle, gameStatus);
+                case 'casino':
+                    initCasino(gameBoard, gameControls, gameTitle, gameStatus);
                     break;
             }
         }
@@ -17905,10 +17962,13 @@ window.addEmojiReaction = addEmojiReaction;
                                     <div style="font-size:13px;font-weight:700;color:var(--text-primary);">🤖 Auto-Clicker</div>
                                     <div style="font-size:10px;color:var(--text-secondary);">1 clic automatique par seconde</div>
                                 </div>
-                                <button onclick="buyAutoClicker()" style="padding:8px 14px;border:none;border-radius:8px;background:linear-gradient(135deg,#ff6b35,#f9a825);color:white;cursor:pointer;font-size:12px;font-weight:700;">🍌 1000</button>
+                                <button onclick="buyAutoClicker()" style="padding:8px 14px;border:none;border-radius:8px;background:linear-gradient(135deg,#ff6b35,#f9a825);color:white;cursor:pointer;font-size:12px;font-weight:700;">🍌 560</button>
                             </div>
                         `}
                     </div>
+
+                    <!-- Upgrades section -->
+                    <div id="clickerUpgradesBox" style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center;"></div>
                 </div>
             `;
 
@@ -17916,7 +17976,32 @@ window.addEmojiReaction = addEmojiReaction;
                 <button class="game-btn secondary" onclick="backToGamesMenu()">← Retour</button>
             `;
 
-            if (socket) socket.emit('get_clicker_state');
+            if (socket) { socket.emit('get_clicker_state'); socket.emit('get_clicker_upgrades'); }
+        }
+
+        function renderClickerUpgrades(upgrades) {
+            const box = document.getElementById('clickerUpgradesBox');
+            if (!box) return;
+            const defs = {
+                efficiency: { baseCost: 20, costMul: 1.8, maxLvl: 10, label: '⚡ Efficacité', desc: '+1 XP/clic' },
+                luck: { baseCost: 30, costMul: 2.0, maxLvl: 10, label: '🍀 Chance', desc: '+1% drop 🍌' },
+                speed: { baseCost: 40, costMul: 2.2, maxLvl: 8, label: '💨 Vitesse', desc: 'Auto + rapide' }
+            };
+            box.innerHTML = Object.entries(defs).map(([key, d]) => {
+                const lvl = upgrades[key] || 0;
+                const maxed = lvl >= d.maxLvl;
+                const cost = maxed ? '—' : Math.round(d.baseCost * Math.pow(d.costMul, lvl));
+                return `<button onclick="buyClickerUpgrade('${key}')" style="flex:1;min-width:110px;padding:8px 6px;border:1px solid var(--border-color);border-radius:10px;background:${maxed ? 'rgba(67,181,129,0.12)' : 'rgba(var(--accent-rgb),0.08)'};color:var(--text-primary);cursor:${maxed ? 'default' : 'pointer'};font-size:11px;text-align:center;transition:all 0.2s;" ${maxed ? 'disabled' : ''}>
+                    <div style="font-weight:700;">${d.label}</div>
+                    <div style="font-size:9px;color:var(--text-secondary);">${d.desc}</div>
+                    <div style="font-size:10px;margin-top:3px;color:${maxed ? '#43B581' : '#f59e0b'};font-weight:700;">Niv.${lvl}/${d.maxLvl} ${maxed ? '✔' : `· ${cost} 🍌`}</div>
+                </button>`;
+            }).join('');
+        }
+
+        function buyClickerUpgrade(key) {
+            if (!socket) return;
+            socket.emit('buy_clicker_upgrade', { upgrade: key });
         }
 
         function tapXPClicker() {
@@ -18190,31 +18275,6 @@ window.addEmojiReaction = addEmojiReaction;
             showPlayerSelection('quiz');
         }
 
-        function showArena2DModeSelector() {
-            document.getElementById('gamesMenu').style.display = 'none';
-            document.getElementById('gameArea').style.display = 'block';
-            document.getElementById('gameTitle').textContent = '🕹️ Arena 2D';
-            document.getElementById('gameStatus').textContent = 'Choisir un mode';
-            document.getElementById('gameBoard').innerHTML = `
-                <div class="game-mode-selector-panel">
-                    <h3>Comment veux-tu jouer ?</h3>
-                    <div class="game-mode-cards">
-                        <div class="game-mode-card" onclick="startGame('arena2d')">
-                            <div class="game-mode-card-icon">🤖</div>
-                            <div class="game-mode-card-title">Solo Bot</div>
-                            <div class="game-mode-card-desc">5 modes aléatoires (Coin Rush, Turbo, Spike, Sword, Mario Pipes)</div>
-                        </div>
-                        <div class="game-mode-card" onclick="showPlayerSelection('arena2d')">
-                            <div class="game-mode-card-icon">👥</div>
-                            <div class="game-mode-card-title">Multijoueur</div>
-                            <div class="game-mode-card-desc">Mode aléatoire synchronisé en direct</div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            document.getElementById('gameControls').innerHTML = '';
-        }
-        
         function startHangmanMulti() {
             showPlayerSelection('hangman');
         }
@@ -19484,65 +19544,69 @@ window.addEmojiReaction = addEmojiReaction;
             });
         }
         
-        // ===== PIERRE-PAPIER-CISEAUX =====
-        function initRPS(board, controls, title, status) {
-            title.textContent = '✊ Pierre-Papier-Ciseaux';
-            gameState = { playerScore: 0, botScore: 0, rounds: 0 };
-            status.textContent = 'Choisissez!';
-            
+        // ===== CASINO =====
+        function initCasino(board, controls, title, status) {
+            title.textContent = '🎰 Casino';
+            status.textContent = '';
+            const myBananas = parseInt(document.getElementById('myBananaPoints')?.textContent || '0', 10);
+            gameState = { casinoBet: 0, casinoSpinning: false, casinoHistory: [] };
+
             board.innerHTML = `
-                <div class="rps-choices">
-                    <button class="rps-choice" onclick="playRPS('rock')">🪨</button>
-                    <button class="rps-choice" onclick="playRPS('paper')">📄</button>
-                    <button class="rps-choice" onclick="playRPS('scissors')">✂️</button>
+                <div style="max-width:440px;margin:0 auto;text-align:center;padding:12px;">
+                    <div style="font-size:16px;font-weight:700;color:var(--text-primary);margin-bottom:12px;">
+                        Ton solde: <span id="casinoBananas" style="color:#f59e0b;">${myBananas} 🍌</span>
+                    </div>
+                    <div style="background:rgba(var(--accent-rgb),0.08);border-radius:16px;padding:20px;border:1px solid rgba(var(--accent-rgb),0.15);margin-bottom:16px;">
+                        <div id="casinoSlots" style="display:flex;justify-content:center;gap:12px;margin-bottom:16px;">
+                            <div class="casino-slot">❓</div>
+                            <div class="casino-slot">❓</div>
+                            <div class="casino-slot">❓</div>
+                        </div>
+                        <div id="casinoResult" style="font-size:18px;font-weight:700;min-height:28px;margin-bottom:12px;color:var(--text-secondary);">Place ta mise et tente ta chance !</div>
+                    </div>
+                    <div style="margin-bottom:14px;">
+                        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;">Mise (🍌)</div>
+                        <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">
+                            <button class="casino-bet-btn" onclick="setCasinoBet(5)">5</button>
+                            <button class="casino-bet-btn" onclick="setCasinoBet(10)">10</button>
+                            <button class="casino-bet-btn" onclick="setCasinoBet(25)">25</button>
+                            <button class="casino-bet-btn" onclick="setCasinoBet(50)">50</button>
+                            <button class="casino-bet-btn" onclick="setCasinoBet(100)">100</button>
+                            <input type="number" id="casinoBetInput" min="1" value="10" style="width:60px;padding:6px 8px;border-radius:8px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--text-primary);text-align:center;font-size:14px;font-weight:700;" onchange="setCasinoBet(parseInt(this.value)||10)">
+                        </div>
+                    </div>
+                    <button id="casinoSpinBtn" onclick="casinoSpin()" style="padding:12px 32px;border:none;border-radius:12px;background:linear-gradient(135deg,#f59e0b,#ef4444);color:white;font-size:16px;font-weight:800;cursor:pointer;transition:all 0.2s;box-shadow:0 4px 15px rgba(245,158,11,0.3);">🎰 SPIN</button>
+                    <div style="margin-top:16px;font-size:11px;color:var(--text-secondary);opacity:0.7;">
+                        <div>🍒🍒🍒 = x5 · 🍋🍋🍋 = x3 · 🍇🍇🍇 = x4 · 💎💎💎 = x10</div>
+                        <div>2 identiques = x2 · Aucun match = perdu</div>
+                    </div>
+                    <div id="casinoHistoryBox" style="margin-top:14px;max-height:120px;overflow-y:auto;font-size:11px;text-align:left;color:var(--text-secondary);"></div>
                 </div>
-                <div id="rpsResult" class="rps-result"></div>
             `;
-            
-            controls.innerHTML = `
-                <div class="quiz-score">Vous: <span id="rpsPlayerScore">0</span> - Bot: <span id="rpsBotScore">0</span></div>
-            `;
+
+            controls.innerHTML = `<button class="game-btn secondary" onclick="backToGamesMenu()">← Retour</button>`;
         }
-        
-        function playRPS(choice) {
-            const choices = ['rock', 'paper', 'scissors'];
-            const emojis = { rock: '🪨', paper: '📄', scissors: '✂️' };
-            const botChoice = choices[Math.floor(Math.random() * 3)];
-            
-            let result, color;
-            if (choice === botChoice) {
-                result = '🤝 Égalité!';
-                color = 'var(--text-secondary)';
-            } else if (
-                (choice === 'rock' && botChoice === 'scissors') ||
-                (choice === 'paper' && botChoice === 'rock') ||
-                (choice === 'scissors' && botChoice === 'paper')
-            ) {
-                result = '🎉 Vous gagnez!';
-                color = '#22c55e';
-                gameState.playerScore++;
-            } else {
-                result = '😢 Bot gagne!';
-                color = '#ef4444';
-                gameState.botScore++;
-            }
-            
-            gameState.rounds++;
-            
-            document.getElementById('rpsResult').innerHTML = `
-                <div class="rps-result-display">
-                    <span>${emojis[choice]}</span>
-                    <span class="rps-vs">VS</span>
-                    <span>${emojis[botChoice]}</span>
-                </div>
-                <div style="font-size: 20px; color: ${color}; font-weight: 600;">${result}</div>
-            `;
-            
-            document.getElementById('rpsPlayerScore').textContent = gameState.playerScore;
-            document.getElementById('rpsBotScore').textContent = gameState.botScore;
-            document.getElementById('gameStatus').textContent = `Round ${gameState.rounds}`;
+
+        function setCasinoBet(amount) {
+            const input = document.getElementById('casinoBetInput');
+            if (input) input.value = amount;
+            gameState.casinoBet = Math.max(1, amount);
+            document.querySelectorAll('.casino-bet-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.casino-bet-btn').forEach(b => {
+                if (parseInt(b.textContent) === amount) b.classList.add('active');
+            });
         }
-        
+
+        function casinoSpin() {
+            if (!socket || gameState.casinoSpinning) return;
+            const bet = parseInt(document.getElementById('casinoBetInput')?.value || '10', 10);
+            if (bet < 1) { showNotification('🎰', 'Mise minimum: 1 🍌', 'warning'); return; }
+            gameState.casinoSpinning = true;
+            const spinBtn = document.getElementById('casinoSpinBtn');
+            if (spinBtn) { spinBtn.disabled = true; spinBtn.textContent = '🎰 ...'; }
+            socket.emit('casino_spin', { bet });
+        }
+
         // ===== QUIZ =====
         const quizQuestions = [
             { q: "Quelle est la capitale de la France?", a: ["Paris", "Lyon", "Marseille", "Nice"], c: 0, cat: "Géographie" },
@@ -19646,377 +19710,6 @@ window.addEmojiReaction = addEmojiReaction;
             document.getElementById('gameStatus').textContent = 'Terminé!';
         }
         
-        // ===== DEVINE LE NOMBRE =====
-        function initGuessNumber(board, controls, title, status) {
-            title.textContent = '🔢 Devine le Nombre';
-            gameState = {
-                target: Math.floor(Math.random() * 100) + 1,
-                attempts: 0,
-                maxAttempts: 7,
-                hints: []
-            };
-            status.textContent = `Essais: 0/${gameState.maxAttempts}`;
-            
-            board.innerHTML = `
-                <div style="text-align: center; margin-bottom: 20px; color: var(--text-secondary);">
-                    Je pense à un nombre entre 1 et 100...
-                </div>
-                <div class="guess-input-group">
-                    <input type="number" class="guess-input" id="guessInput" min="1" max="100" placeholder="Ton nombre..." onkeypress="if(event.key==='Enter')makeGuess()">
-                    <button class="guess-btn" onclick="makeGuess()">Deviner</button>
-                </div>
-                <div class="guess-hints" id="guessHints"></div>
-            `;
-            
-            controls.innerHTML = `<button class="game-btn secondary" onclick="startGame('guess')">🔄 Nouveau nombre</button>`;
-            
-            setTimeout(() => document.getElementById('guessInput').focus(), 100);
-        }
-        
-        function makeGuess() {
-            const input = document.getElementById('guessInput');
-            const guess = parseInt(input.value);
-            
-            if (isNaN(guess) || guess < 1 || guess > 100) {
-                input.style.borderColor = '#ef4444';
-                setTimeout(() => input.style.borderColor = '', 500);
-                return;
-            }
-            
-            gameState.attempts++;
-            input.value = '';
-            
-            const hintsDiv = document.getElementById('guessHints');
-            let hint, className;
-            
-            if (guess === gameState.target) {
-                hint = `🎉 Bravo! C'était bien ${gameState.target}! (${gameState.attempts} essai${gameState.attempts > 1 ? 's' : ''})`;
-                className = 'correct';
-                document.getElementById('gameStatus').textContent = 'Gagné!';
-                input.disabled = true;
-                if (socket) {
-                    const qualityBonus = Math.max(0, gameState.maxAttempts - gameState.attempts);
-                    socket.emit('minigame_result', {
-                        gameType: 'guess',
-                        outcome: 'win',
-                        points: 10 + qualityBonus,
-                        xp: 18 + qualityBonus * 2
-                    });
-                }
-            } else if (guess < gameState.target) {
-                hint = `⬆️ ${guess} - C'est plus!`;
-                className = 'higher';
-            } else {
-                hint = `⬇️ ${guess} - C'est moins!`;
-                className = 'lower';
-            }
-            
-            gameState.hints.unshift({ text: hint, class: className });
-            hintsDiv.innerHTML = gameState.hints.map(h => `<div class="guess-hint ${h.class}">${h.text}</div>`).join('');
-            
-            if (gameState.attempts >= gameState.maxAttempts && guess !== gameState.target) {
-                hintsDiv.innerHTML = `<div class="guess-hint wrong">😢 Perdu! C'était ${gameState.target}</div>` + hintsDiv.innerHTML;
-                document.getElementById('gameStatus').textContent = 'Perdu!';
-                input.disabled = true;
-                if (socket) {
-                    socket.emit('minigame_result', {
-                        gameType: 'guess',
-                        outcome: 'loss',
-                        points: 4,
-                        xp: 8
-                    });
-                }
-            } else {
-                document.getElementById('gameStatus').textContent = `Essais: ${gameState.attempts}/${gameState.maxAttempts}`;
-            }
-        }
-        
-        // ===== MEMORY =====
-        const memoryEmojis = ['🍎', '🍊', '🍋', '🍇', '🍓', '🍒', '🥝', '🍑'];
-        
-        function initMemory(board, controls, title, status) {
-            title.textContent = '🧠 Memory';
-            
-            const cards = [...memoryEmojis, ...memoryEmojis]
-                .sort(() => Math.random() - 0.5)
-                .map((emoji, i) => ({ id: i, emoji, flipped: false, matched: false }));
-            
-            gameState = {
-                cards,
-                flipped: [],
-                matches: 0,
-                moves: 0,
-                locked: false
-            };
-            
-            status.textContent = 'Trouvez les paires!';
-            renderMemory(board);
-            controls.innerHTML = `
-                <div class="memory-stats">
-                    <div class="memory-stat">Coups: <span id="memoryMoves">0</span></div>
-                    <div class="memory-stat">Paires: <span id="memoryMatches">0</span>/8</div>
-                </div>
-            `;
-        }
-        
-        function renderMemory(board) {
-            board.innerHTML = `
-                <div class="memory-grid">
-                    ${gameState.cards.map(card => `
-                        <div class="memory-card ${card.flipped ? 'flipped' : ''} ${card.matched ? 'matched' : ''}" 
-                             onclick="flipCard(${card.id})">
-                            ${card.flipped || card.matched ? card.emoji : '❓'}
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-        }
-        
-        function flipCard(id) {
-            if (gameState.locked) return;
-            const card = gameState.cards[id];
-            if (card.flipped || card.matched) return;
-            
-            card.flipped = true;
-            gameState.flipped.push(card);
-            renderMemory(document.getElementById('gameBoard'));
-            
-            if (gameState.flipped.length === 2) {
-                gameState.moves++;
-                document.getElementById('memoryMoves').textContent = gameState.moves;
-                gameState.locked = true;
-                
-                const [c1, c2] = gameState.flipped;
-                
-                if (c1.emoji === c2.emoji) {
-                    c1.matched = true;
-                    c2.matched = true;
-                    gameState.matches++;
-                    document.getElementById('memoryMatches').textContent = gameState.matches;
-                    gameState.flipped = [];
-                    gameState.locked = false;
-                    renderMemory(document.getElementById('gameBoard'));
-                    
-                    if (gameState.matches === 8) {
-                        document.getElementById('gameStatus').textContent = `🎉 Gagné en ${gameState.moves} coups!`;
-                        if (socket) {
-                            const moveEfficiency = Math.max(0, 20 - gameState.moves);
-                            socket.emit('minigame_result', {
-                                gameType: 'memory',
-                                outcome: 'win',
-                                points: 10 + Math.floor(moveEfficiency / 2),
-                                xp: 20 + moveEfficiency
-                            });
-                        }
-                        document.getElementById('gameControls').innerHTML += `
-                            <button class="game-btn" onclick="startGame('memory')" style="margin-top: 10px;">🔄 Rejouer</button>
-                        `;
-                    }
-                } else {
-                    setTimeout(() => {
-                        c1.flipped = false;
-                        c2.flipped = false;
-                        gameState.flipped = [];
-                        gameState.locked = false;
-                        renderMemory(document.getElementById('gameBoard'));
-                    }, 1000);
-                }
-            }
-        }
-
-        // ===== ARENA 2D SOLO (BOT) =====
-        function initArena2DSolo(board, controls, title, status) {
-            title.textContent = '🕹️ Arena 2D (Solo Bot)';
-            gameState = {
-                soloArena: {
-                    width: 20,
-                    height: 12,
-                    targetScore: 10,
-                    coins: [],
-                    you: { x: 1, y: 6, score: 0 },
-                    bot: { x: 18, y: 6, score: 0 },
-                    finished: false,
-                    moveCooldownMs: 80,
-                    lastMoveAt: 0,
-                    botTimer: null,
-                    botThinkMs: 260
-                }
-            };
-
-            const arena = gameState.soloArena;
-            for (let i = 0; i < 7; i++) {
-                arena.coins.push(spawnSoloArenaCoin(arena));
-            }
-
-            status.textContent = 'Collectez les pieces avant le bot !';
-            renderArena2DSolo();
-            setupArena2DSoloKeyboard(true);
-            startArena2DBotLoop();
-
-            controls.innerHTML = `
-                <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;">
-                    <button class="game-btn" onclick="moveArena2DSolo('up')">⬆️</button>
-                    <button class="game-btn" onclick="moveArena2DSolo('left')">⬅️</button>
-                    <button class="game-btn" onclick="moveArena2DSolo('down')">⬇️</button>
-                    <button class="game-btn" onclick="moveArena2DSolo('right')">➡️</button>
-                    <button class="game-btn secondary" onclick="startGame('arena2d')">🔄 Rejouer</button>
-                </div>
-                <div style="margin-top:8px;font-size:12px;color:var(--text-secondary);text-align:center;">Clavier: fleches ou ZQSD</div>
-            `;
-        }
-
-        function spawnSoloArenaCoin(arena) {
-            const occupied = new Set();
-            occupied.add(`${arena.you.x},${arena.you.y}`);
-            occupied.add(`${arena.bot.x},${arena.bot.y}`);
-            arena.coins.forEach(c => occupied.add(`${c.x},${c.y}`));
-            for (let tries = 0; tries < 200; tries++) {
-                const x = Math.floor(Math.random() * arena.width);
-                const y = Math.floor(Math.random() * arena.height);
-                const key = `${x},${y}`;
-                if (!occupied.has(key)) return { x, y };
-            }
-            return { x: Math.floor(arena.width / 2), y: Math.floor(arena.height / 2) };
-        }
-
-        function renderArena2DSolo() {
-            const board = document.getElementById('gameBoard');
-            const arena = gameState.soloArena;
-            if (!arena) return;
-
-            const cellW = 100 / arena.width;
-            const cellH = 100 / arena.height;
-            board.innerHTML = `
-                <div style="max-width:620px;margin:0 auto;">
-                    <div style="display:flex;justify-content:center;gap:14px;margin-bottom:10px;font-size:14px;">
-                        <div style="padding:8px 12px;border-radius:10px;background:rgba(88,101,242,0.18);">Vous: <strong>${arena.you.score}</strong> / ${arena.targetScore}</div>
-                        <div style="padding:8px 12px;border-radius:10px;background:rgba(240,71,71,0.18);">Bot: <strong>${arena.bot.score}</strong> / ${arena.targetScore}</div>
-                    </div>
-                    <div style="position:relative;height:340px;border:2px solid var(--border-color);border-radius:14px;background:radial-gradient(circle at 20% 20%, rgba(88,101,242,0.15), transparent 40%), radial-gradient(circle at 80% 70%, rgba(67,181,129,0.14), transparent 45%), rgba(0,0,0,0.2);overflow:hidden;">
-                        ${arena.coins.map(c => `<div style="position:absolute;left:${(c.x + 0.2) * cellW}%;top:${(c.y + 0.2) * cellH}%;width:${cellW * 0.6}%;height:${cellH * 0.6}%;min-width:8px;min-height:8px;border-radius:999px;background:#f7b500;box-shadow:0 0 10px rgba(247,181,0,0.6);"></div>`).join('')}
-                        <div style="position:absolute;left:${(arena.you.x + 0.08) * cellW}%;top:${(arena.you.y + 0.08) * cellH}%;width:${cellW * 0.84}%;height:${cellH * 0.84}%;min-width:14px;min-height:14px;border-radius:8px;background:#5865f2;border:2px solid rgba(255,255,255,0.5);"></div>
-                        <div style="position:absolute;left:${(arena.bot.x + 0.08) * cellW}%;top:${(arena.bot.y + 0.08) * cellH}%;width:${cellW * 0.84}%;height:${cellH * 0.84}%;min-width:14px;min-height:14px;border-radius:8px;background:#f04747;border:2px solid rgba(255,255,255,0.5);"></div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function moveArena2DSolo(dir) {
-            const arena = gameState.soloArena;
-            if (!arena || arena.finished) return;
-            const now = Date.now();
-            if (now - arena.lastMoveAt < arena.moveCooldownMs) return;
-            arena.lastMoveAt = now;
-
-            if (dir === 'up') arena.you.y = Math.max(0, arena.you.y - 1);
-            if (dir === 'down') arena.you.y = Math.min(arena.height - 1, arena.you.y + 1);
-            if (dir === 'left') arena.you.x = Math.max(0, arena.you.x - 1);
-            if (dir === 'right') arena.you.x = Math.min(arena.width - 1, arena.you.x + 1);
-
-            collectSoloArenaCoin('you');
-            renderArena2DSolo();
-            evaluateArena2DSoloEnd();
-        }
-
-        function collectSoloArenaCoin(who) {
-            const arena = gameState.soloArena;
-            if (!arena) return;
-            const p = who === 'you' ? arena.you : arena.bot;
-            const idx = arena.coins.findIndex(c => c.x === p.x && c.y === p.y);
-            if (idx >= 0) {
-                arena.coins.splice(idx, 1);
-                p.score += 1;
-                arena.coins.push(spawnSoloArenaCoin(arena));
-            }
-        }
-
-        function startArena2DBotLoop() {
-            const arena = gameState.soloArena;
-            if (!arena) return;
-            if (arena.botTimer) clearInterval(arena.botTimer);
-            arena.botTimer = setInterval(() => {
-                if (!gameState.soloArena || gameState.soloArena.finished || currentGame !== 'arena2d') return;
-                tickArena2DBot();
-            }, arena.botThinkMs);
-        }
-
-        function tickArena2DBot() {
-            const arena = gameState.soloArena;
-            if (!arena || arena.finished) return;
-            const target = arena.coins[0];
-            if (!target) return;
-
-            if (arena.bot.x < target.x) arena.bot.x += 1;
-            else if (arena.bot.x > target.x) arena.bot.x -= 1;
-            else if (arena.bot.y < target.y) arena.bot.y += 1;
-            else if (arena.bot.y > target.y) arena.bot.y -= 1;
-
-            collectSoloArenaCoin('bot');
-            renderArena2DSolo();
-            evaluateArena2DSoloEnd();
-        }
-
-        function evaluateArena2DSoloEnd() {
-            const arena = gameState.soloArena;
-            if (!arena || arena.finished) return;
-            if (arena.you.score < arena.targetScore && arena.bot.score < arena.targetScore) return;
-
-            arena.finished = true;
-            if (arena.botTimer) {
-                clearInterval(arena.botTimer);
-                arena.botTimer = null;
-            }
-            setupArena2DSoloKeyboard(false);
-
-            const isWin = arena.you.score >= arena.targetScore && arena.you.score >= arena.bot.score;
-            const isDraw = arena.you.score === arena.bot.score;
-            const outcome = isDraw ? 'draw' : (isWin ? 'win' : 'loss');
-            const points = isDraw ? 9 : (isWin ? 16 : 6);
-            const xp = isDraw ? 18 : (isWin ? 36 : 12);
-            if (socket) {
-                socket.emit('minigame_result', {
-                    gameType: 'arena2d',
-                    outcome,
-                    points,
-                    xp
-                });
-            }
-
-            document.getElementById('gameStatus').textContent = isDraw
-                ? '🤝 Egalite contre le bot'
-                : (isWin ? '🏆 Victoire contre le bot !' : '😢 Defaite contre le bot');
-        }
-
-        function setupArena2DSoloKeyboard(enabled) {
-            if (window.__arena2dSoloKeyHandler) {
-                window.removeEventListener('keydown', window.__arena2dSoloKeyHandler);
-                window.__arena2dSoloKeyHandler = null;
-            }
-            if (!enabled) return;
-
-            window.__arena2dSoloKeyHandler = (event) => {
-                if (currentGame !== 'arena2d' || !gameState.soloArena || gameState.soloArena.finished) return;
-                const key = (event.key || '').toLowerCase();
-                const map = {
-                    arrowup: 'up',
-                    z: 'up',
-                    w: 'up',
-                    arrowdown: 'down',
-                    s: 'down',
-                    arrowleft: 'left',
-                    q: 'left',
-                    a: 'left',
-                    arrowright: 'right',
-                    d: 'right'
-                };
-                const dir = map[key];
-                if (!dir) return;
-                event.preventDefault();
-                moveArena2DSolo(dir);
-            };
-            window.addEventListener('keydown', window.__arena2dSoloKeyHandler);
-        }
-
         // ============== PATCH NOTES ==============
         let patchNotesData = null;
         
@@ -21919,6 +21612,17 @@ window.addEmojiReaction = addEmojiReaction;
             }
             socket.emit('admin_action', { password: ADMIN_PASSWORD, action: 'xp_set', target: username, amount });
         }
+
+        function adminGrantBananasFromInput() {
+            const username = getAdminTargetUsername();
+            if (!username) return;
+            const amount = parseInt(document.getElementById('adminBananaAmountInput')?.value || '0', 10);
+            if (!Number.isFinite(amount) || amount <= 0) {
+                showNotification('❌ Erreur', 'Montant bananes invalide', 'error');
+                return;
+            }
+            socket.emit('admin_action', { password: ADMIN_PASSWORD, action: 'banana_add', target: username, amount });
+        }
         
         function adminKickUser(username) {
             if (!isAdmin || !socket) return;
@@ -22699,8 +22403,12 @@ window.addEmojiReaction = addEmojiReaction;
             iceServers: [
                 { urls: 'stun:stun.l.google.com:19302' },
                 { urls: 'stun:stun1.l.google.com:19302' },
-                { urls: 'stun:stun2.l.google.com:19302' }
-            ]
+                { urls: 'stun:stun2.l.google.com:19302' },
+                { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+                { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+                { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
+            ],
+            iceCandidatePoolSize: 2
         };
 
         let voiceStartTime = null;
@@ -24266,7 +23974,11 @@ window.addEmojiReaction = addEmojiReaction;
                     }
                 } catch (err) {
                     console.error('Erreur caméra:', err);
-                    showNotification('❌', 'Impossible d\'accéder à la caméra', 'error');
+                    const msg = err.name === 'NotAllowedError' ? 'Permission caméra refusée. Autorise l\'accès dans les paramètres du navigateur.'
+                        : err.name === 'NotFoundError' ? 'Aucune caméra détectée.'
+                        : err.name === 'NotReadableError' ? 'Caméra déjà utilisée par une autre application.'
+                        : `Impossible d'accéder à la caméra (${err.name || err.message})`;
+                    showNotification('📷', msg, 'error');
                     return;
                 }
             }
@@ -26277,6 +25989,7 @@ window.addEmojiReaction = addEmojiReaction;
             socket.on('shop_promotion_state', (promo) => {
                 currentShopPromo = promo || { active: false, discount: 0, label: '', endsAt: 0 };
                 updateShopPromoBanner();
+                updateShopPromosPrices();
                 // Update studio chip if admin
                 const chip = document.getElementById('studioPromoChip');
                 if (chip) {
@@ -26325,6 +26038,9 @@ window.addEmojiReaction = addEmojiReaction;
                 if (btn) {
                     btn.style.animation = data.active ? 'clickerAutoGlow 1.5s ease-in-out infinite' : 'clickerPulse 2s ease-in-out infinite';
                 }
+            });
+            socket.on('clicker_upgrades_state', (data) => {
+                if (data?.upgrades) renderClickerUpgrades(data.upgrades);
             });
             socket.on('banana_effect', (data) => {
                 triggerBananaEffect(data.effect, data.username);
@@ -26408,6 +26124,44 @@ window.addEmojiReaction = addEmojiReaction;
                         }, mega ? 6000 : jackpot ? 4000 : 2000);
                     }
                 }
+            });
+
+            // Casino result
+            socket.on('casino_result', (data) => {
+                gameState.casinoSpinning = false;
+                const spinBtn = document.getElementById('casinoSpinBtn');
+                if (spinBtn) { spinBtn.disabled = false; spinBtn.textContent = '🎰 SPIN'; }
+                if (!data) return;
+
+                const slots = document.querySelectorAll('.casino-slot');
+                const symbols = data.symbols || ['❓','❓','❓'];
+
+                // Animate slots
+                slots.forEach((s, i) => { s.classList.add('spinning'); s.textContent = ''; });
+                setTimeout(() => { if (slots[0]) { slots[0].classList.remove('spinning'); slots[0].textContent = symbols[0]; } }, 300);
+                setTimeout(() => { if (slots[1]) { slots[1].classList.remove('spinning'); slots[1].textContent = symbols[1]; } }, 600);
+                setTimeout(() => {
+                    if (slots[2]) { slots[2].classList.remove('spinning'); slots[2].textContent = symbols[2]; }
+                    const resultEl = document.getElementById('casinoResult');
+                    if (resultEl) {
+                        if (data.win) {
+                            resultEl.style.color = '#22c55e';
+                            resultEl.textContent = `🎉 +${data.gain} 🍌 (x${data.multiplier})`;
+                        } else {
+                            resultEl.style.color = '#ef4444';
+                            resultEl.textContent = `😢 -${data.bet} 🍌 perdu !`;
+                        }
+                    }
+                    const bal = document.getElementById('casinoBananas');
+                    if (bal) bal.textContent = `${data.newBalance} 🍌`;
+                    // History
+                    gameState.casinoHistory.unshift({ symbols, win: data.win, amount: data.win ? data.gain : -data.bet });
+                    if (gameState.casinoHistory.length > 15) gameState.casinoHistory.pop();
+                    const hbox = document.getElementById('casinoHistoryBox');
+                    if (hbox) hbox.innerHTML = gameState.casinoHistory.map(h =>
+                        `<div style="padding:2px 0;${h.win ? 'color:#22c55e' : 'color:#ef4444'}">${h.symbols.join(' ')} → ${h.win ? '+' : ''}${h.amount} 🍌</div>`
+                    ).join('');
+                }, 900);
             });
 
             // Reminders
